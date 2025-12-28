@@ -1,10 +1,16 @@
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
+	"github.com/neogan/sre-toolkit/internal/k8s-doctor/diagnostics"
+	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
+	"github.com/neogan/sre-toolkit/internal/k8s-doctor/reporter"
 	"github.com/neogan/sre-toolkit/pkg/cli"
 	"github.com/neogan/sre-toolkit/pkg/config"
+	"github.com/neogan/sre-toolkit/pkg/k8s"
 	"github.com/neogan/sre-toolkit/pkg/logging"
 	"github.com/neogan/sre-toolkit/pkg/metrics"
 	"github.com/spf13/cobra"
@@ -51,6 +57,13 @@ for improving your cluster's reliability and security.`
 }
 
 func newHealthCheckCmd() *cobra.Command {
+	var (
+		kubeconfig string
+		namespace  string
+		output     string
+		timeout    time.Duration
+	)
+
 	cmd := &cobra.Command{
 		Use:   "healthcheck",
 		Short: "Run cluster health checks",
@@ -58,16 +71,102 @@ func newHealthCheckCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
 			logger.Info().Msg("Running health checks...")
-			// TODO: Implement health check logic
-			logger.Info().Msg("Health check completed (not yet implemented)")
+
+			// Create Kubernetes client
+			client, err := k8s.NewClient(&k8s.Config{
+				Kubeconfig: kubeconfig,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to create Kubernetes client")
+				return err
+			}
+
+			// Create context with timeout
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+
+			// Check cluster connectivity
+			if err := client.Ping(ctx); err != nil {
+				logger.Error().Err(err).Msg("Failed to connect to cluster")
+				return err
+			}
+
+			version, _ := client.ServerVersion(ctx)
+			logger.Info().Str("version", version).Msg("Connected to cluster")
+
+			// Create reporter
+			format := reporter.FormatTable
+			if output == "json" {
+				format = reporter.FormatJSON
+			}
+			rep := reporter.NewReporter(format, os.Stdout)
+
+			// Check nodes
+			logger.Info().Msg("Checking nodes...")
+			nodes, err := healthcheck.CheckNodes(ctx, client.Clientset())
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to check nodes")
+				return err
+			}
+			logger.Info().Int("count", len(nodes)).Msg("Nodes checked")
+
+			if output == "table" {
+				logger.Info().Msg("\n=== Node Health ===")
+			}
+			if err := rep.ReportNodeHealth(nodes); err != nil {
+				return err
+			}
+
+			// Check pods
+			logger.Info().Msg("Checking pods...")
+			pods, err := healthcheck.CheckPods(ctx, client.Clientset(), namespace)
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to check pods")
+				return err
+			}
+			logger.Info().Int("total", pods.Total).Int("problems", len(pods.ProblemPods)).Msg("Pods checked")
+
+			if err := rep.ReportPodHealth(pods); err != nil {
+				return err
+			}
+
+			// Check components
+			logger.Info().Msg("Checking components...")
+			components, err := healthcheck.CheckComponents(ctx, client.Clientset())
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to check components")
+				return err
+			}
+			logger.Info().Int("count", len(components)).Msg("Components checked")
+
+			if output == "table" {
+				logger.Info().Msg("\n=== Component Health ===")
+			}
+			if err := rep.ReportComponentHealth(components); err != nil {
+				return err
+			}
+
+			logger.Info().Msg("Health check completed successfully")
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check (empty for all)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
 }
 
 func newDiagnosticsCmd() *cobra.Command {
+	var (
+		kubeconfig string
+		namespace  string
+		output     string
+		timeout    time.Duration
+	)
+
 	cmd := &cobra.Command{
 		Use:   "diagnostics",
 		Short: "Run cluster diagnostics",
@@ -75,11 +174,70 @@ func newDiagnosticsCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
 			logger.Info().Msg("Running diagnostics...")
-			// TODO: Implement diagnostics logic
-			logger.Info().Msg("Diagnostics completed (not yet implemented)")
+
+			// Create Kubernetes client
+			client, err := k8s.NewClient(&k8s.Config{
+				Kubeconfig: kubeconfig,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to create Kubernetes client")
+				return err
+			}
+
+			// Create context with timeout
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+
+			// Check cluster connectivity
+			if err := client.Ping(ctx); err != nil {
+				logger.Error().Err(err).Msg("Failed to connect to cluster")
+				return err
+			}
+
+			version, _ := client.ServerVersion(ctx)
+			logger.Info().Str("version", version).Msg("Connected to cluster")
+
+			// Run diagnostics
+			logger.Info().Msg("Analyzing cluster...")
+			result, err := diagnostics.RunDiagnostics(ctx, client.Clientset(), namespace)
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to run diagnostics")
+				return err
+			}
+
+			// Create reporter
+			format := reporter.FormatTable
+			if output == "json" {
+				format = reporter.FormatJSON
+			}
+			rep := reporter.NewReporter(format, os.Stdout)
+
+			// Report results
+			if err := rep.ReportDiagnostics(result); err != nil {
+				return err
+			}
+
+			// Log summary
+			logger.Info().
+				Int("total_issues", result.Summary.TotalIssues).
+				Int("critical", result.Summary.CriticalCount).
+				Int("warning", result.Summary.WarningCount).
+				Int("info", result.Summary.InfoCount).
+				Msg("Diagnostics completed")
+
+			// Exit with error code if critical issues found
+			if result.Summary.CriticalCount > 0 {
+				os.Exit(1)
+			}
+
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check (empty for all)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
 }
