@@ -1,0 +1,246 @@
+package diagnostics
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
+	"k8s.io/client-go/kubernetes"
+)
+
+// DiagnosticsResult represents the result of diagnostics
+type DiagnosticsResult struct {
+	Summary      Summary
+	NodeIssues   []NodeIssue
+	PodIssues    []PodIssue
+	SystemIssues []SystemIssue
+}
+
+// Summary provides an overview of issues found
+type Summary struct {
+	TotalIssues   int
+	CriticalCount int
+	WarningCount  int
+	InfoCount     int
+}
+
+// NodeIssue represents an issue with a node
+type NodeIssue struct {
+	Node     string
+	Severity string // Critical, Warning, Info
+	Type     string
+	Message  string
+}
+
+// PodIssue represents an issue with a pod
+type PodIssue struct {
+	Pod       string
+	Namespace string
+	Severity  string
+	Type      string
+	Message   string
+	Restarts  int32
+}
+
+// SystemIssue represents a system-level issue
+type SystemIssue struct {
+	Component string
+	Severity  string
+	Type      string
+	Message   string
+}
+
+// RunDiagnostics performs comprehensive cluster diagnostics
+func RunDiagnostics(ctx context.Context, clientset *kubernetes.Clientset, namespace string) (*DiagnosticsResult, error) {
+	result := &DiagnosticsResult{
+		NodeIssues:   []NodeIssue{},
+		PodIssues:    []PodIssue{},
+		SystemIssues: []SystemIssue{},
+	}
+
+	// Check nodes
+	nodes, err := healthcheck.CheckNodes(ctx, clientset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check nodes: %w", err)
+	}
+
+	for _, node := range nodes {
+		issues := diagnoseNode(&node)
+		result.NodeIssues = append(result.NodeIssues, issues...)
+	}
+
+	// Check pods
+	pods, err := healthcheck.CheckPods(ctx, clientset, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check pods: %w", err)
+	}
+
+	for _, pod := range pods.ProblemPods {
+		issue := diagnosePod(&pod)
+		result.PodIssues = append(result.PodIssues, issue)
+	}
+
+	// Check components
+	components, err := healthcheck.CheckComponents(ctx, clientset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check components: %w", err)
+	}
+
+	for _, comp := range components {
+		if issue := diagnoseComponent(&comp); issue != nil {
+			result.SystemIssues = append(result.SystemIssues, *issue)
+		}
+	}
+
+	// Calculate summary
+	result.Summary = calculateSummary(result)
+
+	return result, nil
+}
+
+// diagnoseNode analyzes a node and returns issues
+func diagnoseNode(node *healthcheck.NodeStatus) []NodeIssue {
+	var issues []NodeIssue
+
+	// Not ready is critical
+	if node.Status == "NotReady" {
+		issues = append(issues, NodeIssue{
+			Node:     node.Name,
+			Severity: "Critical",
+			Type:     "NodeNotReady",
+			Message:  "Node is not in Ready state",
+		})
+	}
+
+	// Check for specific issues
+	for _, issue := range node.Issues {
+		severity := "Warning"
+		issueType := "NodePressure"
+
+		// Memory and disk pressure are critical
+		if issue == "Memory pressure detected" || issue == "Disk pressure detected" {
+			severity = "Critical"
+		}
+
+		// Cordoned node is info
+		if issue == "Node is cordoned (unschedulable)" {
+			severity = "Info"
+			issueType = "NodeCordoned"
+		}
+
+		issues = append(issues, NodeIssue{
+			Node:     node.Name,
+			Severity: severity,
+			Type:     issueType,
+			Message:  issue,
+		})
+	}
+
+	return issues
+}
+
+// diagnosePod analyzes a problem pod and returns an issue
+func diagnosePod(pod *healthcheck.ProblemPod) PodIssue {
+	issue := PodIssue{
+		Pod:       pod.Name,
+		Namespace: pod.Namespace,
+		Type:      pod.Reason,
+		Message:   pod.Message,
+		Restarts:  pod.Restarts,
+	}
+
+	// Determine severity based on reason
+	switch pod.Reason {
+	case "CrashLoopBackOff":
+		issue.Severity = "Critical"
+		issue.Type = "CrashLoopBackOff"
+	case "ImagePullBackOff", "ErrImagePull":
+		issue.Severity = "Critical"
+		issue.Type = "ImagePullError"
+	case "CreateContainerError", "RunContainerError":
+		issue.Severity = "Critical"
+		issue.Type = "ContainerError"
+	case "Pending":
+		issue.Severity = "Warning"
+		issue.Type = "PodPending"
+	case "Failed":
+		issue.Severity = "Critical"
+		issue.Type = "PodFailed"
+	default:
+		if pod.Restarts > 10 {
+			issue.Severity = "Critical"
+			issue.Type = "HighRestartCount"
+		} else if pod.Restarts > 5 {
+			issue.Severity = "Warning"
+			issue.Type = "FrequentRestarts"
+		} else {
+			issue.Severity = "Warning"
+		}
+	}
+
+	if issue.Message == "" {
+		issue.Message = fmt.Sprintf("Pod has %d restarts", pod.Restarts)
+	}
+
+	return issue
+}
+
+// diagnoseComponent analyzes a component and returns an issue if unhealthy
+func diagnoseComponent(comp *healthcheck.ComponentStatus) *SystemIssue {
+	if comp.Status == "Healthy" {
+		return nil
+	}
+
+	return &SystemIssue{
+		Component: comp.Name,
+		Severity:  "Critical",
+		Type:      "ComponentUnhealthy",
+		Message:   comp.Message,
+	}
+}
+
+// calculateSummary calculates the summary statistics
+func calculateSummary(result *DiagnosticsResult) Summary {
+	summary := Summary{}
+
+	// Count node issues
+	for _, issue := range result.NodeIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	// Count pod issues
+	for _, issue := range result.PodIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	// Count system issues
+	for _, issue := range result.SystemIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	return summary
+}
