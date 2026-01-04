@@ -37,6 +37,7 @@ build-all: ## Build all tools
 	@echo "$(CYAN)Building all tools...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/k8s-doctor ./cmd/k8s-doctor
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/alert-analyzer ./cmd/alert-analyzer
 	@echo "$(GREEN)All builds complete$(NC)"
 
 install: build ## Install the binary to GOPATH/bin
