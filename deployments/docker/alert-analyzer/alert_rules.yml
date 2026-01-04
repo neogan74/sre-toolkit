@@ -1,0 +1,83 @@
+groups:
+  - name: sample_alerts
+    interval: 15s
+    rules:
+      # Noisy alert - fires frequently with short duration
+      - alert: HighMemoryUsage
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.9
+        for: 1m
+        labels:
+          severity: warning
+          service: sample-app
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 90%"
+
+      # Flapping alert - simulated by using a metric that oscillates
+      - alert: DatabaseConnectionFlap
+        expr: |
+          (minute() % 10 < 5)
+        for: 30s
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database connection is flapping"
+          description: "Database connection is unstable"
+
+      # Critical alert with longer duration
+      - alert: APIServerDown
+        expr: up{job="prometheus"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: api-server
+        annotations:
+          summary: "API Server is down"
+          description: "The API server has been down for more than 5 minutes"
+
+      # Alert that never fires
+      - alert: TestAlertNeverFiring
+        expr: node_cpu_seconds_total > 999999999
+        for: 1m
+        labels:
+          severity: info
+          service: test
+        annotations:
+          summary: "Test alert that never fires"
+          description: "This alert is used for testing and should never fire"
+
+      # Another noisy alert
+      - alert: CPUHighUsage
+        expr: |
+          (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.01
+        for: 1m
+        labels:
+          severity: warning
+          service: sample-app
+        annotations:
+          summary: "CPU usage is high"
+          description: "CPU usage is above 1%"
+
+      # Correlated with HighMemoryUsage (fires at same time)
+      - alert: HighSystemLoad
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.9
+        for: 1m
+        labels:
+          severity: warning
+          service: sample-app
+        annotations:
+          summary: "System load is high"
+          description: "System load is elevated"
+
+      # Info-level alert
+      - alert: LowDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) > 0.1
+        for: 2m
+        labels:
+          severity: info
+          service: sample-app
+        annotations:
+          summary: "Disk space is getting low"
+          description: "Less than 90% disk space used"
