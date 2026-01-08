@@ -51,7 +51,7 @@ type SystemIssue struct {
 }
 
 // RunDiagnostics performs comprehensive cluster diagnostics
-func RunDiagnostics(ctx context.Context, clientset *kubernetes.Clientset, namespace string) (*DiagnosticsResult, error) {
+func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*DiagnosticsResult, error) {
 	result := &DiagnosticsResult{
 		NodeIssues:   []NodeIssue{},
 		PodIssues:    []PodIssue{},

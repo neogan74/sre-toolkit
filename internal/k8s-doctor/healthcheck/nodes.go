@@ -28,7 +28,7 @@ type NodeCondition struct {
 }
 
 // CheckNodes checks the health status of all nodes in the cluster
-func CheckNodes(ctx context.Context, clientset *kubernetes.Clientset) ([]NodeStatus, error) {
+func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStatus, error) {
 	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list nodes: %w", err)
