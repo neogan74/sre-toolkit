@@ -16,15 +16,15 @@ type ComponentStatus struct {
 }
 
 // CheckComponents checks the health status of cluster components
-func CheckComponents(ctx context.Context, clientset *kubernetes.Clientset) ([]ComponentStatus, error) {
+func CheckComponents(ctx context.Context, clientset kubernetes.Interface) ([]ComponentStatus, error) {
 	// Try to get component statuses (deprecated in newer k8s versions)
 	components, err := clientset.CoreV1().ComponentStatuses().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		// If ComponentStatus API is not available, check via pods
+	if err != nil || len(components.Items) == 0 {
+		// If ComponentStatus API is not available or returns no results, check via pods
 		return checkComponentPods(ctx, clientset)
 	}
 
-	var statuses []ComponentStatus
+	statuses := []ComponentStatus{} // Initialize as empty slice, not nil
 	for _, comp := range components.Items {
 		status := ComponentStatus{
 			Name:   comp.Name,
@@ -54,7 +54,7 @@ func CheckComponents(ctx context.Context, clientset *kubernetes.Clientset) ([]Co
 }
 
 // checkComponentPods checks component health via system pods
-func checkComponentPods(ctx context.Context, clientset *kubernetes.Clientset) ([]ComponentStatus, error) {
+func checkComponentPods(ctx context.Context, clientset kubernetes.Interface) ([]ComponentStatus, error) {
 	// Check kube-system namespace for control plane components
 	pods, err := clientset.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -108,7 +108,7 @@ func checkComponentPods(ctx context.Context, clientset *kubernetes.Clientset) ([
 	}
 
 	// Convert map to slice
-	var statuses []ComponentStatus
+	statuses := []ComponentStatus{} // Initialize as empty slice, not nil
 	for _, name := range componentNames {
 		if componentMap[name].Status != "NotFound" {
 			statuses = append(statuses, *componentMap[name])
