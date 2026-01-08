@@ -32,7 +32,7 @@ type ProblemPod struct {
 }
 
 // CheckPods checks the health status of all pods in the cluster
-func CheckPods(ctx context.Context, clientset *kubernetes.Clientset, namespace string) (*PodStatus, error) {
+func CheckPods(ctx context.Context, clientset kubernetes.Interface, namespace string) (*PodStatus, error) {
 	opts := metav1.ListOptions{}
 	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, opts)
 	if err != nil {
