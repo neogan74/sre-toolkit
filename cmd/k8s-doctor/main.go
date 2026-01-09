@@ -91,7 +91,10 @@ func newHealthCheckCmd() *cobra.Command {
 				return err
 			}
 
-			version, _ := client.ServerVersion(ctx)
+			version, err := client.ServerVersion(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Could not get server version")
+			}
 			logger.Info().Str("version", version).Msg("Connected to cluster")
 
 			// Create reporter
@@ -194,7 +197,10 @@ func newDiagnosticsCmd() *cobra.Command {
 				return err
 			}
 
-			version, _ := client.ServerVersion(ctx)
+			version, err := client.ServerVersion(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Could not get server version")
+			}
 			logger.Info().Str("version", version).Msg("Connected to cluster")
 
 			// Run diagnostics
