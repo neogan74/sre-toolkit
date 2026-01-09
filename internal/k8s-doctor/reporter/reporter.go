@@ -175,9 +175,12 @@ func (r *Reporter) reportComponentTable(components []healthcheck.ComponentStatus
 
 	for _, comp := range components {
 		status := comp.Status
-		if comp.Status == "Healthy" {
+		switch comp.Status {
+		case "Healthy":
 			status = "✓ " + status
-		} else {
+		case "Warning":
+			status = "⚠ " + status
+		default:
 			status = "✗ " + status
 		}
 

@@ -163,18 +163,28 @@ func TestAnalyzeNode(t *testing.T) {
 		{
 			name: "node with network unavailable",
 			node: makeNodePtr("worker-7", nodeOptions{
-				ready:             true,
+				ready:              true,
 				networkUnavailable: true,
 			}),
 			wantStatus: "Ready",
 			wantIssues: 1, // "Network unavailable"
 			wantRoles:  1,
 		},
+		{
+			name: "node with version skew",
+			node: makeNodePtr("worker-8", nodeOptions{
+				ready:   true,
+				version: "v1.24.0", // 4 minor versions behind v1.28.0
+			}),
+			wantStatus: "Ready",
+			wantIssues: 1, // Version skew detected
+			wantRoles:  1,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := analyzeNode(tt.node)
+			got := analyzeNode(tt.node, "v1.28.0")
 
 			if got.Name != tt.node.Name {
 				t.Errorf("analyzeNode().Name = %v, want %v", got.Name, tt.node.Name)
@@ -234,7 +244,7 @@ func TestGetRoles(t *testing.T) {
 		{
 			name: "other labels",
 			labels: map[string]string{
-				"kubernetes.io/hostname": "node1",
+				"kubernetes.io/hostname":      "node1",
 				"topology.kubernetes.io/zone": "us-east-1a",
 			},
 			wantRoles: []string{"worker"}, // Default to worker

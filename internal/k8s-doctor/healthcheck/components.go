@@ -4,6 +4,7 @@ package healthcheck
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -18,11 +19,17 @@ type ComponentStatus struct {
 
 // CheckComponents checks the health status of cluster components
 func CheckComponents(ctx context.Context, clientset kubernetes.Interface) ([]ComponentStatus, error) {
+	// Get API server version for compatibility check
+	serverVersion := "unknown"
+	if versionInfo, err := clientset.Discovery().ServerVersion(); err == nil {
+		serverVersion = versionInfo.GitVersion
+	}
+
 	// Try to get component statuses (deprecated in newer k8s versions)
 	components, err := clientset.CoreV1().ComponentStatuses().List(ctx, metav1.ListOptions{})
 	if err != nil || len(components.Items) == 0 {
 		// If ComponentStatus API is not available or returns no results, check via pods
-		return checkComponentPods(ctx, clientset)
+		return checkComponentPods(ctx, clientset, serverVersion)
 	}
 
 	statuses := []ComponentStatus{} // Initialize as empty slice, not nil
@@ -55,7 +62,7 @@ func CheckComponents(ctx context.Context, clientset kubernetes.Interface) ([]Com
 }
 
 // checkComponentPods checks component health via system pods
-func checkComponentPods(ctx context.Context, clientset kubernetes.Interface) ([]ComponentStatus, error) {
+func checkComponentPods(ctx context.Context, clientset kubernetes.Interface, apiServerVersion string) ([]ComponentStatus, error) {
 	// Check kube-system namespace for control plane components
 	pods, err := clientset.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -104,6 +111,23 @@ func checkComponentPods(ctx context.Context, clientset kubernetes.Interface) ([]
 					componentMap[name].Status = "Unhealthy"
 					componentMap[name].Message = fmt.Sprintf("Pod in %s phase", pod.Status.Phase)
 				}
+
+				// Check version compatibility if possible
+				if apiServerVersion != "unknown" && len(pod.Spec.Containers) > 0 {
+					image := pod.Spec.Containers[0].Image
+					if version := extractVersionFromImage(image); version != "" {
+						apiVersion, err1 := ParseVersion(apiServerVersion)
+						compVersion, err2 := ParseVersion(version)
+						if err1 == nil && err2 == nil {
+							if skewIssue := GetVersionSkewDescription(compVersion, apiVersion, name); skewIssue != "" {
+								if componentMap[name].Status == "Healthy" {
+									componentMap[name].Status = "Warning"
+								}
+								componentMap[name].Message = fmt.Sprintf("%s. %s", componentMap[name].Message, skewIssue)
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -123,4 +147,18 @@ func checkComponentPods(ctx context.Context, clientset kubernetes.Interface) ([]
 func matchesComponent(podName, componentName string) bool {
 	// Simple prefix matching (could be improved)
 	return len(podName) >= len(componentName) && podName[:len(componentName)] == componentName
+}
+
+// extractVersionFromImage attempts to extract a version tag from an image string
+func extractVersionFromImage(image string) string {
+	parts := strings.Split(image, ":")
+	if len(parts) < 2 {
+		return ""
+	}
+	tag := parts[len(parts)-1]
+	// Basic validation that tag looks like a version
+	if versionRegex.MatchString(tag) {
+		return tag
+	}
+	return ""
 }
