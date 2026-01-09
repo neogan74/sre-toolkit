@@ -2,6 +2,8 @@ module github.com/neogan/sre-toolkit
 
 go 1.24
 
+toolchain go1.24.0
+
 require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.66.1
