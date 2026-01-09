@@ -42,9 +42,25 @@ k8s-doctor diagnostics
 k8s-doctor audit
 ```
 
-### 📊 alert-analyzer - Prometheus Alert Optimizer (🚧 Coming Soon)
+### 📊 alert-analyzer - Prometheus Alert Optimizer (✅ Available)
 
 Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
+
+**Features:**
+- Prometheus API integration for alert history collection
+- Frequency analysis of firing alerts
+- Identification of noisy and flapping alerts
+- Support for custom lookback periods and resolutions
+- Multiple output formats (table, JSON)
+
+**Quick Start:**
+```bash
+# Analyze last 7 days of alerts
+alert-analyzer analyze --prometheus-url http://prometheus:9090
+
+# Analyze with custom lookback and top-N results
+alert-analyzer analyze --prometheus-url http://prometheus:9090 --lookback 30d --top-n 10
+```
 
 ### 💥 chaos-load - Load & Chaos Testing (✅ Available)
 
