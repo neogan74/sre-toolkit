@@ -1,3 +1,4 @@
+// Package http provides HTTP load testing functionality for chaos engineering.
 package http
 
 import (

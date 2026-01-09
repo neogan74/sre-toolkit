@@ -1,3 +1,4 @@
+// Package stats provides statistics collection and reporting for load tests.
 package stats
 
 import (

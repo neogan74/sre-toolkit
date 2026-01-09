@@ -47,6 +47,9 @@ linters:
 
     govet:
       enable-all: true
+      disable:
+        - fieldalignment  # Low priority memory optimization
+        - shadow          # Common pattern in Go, often false positives
 
     gocyclo:
       min-complexity: 15
@@ -61,6 +64,8 @@ linters:
         - opinionated
         - performance
         - style
+      disabled-checks:
+        - rangeValCopy  # Often unavoidable with Kubernetes types
 
     revive:
       rules:

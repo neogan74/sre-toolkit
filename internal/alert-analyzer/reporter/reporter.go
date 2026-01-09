@@ -10,6 +10,7 @@ import (
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/analyzer"
 )
 
+// Output format constants
 const (
 	FormatTable = "table"
 	FormatJSON  = "json"
@@ -141,7 +142,7 @@ func formatDuration(d time.Duration) string {
 	minutes := int(d.Minutes()) % 60
 	if hours > 24 {
 		days := hours / 24
-		hours = hours % 24
+		hours %= 24
 		return fmt.Sprintf("%dd %dh %dm", days, hours, minutes)
 	}
 	return fmt.Sprintf("%dh %dm", hours, minutes)
@@ -163,9 +164,9 @@ func getSeverityIcon(severity string) string {
 
 // AnalysisReport contains all analysis results for JSON export
 type AnalysisReport struct {
-	Timestamp string                       `json:"timestamp"`
-	Summary   analyzer.SummaryStats        `json:"summary"`
-	Frequency []analyzer.FrequencyResult   `json:"frequency_analysis"`
+	Timestamp string                     `json:"timestamp"`
+	Summary   analyzer.SummaryStats      `json:"summary"`
+	Frequency []analyzer.FrequencyResult `json:"frequency_analysis"`
 }
 
 // ReportComplete outputs a complete analysis report
