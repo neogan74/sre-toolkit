@@ -46,9 +46,21 @@ k8s-doctor audit
 
 Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
 
-### 💥 chaos-load - Load & Chaos Testing (🚧 Coming Soon)
+### 💥 chaos-load - Load & Chaos Testing (✅ Available)
 
 Combined load testing and chaos engineering toolkit.
+
+**Features:**
+- HTTP load generator with keep-alive support
+- Configurable concurrency and duration
+- Real-time statistics (RPS, Latency percentiles)
+- Detailed reporting
+
+**Quick Start:**
+```bash
+# Run HTTP load test
+chaos-load http --url https://example.com --duration 30s --concurrency 20
+```
 
 ### ✅ config-linter - Configuration Validator (🚧 Coming Soon)
 

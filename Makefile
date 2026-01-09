@@ -1,4 +1,4 @@
-.PHONY: help build test lint fmt vet clean run install deps tidy
+.PHONY: help build chaos-load test lint fmt vet clean run install deps tidy
 
 # Variables
 BINARY_NAME=k8s-doctor
@@ -33,11 +33,18 @@ build: ## Build the k8s-doctor binary
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/k8s-doctor
 	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME)$(NC)"
 
+chaos-load: ## Build the chaos-load binary
+	@echo "$(CYAN)Building chaos-load...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/chaos-load ./cmd/chaos-load
+	@echo "$(GREEN)Build complete: $(BUILD_DIR)/chaos-load$(NC)"
+
 build-all: ## Build all tools
 	@echo "$(CYAN)Building all tools...$(NC)"
 	@mkdir -p $(BUILD_DIR)
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/k8s-doctor ./cmd/k8s-doctor
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/alert-analyzer ./cmd/alert-analyzer
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/chaos-load ./cmd/chaos-load
 	@echo "$(GREEN)All builds complete$(NC)"
 
 install: build ## Install the binary to GOPATH/bin
