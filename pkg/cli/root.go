@@ -1,3 +1,4 @@
+// Package cli provides the command-line interface framework using cobra and viper.
 package cli
 
 import (

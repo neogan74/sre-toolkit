@@ -1,3 +1,4 @@
+// Package healthcheck provides functionality for checking the health of Kubernetes components.
 package healthcheck
 
 import (

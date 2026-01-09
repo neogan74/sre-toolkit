@@ -34,7 +34,7 @@ func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStat
 		return nil, fmt.Errorf("failed to list nodes: %w", err)
 	}
 
-	var statuses []NodeStatus
+	statuses := make([]NodeStatus, 0, len(nodes.Items))
 	for _, node := range nodes.Items {
 		status := analyzeNode(&node)
 		statuses = append(statuses, status)
@@ -101,9 +101,10 @@ func analyzeNode(node *corev1.Node) NodeStatus {
 func getRoles(node *corev1.Node) []string {
 	roles := []string{}
 	for label := range node.Labels {
-		if label == "node-role.kubernetes.io/master" || label == "node-role.kubernetes.io/control-plane" {
+		switch label {
+		case "node-role.kubernetes.io/master", "node-role.kubernetes.io/control-plane":
 			roles = append(roles, "control-plane")
-		} else if label == "node-role.kubernetes.io/worker" {
+		case "node-role.kubernetes.io/worker":
 			roles = append(roles, "worker")
 		}
 	}

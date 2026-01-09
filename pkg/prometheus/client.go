@@ -1,3 +1,4 @@
+// Package prometheus provides a wrapper around the Prometheus API client.
 package prometheus
 
 import (
@@ -42,10 +43,9 @@ func NewClient(cfg *Config, logger *zerolog.Logger) (*Client, error) {
 
 	// Create HTTP client with custom transport
 	httpClient := &http.Client{
-		Timeout: cfg.Timeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: cfg.Insecure,
+				InsecureSkipVerify: cfg.Insecure, // #nosec G402
 			},
 		},
 	}

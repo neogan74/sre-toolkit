@@ -1,3 +1,4 @@
+// Package reporter provides functionality for reporting alert analysis results in different formats.
 package reporter
 
 import (

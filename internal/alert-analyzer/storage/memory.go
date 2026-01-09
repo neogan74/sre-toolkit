@@ -1,3 +1,4 @@
+// Package storage provides in-memory storage for alert history.
 package storage
 
 import (

@@ -1,3 +1,4 @@
+// Package k8s provides Kubernetes client utilities.
 package k8s
 
 import (
