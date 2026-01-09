@@ -1,3 +1,5 @@
+version: 2
+
 run:
   timeout: 5m
   tests: true
@@ -6,14 +8,10 @@ run:
 linters:
   enable:
     - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
     - govet         # Reports suspicious constructs
     - ineffassign   # Detects ineffectual assignments
     - staticcheck   # Advanced go vet
-    - typecheck     # Type checks
     - unused        # Checks for unused code
-    - gofmt         # Check code formatting
-    - goimports     # Check import formatting
     - misspell      # Finds commonly misspelled words
     - revive        # Replacement for golint
     - unconvert     # Remove unnecessary type conversions
