@@ -30,7 +30,7 @@ jobs:
         env:
           GOTOOLCHAIN: local
         with:
-          version: v1.64.8
+          version: v2.6.1
           args: --timeout=5m ./...
 
   test:

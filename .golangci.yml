@@ -79,8 +79,8 @@ linters:
         - G104 # Audit errors not checked - covered by errcheck
 
   exclusions:
-    # Exclude test files from some linters
     rules:
+      # Exclude some linters from running on tests files
       - path: _test\.go
         linters:
           - gocyclo
@@ -94,7 +94,7 @@ linters:
         linters:
           - gosec
 
-      # Exclude deferred Stop/Close calls (cleanup, best-effort)
+      # Exclude deferred calls from errcheck
       - source: "defer"
         linters:
           - errcheck
