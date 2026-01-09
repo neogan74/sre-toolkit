@@ -51,7 +51,7 @@ func NewClient(cfg *Config, logger *zerolog.Logger) (*Client, error) {
 	}
 
 	// Add basic auth if provided
-	var roundTripper http.RoundTripper = httpClient.Transport
+	var roundTripper = httpClient.Transport
 	if cfg.Username != "" && cfg.Password != "" {
 		roundTripper = &basicAuthRoundTripper{
 			username: cfg.Username,
@@ -156,7 +156,7 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
-// buildInfo returns Prometheus build information
+// BuildInfo returns Prometheus build information
 func (c *Client) BuildInfo(ctx context.Context) (v1.BuildinfoResult, error) {
 	return c.api.Buildinfo(ctx)
 }

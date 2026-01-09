@@ -14,6 +14,7 @@ import (
 // OutputFormat represents the output format
 type OutputFormat string
 
+// Output format constants
 const (
 	FormatTable OutputFormat = "table"
 	FormatJSON  OutputFormat = "json"
