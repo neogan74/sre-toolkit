@@ -76,7 +76,7 @@ func (c *PrometheusCollector) Collect(ctx context.Context, lookback time.Duratio
 }
 
 // parseAlerts converts Prometheus query result into Alert structs
-func (c *PrometheusCollector) parseAlerts(value model.Value, startTime, endTime time.Time) ([]Alert, error) {
+func (c *PrometheusCollector) parseAlerts(value model.Value, _, endTime time.Duration) ([]Alert, error) {
 	matrix, ok := value.(model.Matrix)
 	if !ok {
 		return nil, fmt.Errorf("unexpected result type: %s", value.Type())
