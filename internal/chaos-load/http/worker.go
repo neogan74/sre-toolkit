@@ -1,3 +1,4 @@
+// Package http provides HTTP load testing functionality for chaos engineering.
 package http
 
 import (
@@ -100,7 +101,7 @@ func (p *Pool) Run() error {
 	return nil
 }
 
-func (p *Pool) worker(ctx context.Context, id int, requests <-chan struct{}) {
+func (p *Pool) worker(ctx context.Context, _ /* id */ int, requests <-chan struct{}) {
 	for range requests {
 		// check context cancellation
 		select {
@@ -110,7 +111,11 @@ func (p *Pool) worker(ctx context.Context, id int, requests <-chan struct{}) {
 		}
 
 		start := time.Now()
-		resp, err := p.client.Get(p.config.TargetURL)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.config.TargetURL, http.NoBody)
+		var resp *http.Response
+		if err == nil {
+			resp, err = p.client.Do(req)
+		}
 		duration := time.Since(start)
 
 		result := stats.Result{

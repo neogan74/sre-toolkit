@@ -432,7 +432,7 @@ func TestDiagnoseComponent(t *testing.T) {
 func TestCalculateSummary(t *testing.T) {
 	tests := []struct {
 		name         string
-		result       *DiagnosticsResult
+		result       *Result
 		wantTotal    int
 		wantCritical int
 		wantWarning  int
@@ -440,7 +440,7 @@ func TestCalculateSummary(t *testing.T) {
 	}{
 		{
 			name: "no issues",
-			result: &DiagnosticsResult{
+			result: &Result{
 				NodeIssues:   []NodeIssue{},
 				PodIssues:    []PodIssue{},
 				SystemIssues: []SystemIssue{},
@@ -452,7 +452,7 @@ func TestCalculateSummary(t *testing.T) {
 		},
 		{
 			name: "mixed issues",
-			result: &DiagnosticsResult{
+			result: &Result{
 				NodeIssues: []NodeIssue{
 					{Severity: "Critical"},
 					{Severity: "Warning"},

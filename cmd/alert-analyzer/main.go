@@ -1,3 +1,4 @@
+// Package main provides the entry point for the alert-analyzer tool.
 package main
 
 import (
@@ -139,7 +140,7 @@ func runAnalyze(prometheusURL, lookbackStr, resolutionStr, outputFormat string, 
 		URL:      prometheusURL,
 		Timeout:  timeout,
 		Insecure: insecure,
-	}, logger)
+	}, &logger)
 	if err != nil {
 		return fmt.Errorf("failed to create Prometheus client: %w", err)
 	}
@@ -156,7 +157,7 @@ func runAnalyze(prometheusURL, lookbackStr, resolutionStr, outputFormat string, 
 	logger.Info().Str("url", prometheusURL).Msg("Connected to Prometheus")
 
 	// Create collector
-	promCollector := collector.NewPrometheusCollector(promClient, logger)
+	promCollector := collector.NewPrometheusCollector(promClient, &logger)
 
 	// Create storage
 	store := storage.NewMemoryStorage()

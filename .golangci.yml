@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
@@ -6,14 +8,10 @@ run:
 linters:
   enable:
     - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
     - govet         # Reports suspicious constructs
     - ineffassign   # Detects ineffectual assignments
     - staticcheck   # Advanced go vet
-    - typecheck     # Type checks
     - unused        # Checks for unused code
-    - gofmt         # Check code formatting
-    - goimports     # Check import formatting
     - misspell      # Finds commonly misspelled words
     - revive        # Replacement for golint
     - unconvert     # Remove unnecessary type conversions
@@ -28,66 +26,88 @@ linters:
     - dupl          # Code clone detection
     - prealloc      # Find slice declarations that could potentially be preallocated
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+      exclude-functions:
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Print
+        - fmt.Println
+        - fmt.Printf
+        - (io.Writer).Write
+        - (io.Closer).Close
+        - (*github.com/spf13/cobra.Command).MarkFlagRequired
+        - (*text/tabwriter.Writer).Flush
+        - (*net/http.Response).Body.Close
+        - (*github.com/spf13/viper.Viper).BindPFlag
+        - github.com/spf13/viper.BindPFlag
 
-  govet:
-    check-shadowing: true
-    enable-all: true
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment  # Low priority memory optimization
+        - shadow          # Common pattern in Go, often false positives
 
-  gocyclo:
-    min-complexity: 15
+    gocyclo:
+      min-complexity: 15
 
-  dupl:
-    threshold: 100
+    dupl:
+      threshold: 100
 
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - rangeValCopy  # Often unavoidable with Kubernetes types
 
-  revive:
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+          disabled: false
+        - name: var-naming
+          severity: warning
+          disabled: false
+        - name: package-comments
+          severity: warning
+          disabled: false
+
+    gosec:
+      excludes:
+        - G104 # Audit errors not checked - covered by errcheck
+
+  exclusions:
     rules:
-      - name: exported
-        severity: warning
-        disabled: false
-      - name: var-naming
-        severity: warning
-        disabled: false
-      - name: package-comments
-        severity: warning
-        disabled: false
+      # Exclude some linters from running on tests files
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - gocritic
 
-  gosec:
-    excludes:
-      - G104 # Audit errors not checked - covered by errcheck
+      # Exclude weak cryptographic primitive warnings
+      - text: "weak cryptographic primitive"
+        linters:
+          - gosec
 
-issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
-
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - gocritic
-
-    # Exclude known issues
-    - text: "weak cryptographic primitive"
-      linters:
-        - gosec
+      # Exclude deferred calls from errcheck
+      - source: "defer"
+        linters:
+          - errcheck
 
 output:
-  format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
+  formats:
+    text:
+      path: stdout
+      colors: true
+      print-issued-lines: true
+      print-linter-name: true

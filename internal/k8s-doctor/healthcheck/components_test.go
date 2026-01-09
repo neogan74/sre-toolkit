@@ -134,9 +134,10 @@ func TestCheckComponentPods(t *testing.T) {
 			healthy := 0
 			unhealthy := 0
 			for _, comp := range got {
-				if comp.Status == "Healthy" {
+				switch comp.Status {
+				case "Healthy":
 					healthy++
-				} else if comp.Status == "Unhealthy" {
+				case "Unhealthy":
 					unhealthy++
 				}
 			}
@@ -180,11 +181,11 @@ func TestMatchesComponent(t *testing.T) {
 
 // Helper functions for test data
 
-func makeComponentPod(name, namespace string, ready bool) corev1.Pod {
+func makeComponentPod(name string, _ /* namespace */ string, ready bool) corev1.Pod {
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "kube-system",
 		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
@@ -202,11 +203,11 @@ func makeComponentPod(name, namespace string, ready bool) corev1.Pod {
 	return pod
 }
 
-func makePendingComponentPod(name, namespace string) corev1.Pod {
+func makePendingComponentPod(name string, _ /* namespace */ string) corev1.Pod {
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "kube-system",
 		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodPending,

@@ -1,3 +1,4 @@
+// Package collector provides functionality for collecting alert data from Prometheus.
 package collector
 
 import (
@@ -15,11 +16,11 @@ import (
 // PrometheusCollector collects alert data from Prometheus
 type PrometheusCollector struct {
 	client *prometheus.Client
-	logger zerolog.Logger
+	logger *zerolog.Logger
 }
 
 // NewPrometheusCollector creates a new Prometheus collector
-func NewPrometheusCollector(client *prometheus.Client, logger zerolog.Logger) *PrometheusCollector {
+func NewPrometheusCollector(client *prometheus.Client, logger *zerolog.Logger) *PrometheusCollector {
 	return &PrometheusCollector{
 		client: client,
 		logger: logger,
@@ -27,7 +28,7 @@ func NewPrometheusCollector(client *prometheus.Client, logger zerolog.Logger) *P
 }
 
 // Collect fetches alert history from Prometheus for the specified time range
-func (c *PrometheusCollector) Collect(ctx context.Context, lookback time.Duration, resolution time.Duration) (*AlertHistory, error) {
+func (c *PrometheusCollector) Collect(ctx context.Context, lookback, resolution time.Duration) (*AlertHistory, error) {
 	endTime := time.Now()
 	startTime := endTime.Add(-lookback)
 
@@ -76,7 +77,7 @@ func (c *PrometheusCollector) Collect(ctx context.Context, lookback time.Duratio
 }
 
 // parseAlerts converts Prometheus query result into Alert structs
-func (c *PrometheusCollector) parseAlerts(value model.Value, startTime, endTime time.Time) ([]Alert, error) {
+func (c *PrometheusCollector) parseAlerts(value model.Value, _ /* startTime */, _ /* endTime */ time.Time) ([]Alert, error) {
 	matrix, ok := value.(model.Matrix)
 	if !ok {
 		return nil, fmt.Errorf("unexpected result type: %s", value.Type())
@@ -132,14 +133,14 @@ func (c *PrometheusCollector) parseAlerts(value model.Value, startTime, endTime 
 					FiredAt:     timestamp,
 				}
 				alertMap[key] = alert
-			} else {
-				// Update existing alert
-				// If value is 0, the alert was resolved
-				if value == 0 && alert.ResolvedAt == nil {
-					resolvedAt := timestamp
-					alert.ResolvedAt = &resolvedAt
-					alert.State = "inactive"
-				}
+			}
+
+			// Update existing or new alert
+			// If value is 0, the alert was resolved
+			if value == 0 && alert.ResolvedAt == nil {
+				resolvedAt := timestamp
+				alert.ResolvedAt = &resolvedAt
+				alert.State = "inactive"
 			}
 		}
 	}

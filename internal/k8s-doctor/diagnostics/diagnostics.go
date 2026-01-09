@@ -1,3 +1,4 @@
+// Package diagnostics provides comprehensive cluster diagnostics functionality.
 package diagnostics
 
 import (
@@ -8,8 +9,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// DiagnosticsResult represents the result of diagnostics
-type DiagnosticsResult struct {
+// Result represents the result of diagnostics
+type Result struct {
 	Summary      Summary
 	NodeIssues   []NodeIssue
 	PodIssues    []PodIssue
@@ -51,8 +52,8 @@ type SystemIssue struct {
 }
 
 // RunDiagnostics performs comprehensive cluster diagnostics
-func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*DiagnosticsResult, error) {
-	result := &DiagnosticsResult{
+func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
+	result := &Result{
 		NodeIssues:   []NodeIssue{},
 		PodIssues:    []PodIssue{},
 		SystemIssues: []SystemIssue{},
@@ -100,7 +101,7 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 
 // diagnoseNode analyzes a node and returns issues
 func diagnoseNode(node *healthcheck.NodeStatus) []NodeIssue {
-	var issues []NodeIssue
+	issues := make([]NodeIssue, 0, len(node.Issues)+1)
 
 	// Not ready is critical
 	if node.Status == "NotReady" {
@@ -167,14 +168,13 @@ func diagnosePod(pod *healthcheck.ProblemPod) PodIssue {
 		issue.Severity = "Critical"
 		issue.Type = "PodFailed"
 	default:
-		if pod.Restarts > 10 {
+		issue.Severity = "Warning"
+		switch {
+		case pod.Restarts > 10:
 			issue.Severity = "Critical"
 			issue.Type = "HighRestartCount"
-		} else if pod.Restarts > 5 {
-			issue.Severity = "Warning"
+		case pod.Restarts > 5:
 			issue.Type = "FrequentRestarts"
-		} else {
-			issue.Severity = "Warning"
 		}
 	}
 
@@ -200,7 +200,7 @@ func diagnoseComponent(comp *healthcheck.ComponentStatus) *SystemIssue {
 }
 
 // calculateSummary calculates the summary statistics
-func calculateSummary(result *DiagnosticsResult) Summary {
+func calculateSummary(result *Result) Summary {
 	summary := Summary{}
 
 	// Count node issues

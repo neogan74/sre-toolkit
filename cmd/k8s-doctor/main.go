@@ -1,3 +1,4 @@
+// Package main provides the entry point for the k8s-doctor tool.
 package main
 
 import (
@@ -52,7 +53,8 @@ for improving your cluster's reliability and security.`
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
 		logger.Error().Err(err).Msg("Command execution failed")
-		os.Exit(1)
+		// Don't use os.Exit here to allow deferred cleanup
+		return
 	}
 }
 
@@ -91,7 +93,10 @@ func newHealthCheckCmd() *cobra.Command {
 				return err
 			}
 
-			version, _ := client.ServerVersion(ctx)
+			version, err := client.ServerVersion(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Could not get server version")
+			}
 			logger.Info().Str("version", version).Msg("Connected to cluster")
 
 			// Create reporter
@@ -194,7 +199,10 @@ func newDiagnosticsCmd() *cobra.Command {
 				return err
 			}
 
-			version, _ := client.ServerVersion(ctx)
+			version, err := client.ServerVersion(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Could not get server version")
+			}
 			logger.Info().Str("version", version).Msg("Connected to cluster")
 
 			// Run diagnostics

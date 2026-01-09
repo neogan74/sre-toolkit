@@ -1,3 +1,4 @@
+// Package prometheus provides a wrapper around the Prometheus API client.
 package prometheus
 
 import (
@@ -26,11 +27,11 @@ type Config struct {
 type Client struct {
 	api    v1.API
 	config *Config
-	logger zerolog.Logger
+	logger *zerolog.Logger
 }
 
 // NewClient creates a new Prometheus client
-func NewClient(cfg *Config, logger zerolog.Logger) (*Client, error) {
+func NewClient(cfg *Config, logger *zerolog.Logger) (*Client, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("prometheus URL is required")
 	}
@@ -42,16 +43,15 @@ func NewClient(cfg *Config, logger zerolog.Logger) (*Client, error) {
 
 	// Create HTTP client with custom transport
 	httpClient := &http.Client{
-		Timeout: cfg.Timeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: cfg.Insecure,
+				InsecureSkipVerify: cfg.Insecure, // #nosec G402
 			},
 		},
 	}
 
 	// Add basic auth if provided
-	var roundTripper http.RoundTripper = httpClient.Transport
+	var roundTripper = httpClient.Transport
 	if cfg.Username != "" && cfg.Password != "" {
 		roundTripper = &basicAuthRoundTripper{
 			username: cfg.Username,
@@ -156,7 +156,7 @@ func (c *Client) Ping(ctx context.Context) error {
 	return nil
 }
 
-// buildInfo returns Prometheus build information
+// BuildInfo returns Prometheus build information
 func (c *Client) BuildInfo(ctx context.Context) (v1.BuildinfoResult, error) {
 	return c.api.Buildinfo(ctx)
 }

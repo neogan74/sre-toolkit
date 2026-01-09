@@ -1,3 +1,4 @@
+// Package reporter provides functionality for reporting diagnostic and analysis results.
 package reporter
 
 import (
@@ -14,6 +15,7 @@ import (
 // OutputFormat represents the output format
 type OutputFormat string
 
+// Output format constants
 const (
 	FormatTable OutputFormat = "table"
 	FormatJSON  OutputFormat = "json"
@@ -74,7 +76,7 @@ func (r *Reporter) ReportComponentHealth(components []healthcheck.ComponentStatu
 }
 
 // ReportDiagnostics reports diagnostics results
-func (r *Reporter) ReportDiagnostics(result *diagnostics.DiagnosticsResult) error {
+func (r *Reporter) ReportDiagnostics(result *diagnostics.Result) error {
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(result)
@@ -190,7 +192,7 @@ func (r *Reporter) reportComponentTable(components []healthcheck.ComponentStatus
 }
 
 // reportDiagnosticsTable outputs diagnostics as a table
-func (r *Reporter) reportDiagnosticsTable(result *diagnostics.DiagnosticsResult) error {
+func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 	// Summary
 	fmt.Fprintf(r.writer, "\n=== Diagnostics Summary ===\n")
 	fmt.Fprintf(r.writer, "Total Issues:   %d\n", result.Summary.TotalIssues)
@@ -208,11 +210,12 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.DiagnosticsResult)
 
 		for _, issue := range result.NodeIssues {
 			severity := issue.Severity
-			if issue.Severity == "Critical" {
+			switch issue.Severity {
+			case "Critical":
 				severity = "🔴 " + severity
-			} else if issue.Severity == "Warning" {
+			case "Warning":
 				severity = "⚠️  " + severity
-			} else {
+			default:
 				severity = "ℹ️  " + severity
 			}
 
@@ -236,9 +239,10 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.DiagnosticsResult)
 
 		for _, issue := range result.PodIssues {
 			severity := issue.Severity
-			if issue.Severity == "Critical" {
+			switch issue.Severity {
+			case "Critical":
 				severity = "🔴 " + severity
-			} else if issue.Severity == "Warning" {
+			case "Warning":
 				severity = "⚠️  " + severity
 			}
 

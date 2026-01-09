@@ -1,3 +1,4 @@
+// Package main provides the HTTP load testing entry point for chaos engineering.
 package main
 
 import (

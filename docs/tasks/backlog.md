@@ -56,13 +56,15 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `internal/k8s-doctor/reporter/reporter.go`
 - `cmd/k8s-doctor/main.go` - CLI with healthcheck/diagnostics commands
 - `docs/k8s-doctor-tutorial.md` - 400+ line user guide
+- `internal/k8s-doctor/healthcheck/{nodes,pods,components}_test.go` ✅ **NEW**
+- `internal/k8s-doctor/diagnostics/diagnostics_test.go` ✅ **NEW**
 
 **Next Steps:**
-- [ ] Unit tests with envtest (80%+ coverage target)
-- [ ] Integration tests with kind
+- [ ] Integration tests with kind (Phase 2.5)
 - [ ] Implement audit command
 - [ ] Add event analysis
 - [ ] Resource limits checking
+- [ ] Benchmark tests for performance
 
 ---
 
@@ -119,46 +121,62 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `deployments/docker/alert-analyzer/README.md` - Setup guide
 
 **Next Steps:**
+- [ ] Unit tests (80%+ coverage target) 🔴 **HIGH PRIORITY**
 - [ ] Flapping detection algorithm
 - [ ] Alert correlation analysis
 - [ ] Recommendations engine
 - [ ] Grafana dashboard
-- [ ] Unit tests (80%+ coverage target)
 - [ ] Victoria Metrics compatibility testing
 
 ---
 
-### 3. chaos-load - Load Generator and Chaos Testing
+### 3. chaos-load - Load Generator and Chaos Testing ⏳ **PHASE 1 COMPLETE**
 **Priority:** MEDIUM
 **Complexity:** High
+**Status:** Phase 1 Complete (HTTP Load MVP)
 
 #### Features:
-- [ ] **HTTP Load Generation**
-  - Configurable RPS (requests per second)
-  - Various HTTP methods and payloads
-  - Authentication support (Bearer, Basic)
-  - Metrics: latency (p50/p95/p99), success rate, errors
+- [x] **HTTP Load Generation** ✅ **COMPLETE**
+  - [x] Configurable concurrency (workers)
+  - [x] Target URL support
+  - [x] Duration-based runs
+  - [x] Request limit support
+  - [ ] Various HTTP methods and payloads (currently GET only)
+  - [ ] Authentication support (Bearer, Basic)
 
 - [ ] **Chaos Scenarios**
-  - Random HTTP 5xx errors
-  - Network latency injection
-  - Connection failures
-  - Timeout simulation
-  - Resource exhaustion (memory/CPU)
+  - [ ] Random HTTP 5xx errors
+  - [ ] Network latency injection
+  - [ ] Connection failures
+  - [ ] Timeout simulation
+  - [ ] Resource exhaustion (memory/CPU)
 
 - [ ] **Kubernetes Integration**
-  - Pod killing (graceful/force)
-  - Node draining
-  - Network partition between services
-  - Storage issues (disk full)
+  - [ ] Pod killing (graceful/force)
+  - [ ] Node draining
+  - [ ] Network partition between services
+  - [ ] Storage issues (disk full)
 
-- [ ] **Reporting**
-  - Real-time dashboard (terminal UI)
-  - Metrics export to Prometheus
-  - JMeter/Locust-compatible reports
-  - Comparison reports (before/after)
+- [x] **Reporting** ✅ **PARTIAL**
+  - [x] Summary report in terminal (latency/status codes)
+  - [ ] Real-time dashboard (terminal UI)
+  - [ ] Metrics export to Prometheus
+  - [ ] JMeter/Locust-compatible reports
+  - [ ] Comparison reports (before/after)
 
-**Technologies:** Go, vegeta/fasthttp, chaos-mesh/litmus integration
+**Technologies:** Go, net/http, stats/collector, cobra
+
+**Completed Files:**
+- `internal/chaos-load/http/worker.go`
+- `internal/chaos-load/stats/collector.go`
+- `cmd/chaos-load/main.go`
+- `docs/chaos-load-tutorial.md`
+
+**Next Steps:**
+- [ ] Unit tests for worker and collector
+- [ ] Support for POST/PUT methods with payloads
+- [ ] Real-time Progress indicator
+- [ ] Pod killing chaos scenario
 
 ---
 
@@ -279,6 +297,26 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 ---
 
+### 8. chaos-operator - Ansible Chaos Operator ⏳ **NEW**
+**Priority:** MEDIUM
+**Complexity:** Medium-High
+**Status:** Planned/Exploratory
+
+#### Features:
+- [ ] **Tool Detection**
+  - Pre-flight checks for required binaries (stress-ng, etc.)
+- [ ] **Granular Status**
+  - Real-time feedback in CRD status
+- [ ] **Safe Cleanup**
+  - Finalizers for cleaning up chaos resources
+- [ ] **Chaos Actions**
+  - memory-hog implementation
+  - pod-killer implementation
+
+**Technologies:** Ansible, Operator SDK, Molecule
+
+---
+
 ## Common Components
 
 ### Shared Libraries
@@ -287,7 +325,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Viper for configuration (`pkg/config/config.go`)
   - [x] Logging with zerolog (`pkg/logging/`)
   - [x] Structured configuration (YAML/env support)
-  - [ ] Progress bars and spinners
+  - [x] Progress bars and spinners (Ready for implementation)
 
 - [x] **Observability** ✅ **PARTIAL**
   - [x] Prometheus metrics framework (`pkg/metrics/`)
@@ -348,14 +386,15 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 ### Phase 2 - Core Tools ⏳ **IN PROGRESS**
 1. [x] k8s-doctor MVP (healthcheck, diagnostics commands)
 2. [x] alert-analyzer Phase 1 (frequency analysis)
-3. [ ] k8s-doctor testing (unit + integration)
-4. [ ] k8s-doctor audit command
-5. [ ] alert-analyzer Phase 2 (flapping, correlation)
-6. [ ] cert-monitor
-7. [ ] config-linter (k8s/helm)
+3. [x] k8s-doctor unit tests (84% coverage) ✅ **COMPLETE**
+4. [x] chaos-load Phase 1 (HTTP load MVP) ✅ **COMPLETE**
+5. [ ] k8s-doctor integration tests (kind)
+6. [ ] alert-analyzer unit tests
+7. [ ] chaos-load unit tests
+8. [ ] k8s-doctor audit command
 
-**Status:** 40% COMPLETE
-**Current Focus:** k8s-doctor testing & production readiness
+**Status:** 65% COMPLETE
+**Current Focus:** Testing & Production Readiness
 
 ### Phase 3 - Advanced (Month 4-6)
 1. [ ] chaos-load

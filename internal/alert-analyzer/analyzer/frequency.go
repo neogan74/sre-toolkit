@@ -1,3 +1,4 @@
+// Package analyzer provides frequency and pattern analysis for Prometheus alerts.
 package analyzer
 
 import (
@@ -9,12 +10,12 @@ import (
 
 // FrequencyResult represents the firing frequency analysis for a single alert
 type FrequencyResult struct {
-	AlertName    string        `json:"alert_name"`
-	FiringCount  int           `json:"firing_count"`
-	TotalTime    time.Duration `json:"total_time"`
-	AvgDuration  time.Duration `json:"avg_duration"`
-	LastFired    time.Time     `json:"last_fired"`
-	Severity     string        `json:"severity"`
+	AlertName   string        `json:"alert_name"`
+	FiringCount int           `json:"firing_count"`
+	TotalTime   time.Duration `json:"total_time"`
+	AvgDuration time.Duration `json:"avg_duration"`
+	LastFired   time.Time     `json:"last_fired"`
+	Severity    string        `json:"severity"`
 }
 
 // FrequencyAnalyzer analyzes alert firing frequency
@@ -124,13 +125,13 @@ func (a *FrequencyAnalyzer) GetNoisyAlerts(minFirings int, maxDuration time.Dura
 
 // SummaryStats holds summary statistics for all alerts
 type SummaryStats struct {
-	TotalAlerts      int           `json:"total_alerts"`
-	UniqueAlerts     int           `json:"unique_alerts"`
-	TotalFirings     int           `json:"total_firings"`
-	AvgDuration      time.Duration `json:"avg_duration"`
-	TotalFiringTime  time.Duration `json:"total_firing_time"`
-	MostFrequent     string        `json:"most_frequent"`
-	LongestAvgDuration string      `json:"longest_avg_duration"`
+	TotalAlerts        int           `json:"total_alerts"`
+	UniqueAlerts       int           `json:"unique_alerts"`
+	TotalFirings       int           `json:"total_firings"`
+	AvgDuration        time.Duration `json:"avg_duration"`
+	TotalFiringTime    time.Duration `json:"total_firing_time"`
+	MostFrequent       string        `json:"most_frequent"`
+	LongestAvgDuration string        `json:"longest_avg_duration"`
 }
 
 // GetSummaryStats returns overall summary statistics
