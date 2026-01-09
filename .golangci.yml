@@ -38,7 +38,12 @@ linters:
         - fmt.Println
         - fmt.Printf
         - (io.Writer).Write
+        - (io.Closer).Close
         - (*github.com/spf13/cobra.Command).MarkFlagRequired
+        - (*text/tabwriter.Writer).Flush
+        - (*net/http.Response).Body.Close
+        - (*github.com/spf13/viper.Viper).BindPFlag
+        - github.com/spf13/viper.BindPFlag
 
     govet:
       enable-all: true
