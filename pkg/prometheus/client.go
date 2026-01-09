@@ -26,7 +26,7 @@ type Config struct {
 type Client struct {
 	api    v1.API
 	config *Config
-	logger zerolog.Logger
+	logger *zerolog.Logger
 }
 
 // NewClient creates a new Prometheus client
