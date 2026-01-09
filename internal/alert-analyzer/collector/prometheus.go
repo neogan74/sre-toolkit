@@ -15,11 +15,11 @@ import (
 // PrometheusCollector collects alert data from Prometheus
 type PrometheusCollector struct {
 	client *prometheus.Client
-	logger zerolog.Logger
+	logger *zerolog.Logger
 }
 
 // NewPrometheusCollector creates a new Prometheus collector
-func NewPrometheusCollector(client *prometheus.Client, logger zerolog.Logger) *PrometheusCollector {
+func NewPrometheusCollector(client *prometheus.Client, logger *zerolog.Logger) *PrometheusCollector {
 	return &PrometheusCollector{
 		client: client,
 		logger: logger,

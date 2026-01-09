@@ -156,7 +156,7 @@ func runAnalyze(prometheusURL, lookbackStr, resolutionStr, outputFormat string, 
 	logger.Info().Str("url", prometheusURL).Msg("Connected to Prometheus")
 
 	// Create collector
-	promCollector := collector.NewPrometheusCollector(promClient, logger)
+	promCollector := collector.NewPrometheusCollector(promClient, &logger)
 
 	// Create storage
 	store := storage.NewMemoryStorage()
