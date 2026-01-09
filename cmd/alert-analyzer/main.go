@@ -139,7 +139,7 @@ func runAnalyze(prometheusURL, lookbackStr, resolutionStr, outputFormat string, 
 		URL:      prometheusURL,
 		Timeout:  timeout,
 		Insecure: insecure,
-	}, logger)
+	}, &logger)
 	if err != nil {
 		return fmt.Errorf("failed to create Prometheus client: %w", err)
 	}
