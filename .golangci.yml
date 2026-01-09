@@ -1,7 +1,9 @@
+version: "2"
 
 run:
   timeout: 5m
   tests: true
+  modules-download-mode: readonly
   modules-download-mode: readonly
 
 linters:
@@ -29,6 +31,13 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+    exclude-functions:
+      - fmt.Fprint
+      - fmt.Fprintf
+      - fmt.Fprintln
+      - fmt.Print
+      - fmt.Println
+      - fmt.Printf
 
   govet:
     enable-all: true
@@ -85,6 +94,6 @@ issues:
 
 output:
   formats:
-    - format: colored-line-number
+    colored-line-number: {}
   print-issued-lines: true
   print-linter-name: true
