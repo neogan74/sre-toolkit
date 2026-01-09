@@ -30,7 +30,7 @@ type Client struct {
 }
 
 // NewClient creates a new Prometheus client
-func NewClient(cfg *Config, logger zerolog.Logger) (*Client, error) {
+func NewClient(cfg *Config, logger *zerolog.Logger) (*Client, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("prometheus URL is required")
 	}

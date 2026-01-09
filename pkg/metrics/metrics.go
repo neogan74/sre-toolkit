@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -81,8 +82,9 @@ func NewServer(cfg *Config) *Server {
 	return &Server{
 		config: cfg,
 		server: &http.Server{
-			Addr:    cfg.Address,
-			Handler: mux,
+			Addr:              cfg.Address,
+			Handler:           mux,
+			ReadHeaderTimeout: 10 * time.Second,
 		},
 	}
 }
