@@ -25,7 +25,6 @@ linters:
     - gocyclo       # Computes cyclomatic complexity
     - dupl          # Code clone detection
     - prealloc      # Find slice declarations that could potentially be preallocated
-    - shadow        # Check for shadowed variables
 
 linters-settings:
   errcheck:
@@ -87,6 +86,6 @@ issues:
 
 output:
   formats:
-    - colored-line-number
+    format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
