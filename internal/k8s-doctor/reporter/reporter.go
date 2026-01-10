@@ -97,8 +97,8 @@ func (r *Reporter) reportJSON(data interface{}) error {
 // reportNodeTable outputs node data as a table
 func (r *Reporter) reportNodeTable(nodes []healthcheck.NodeStatus) error {
 	w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "NODE\tSTATUS\tROLES\tVERSION\tISSUES")
-	fmt.Fprintln(w, "----\t------\t-----\t-------\t------")
+	fmt.Fprintln(w, "NODE\tSTATUS\tROLES\tVERSION\tCPU\tMEM\tISSUES")
+	fmt.Fprintln(w, "----\t------\t-----\t-------\t---\t---\t------")
 
 	for _, node := range nodes {
 		roles := ""
@@ -122,11 +122,13 @@ func (r *Reporter) reportNodeTable(nodes []healthcheck.NodeStatus) error {
 			status = "✗ " + status
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			node.Name,
 			status,
 			roles,
 			node.Version,
+			node.CPUUsage,
+			node.MemoryUsage,
 			issues,
 		)
 	}

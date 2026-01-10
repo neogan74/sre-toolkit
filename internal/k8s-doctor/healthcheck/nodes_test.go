@@ -184,7 +184,7 @@ func TestAnalyzeNode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := analyzeNode(tt.node, "v1.28.0")
+			got := analyzeNode(tt.node, "v1.28.0", corev1.ResourceList{})
 
 			if got.Name != tt.node.Name {
 				t.Errorf("analyzeNode().Name = %v, want %v", got.Name, tt.node.Name)
