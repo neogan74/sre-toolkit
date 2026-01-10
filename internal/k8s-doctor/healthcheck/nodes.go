@@ -29,6 +29,12 @@ type NodeCondition struct {
 
 // CheckNodes checks the health status of all nodes in the cluster
 func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStatus, error) {
+	// Get API server version for compatibility check
+	serverVersion := "unknown"
+	if versionInfo, err := clientset.Discovery().ServerVersion(); err == nil {
+		serverVersion = versionInfo.GitVersion
+	}
+
 	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list nodes: %w", err)
@@ -36,7 +42,7 @@ func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStat
 
 	statuses := make([]NodeStatus, 0, len(nodes.Items))
 	for _, node := range nodes.Items {
-		status := analyzeNode(&node)
+		status := analyzeNode(&node, serverVersion)
 		statuses = append(statuses, status)
 	}
 
@@ -44,7 +50,7 @@ func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStat
 }
 
 // analyzeNode analyzes a single node and returns its status
-func analyzeNode(node *corev1.Node) NodeStatus {
+func analyzeNode(node *corev1.Node, apiServerVersion string) NodeStatus {
 	status := NodeStatus{
 		Name:       node.Name,
 		Status:     "Unknown",
@@ -52,6 +58,17 @@ func analyzeNode(node *corev1.Node) NodeStatus {
 		Roles:      getRoles(node),
 		Version:    node.Status.NodeInfo.KubeletVersion,
 		Issues:     []string{},
+	}
+
+	// Check version compatibility
+	if apiServerVersion != "unknown" && status.Version != "" {
+		apiVersion, err1 := ParseVersion(apiServerVersion)
+		kubeletVersion, err2 := ParseVersion(status.Version)
+		if err1 == nil && err2 == nil {
+			if skewIssue := GetVersionSkewDescription(kubeletVersion, apiVersion, "Kubelet"); skewIssue != "" {
+				status.Issues = append(status.Issues, skewIssue)
+			}
+		}
 	}
 
 	// Check node conditions

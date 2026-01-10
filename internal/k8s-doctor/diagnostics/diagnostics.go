@@ -15,6 +15,7 @@ type Result struct {
 	NodeIssues   []NodeIssue
 	PodIssues    []PodIssue
 	SystemIssues []SystemIssue
+	EventIssues  []EventIssue
 }
 
 // Summary provides an overview of issues found
@@ -51,12 +52,24 @@ type SystemIssue struct {
 	Message   string
 }
 
+// EventIssue represents an issue detected from cluster events
+type EventIssue struct {
+	Type      string // Warning, Error
+	Reason    string
+	Message   string
+	Object    string
+	Namespace string
+	Severity  string
+	Count     int32
+}
+
 // RunDiagnostics performs comprehensive cluster diagnostics
 func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
 	result := &Result{
 		NodeIssues:   []NodeIssue{},
 		PodIssues:    []PodIssue{},
 		SystemIssues: []SystemIssue{},
+		EventIssues:  []EventIssue{},
 	}
 
 	// Check nodes
@@ -90,6 +103,25 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 	for _, comp := range components {
 		if issue := diagnoseComponent(&comp); issue != nil {
 			result.SystemIssues = append(result.SystemIssues, *issue)
+		}
+	}
+
+	// Check events
+	eventStatus, err := healthcheck.CheckEvents(ctx, clientset, namespace)
+	if err != nil {
+		// Log error but continue with other diagnostics
+		fmt.Printf("Warning: failed to check events: %v\n", err)
+	} else if eventStatus != nil {
+		for _, event := range eventStatus.Events {
+			result.EventIssues = append(result.EventIssues, EventIssue{
+				Type:      event.Type,
+				Reason:    event.Reason,
+				Message:   event.Message,
+				Object:    event.Object,
+				Namespace: event.Namespace,
+				Severity:  mapEventSeverity(event.Type),
+				Count:     event.Count,
+			})
 		}
 	}
 
@@ -242,5 +274,30 @@ func calculateSummary(result *Result) Summary {
 		}
 	}
 
+	// Count event issues
+	for _, issue := range result.EventIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
 	return summary
+}
+
+// mapEventSeverity maps Kubernetes event type to diagnostics severity
+func mapEventSeverity(eventType string) string {
+	switch eventType {
+	case "Warning":
+		return "Warning"
+	case "Error":
+		return "Critical"
+	default:
+		return "Info"
+	}
 }

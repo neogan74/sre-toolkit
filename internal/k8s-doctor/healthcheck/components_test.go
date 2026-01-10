@@ -107,6 +107,15 @@ func TestCheckComponentPods(t *testing.T) {
 			wantCount:   1, // Same component name
 			wantHealthy: 1,
 		},
+		{
+			name: "component with version skew",
+			pods: []corev1.Pod{
+				makeComponentPodWithImage("kube-apiserver-node1", "kube-system", true, "registry.k8s.io/kube-apiserver:v1.25.0"),
+			},
+			wantCount:     1,
+			wantHealthy:   0, // Should be Warning, which is NOT Healthy or Unhealthy in the original test's switch
+			wantUnhealthy: 0,
+		},
 	}
 
 	for _, tt := range tests {
@@ -119,7 +128,7 @@ func TestCheckComponentPods(t *testing.T) {
 			clientset := fake.NewSimpleClientset(objs...)
 
 			// Run checkComponentPods
-			got, err := checkComponentPods(context.Background(), clientset)
+			got, err := checkComponentPods(context.Background(), clientset, "v1.28.0")
 			if err != nil {
 				t.Errorf("checkComponentPods() error = %v", err)
 				return
@@ -139,6 +148,9 @@ func TestCheckComponentPods(t *testing.T) {
 					healthy++
 				case "Unhealthy":
 					unhealthy++
+				case "Warning":
+					// For compatibility with old tests, we'll keep tracking healthy/unhealthy
+					// but you might want to add a wantWarning check if needed.
 				}
 			}
 
@@ -222,6 +234,17 @@ func makePendingComponentPod(name string, _ /* namespace */ string) corev1.Pod {
 					},
 				},
 			},
+		},
+	}
+	return pod
+}
+
+func makeComponentPodWithImage(name string, namespace string, ready bool, image string) corev1.Pod {
+	pod := makeComponentPod(name, namespace, ready)
+	pod.Spec.Containers = []corev1.Container{
+		{
+			Name:  "container",
+			Image: image,
 		},
 	}
 	return pod
