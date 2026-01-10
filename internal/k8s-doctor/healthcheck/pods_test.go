@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -161,10 +162,10 @@ func TestCheckPods(t *testing.T) {
 
 func TestIsProblemPod(t *testing.T) {
 	tests := []struct {
-		name    string
-		pod     *corev1.Pod
-		want    bool
-		reason  string
+		name   string
+		pod    *corev1.Pod
+		want   bool
+		reason string
 	}{
 		{
 			name: "healthy running pod",
@@ -172,15 +173,15 @@ func TestIsProblemPod(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "failed pod",
-			pod:  makePodPtr("pod1", "default", podOptions{phase: corev1.PodFailed}),
-			want: true,
+			name:   "failed pod",
+			pod:    makePodPtr("pod1", "default", podOptions{phase: corev1.PodFailed}),
+			want:   true,
 			reason: "Pod failed",
 		},
 		{
-			name: "pending pod",
-			pod:  makePodPtr("pod1", "default", podOptions{phase: corev1.PodPending}),
-			want: true,
+			name:   "pending pod",
+			pod:    makePodPtr("pod1", "default", podOptions{phase: corev1.PodPending}),
+			want:   true,
 			reason: "Pod pending",
 		},
 		{
@@ -346,12 +347,69 @@ func TestAnalyzePodProblem(t *testing.T) {
 	}
 }
 
+func TestAuditPodResources(t *testing.T) {
+	tests := []struct {
+		name       string
+		pod        *corev1.Pod
+		wantIssues int
+	}{
+		{
+			name: "pod with limits and requests",
+			pod: makePodPtr("pod1", "default", podOptions{
+				phase:  corev1.PodRunning,
+				cpuReq: "100m",
+				memReq: "128Mi",
+				cpuLim: "200m",
+				memLim: "256Mi",
+			}),
+			wantIssues: 0,
+		},
+		{
+			name: "pod missing all limits and requests",
+			pod: makePodPtr("pod1", "default", podOptions{
+				phase: corev1.PodRunning,
+			}),
+			wantIssues: 1, // One ContainerResourceIssue
+		},
+		{
+			name: "pod missing some limits",
+			pod: makePodPtr("pod1", "default", podOptions{
+				phase:  corev1.PodRunning,
+				cpuReq: "100m",
+				memReq: "128Mi",
+			}),
+			wantIssues: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := auditPodResources(tt.pod)
+			if tt.wantIssues == 0 {
+				if got != nil {
+					t.Errorf("auditPodResources() = %v, want nil", got)
+				}
+			} else {
+				if got == nil {
+					t.Errorf("auditPodResources() = nil, want %d issues", tt.wantIssues)
+				} else if len(got.Containers) != tt.wantIssues {
+					t.Errorf("auditPodResources() issues count = %d, want %d", len(got.Containers), tt.wantIssues)
+				}
+			}
+		})
+	}
+}
+
 // Helper functions for test data
 
 type podOptions struct {
 	phase          corev1.PodPhase
 	containerState corev1.ContainerState
 	restarts       int32
+	cpuReq         string
+	memReq         string
+	cpuLim         string
+	memLim         string
 }
 
 func makePod(name, namespace string, opts podOptions) corev1.Pod {
@@ -368,7 +426,33 @@ func makePodPtr(name, namespace string, opts podOptions) *corev1.Pod {
 			Phase:             opts.phase,
 			ContainerStatuses: []corev1.ContainerStatus{},
 		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{},
+		},
 	}
+
+	// Add container resources if specified
+	resources := corev1.ResourceRequirements{
+		Requests: make(corev1.ResourceList),
+		Limits:   make(corev1.ResourceList),
+	}
+	if opts.cpuReq != "" {
+		resources.Requests[corev1.ResourceCPU] = resource.MustParse(opts.cpuReq)
+	}
+	if opts.memReq != "" {
+		resources.Requests[corev1.ResourceMemory] = resource.MustParse(opts.memReq)
+	}
+	if opts.cpuLim != "" {
+		resources.Limits[corev1.ResourceCPU] = resource.MustParse(opts.cpuLim)
+	}
+	if opts.memLim != "" {
+		resources.Limits[corev1.ResourceMemory] = resource.MustParse(opts.memLim)
+	}
+
+	pod.Spec.Containers = append(pod.Spec.Containers, corev1.Container{
+		Name:      "container",
+		Resources: resources,
+	})
 
 	// Add container status if state is specified
 	if opts.containerState.Waiting != nil || opts.containerState.Running != nil || opts.containerState.Terminated != nil {

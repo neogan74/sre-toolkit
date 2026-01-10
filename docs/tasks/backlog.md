@@ -28,7 +28,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Severity classification (Critical/Warning/Info)
   - [x] Resource pressure warnings (Memory/Disk/PID/Network)
   - [x] Event analysis with Warning/Error filtering ✅ **COMPLETE**
-  - [ ] Resource limits check (CPU/Memory requests/limits)
+  - [x] Resource limits check (CPU/Memory requests/limits) ✅ **COMPLETE**
   - [ ] High-load node identification (CPU/memory usage metrics)
 
 - [ ] **Best Practices Audit** ⏳ **PLANNED (Phase 3)**
