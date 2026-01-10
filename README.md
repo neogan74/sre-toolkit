@@ -198,6 +198,7 @@ sre-toolkit/
 ├── internal/         # Tool-specific logic
 ├── docs/             # Documentation
 │   ├── backlog.md    # Product backlog
+│   ├── architecture.md # System architecture
 │   └── plan.md       # Master plan
 └── Makefile          # Build automation
 ```
@@ -254,7 +255,7 @@ k8s-doctor healthcheck --log-level=debug
 
 ## Roadmap
 
-See [plan.md](plan.md) for complete roadmap and [docs/backlog.md](docs/backlog.md) for features.
+See [plan.md](plan.md) for complete roadmap, [docs/backlog.md](docs/backlog.md) for features, and [docs/architecture.md](docs/architecture.md) for system design.
 
 ### Current Phase: Foundation ✅
 

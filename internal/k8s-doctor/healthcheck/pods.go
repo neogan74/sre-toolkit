@@ -11,14 +11,30 @@ import (
 
 // PodStatus represents the health status of pods
 type PodStatus struct {
-	Total       int
-	Running     int
-	Pending     int
-	Failed      int
-	Succeeded   int
-	Unknown     int
-	Namespaces  map[string]int
-	ProblemPods []ProblemPod
+	Total         int
+	Running       int
+	Pending       int
+	Failed        int
+	Succeeded     int
+	Unknown       int
+	Namespaces    map[string]int
+	ProblemPods   []ProblemPod
+	ResourceAudit []ResourceIssue
+}
+
+// ResourceIssue represents a pod with resource limit/request issues
+type ResourceIssue struct {
+	Pod        string
+	Namespace  string
+	Containers []ContainerResourceIssue
+}
+
+// ContainerResourceIssue represents resource issues for a specific container
+type ContainerResourceIssue struct {
+	Name     string
+	Issues   []string
+	Requests corev1.ResourceList
+	Limits   corev1.ResourceList
 }
 
 // ProblemPod represents a pod with issues
@@ -40,8 +56,9 @@ func CheckPods(ctx context.Context, clientset kubernetes.Interface, namespace st
 	}
 
 	status := &PodStatus{
-		Namespaces:  make(map[string]int),
-		ProblemPods: []ProblemPod{},
+		Namespaces:    make(map[string]int),
+		ProblemPods:   []ProblemPod{},
+		ResourceAudit: []ResourceIssue{},
 	}
 
 	for _, pod := range pods.Items {
@@ -66,6 +83,11 @@ func CheckPods(ctx context.Context, clientset kubernetes.Interface, namespace st
 		if isProblemPod(&pod) {
 			problem := analyzePodProblem(&pod)
 			status.ProblemPods = append(status.ProblemPods, problem)
+		}
+
+		// Check resource limits
+		if resourceIssue := auditPodResources(&pod); resourceIssue != nil {
+			status.ResourceAudit = append(status.ResourceAudit, *resourceIssue)
 		}
 	}
 
@@ -158,4 +180,44 @@ func analyzePodProblem(pod *corev1.Pod) ProblemPod {
 	}
 
 	return problem
+}
+
+// auditPodResources checks if a pod has resource limits and requests set
+func auditPodResources(pod *corev1.Pod) *ResourceIssue {
+	issue := &ResourceIssue{
+		Pod:        pod.Name,
+		Namespace:  pod.Namespace,
+		Containers: []ContainerResourceIssue{},
+	}
+
+	for _, container := range pod.Spec.Containers {
+		containerIssue := ContainerResourceIssue{
+			Name:     container.Name,
+			Issues:   []string{},
+			Requests: container.Resources.Requests,
+			Limits:   container.Resources.Limits,
+		}
+
+		if container.Resources.Requests.Cpu().IsZero() {
+			containerIssue.Issues = append(containerIssue.Issues, "CPU request not set")
+		}
+		if container.Resources.Requests.Memory().IsZero() {
+			containerIssue.Issues = append(containerIssue.Issues, "Memory request not set")
+		}
+		if container.Resources.Limits.Cpu().IsZero() {
+			containerIssue.Issues = append(containerIssue.Issues, "CPU limit not set")
+		}
+		if container.Resources.Limits.Memory().IsZero() {
+			containerIssue.Issues = append(containerIssue.Issues, "Memory limit not set")
+		}
+
+		if len(containerIssue.Issues) > 0 {
+			issue.Containers = append(issue.Containers, containerIssue)
+		}
+	}
+
+	if len(issue.Containers) > 0 {
+		return issue
+	}
+	return nil
 }

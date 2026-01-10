@@ -11,11 +11,12 @@ import (
 
 // Result represents the result of diagnostics
 type Result struct {
-	Summary      Summary
-	NodeIssues   []NodeIssue
-	PodIssues    []PodIssue
-	SystemIssues []SystemIssue
-	EventIssues  []EventIssue
+	Summary        Summary
+	NodeIssues     []NodeIssue
+	PodIssues      []PodIssue
+	SystemIssues   []SystemIssue
+	EventIssues    []EventIssue
+	ResourceIssues []ResourceIssue
 }
 
 // Summary provides an overview of issues found
@@ -63,13 +64,22 @@ type EventIssue struct {
 	Count     int32
 }
 
+// ResourceIssue represents a diagnosed resource configuration issue
+type ResourceIssue struct {
+	Pod       string
+	Namespace string
+	Severity  string
+	Message   string
+}
+
 // RunDiagnostics performs comprehensive cluster diagnostics
 func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
 	result := &Result{
-		NodeIssues:   []NodeIssue{},
-		PodIssues:    []PodIssue{},
-		SystemIssues: []SystemIssue{},
-		EventIssues:  []EventIssue{},
+		NodeIssues:     []NodeIssue{},
+		PodIssues:      []PodIssue{},
+		SystemIssues:   []SystemIssue{},
+		EventIssues:    []EventIssue{},
+		ResourceIssues: []ResourceIssue{},
 	}
 
 	// Check nodes
@@ -122,6 +132,20 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 				Severity:  mapEventSeverity(event.Type),
 				Count:     event.Count,
 			})
+		}
+	}
+
+	// Check resource limits
+	for _, audit := range pods.ResourceAudit {
+		for _, container := range audit.Containers {
+			for _, issueMsg := range container.Issues {
+				result.ResourceIssues = append(result.ResourceIssues, ResourceIssue{
+					Pod:       audit.Pod,
+					Namespace: audit.Namespace,
+					Severity:  "Warning",
+					Message:   fmt.Sprintf("Container %s: %s", container.Name, issueMsg),
+				})
+			}
 		}
 	}
 
@@ -276,6 +300,19 @@ func calculateSummary(result *Result) Summary {
 
 	// Count event issues
 	for _, issue := range result.EventIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	// Count resource issues
+	for _, issue := range result.ResourceIssues {
 		summary.TotalIssues++
 		switch issue.Severity {
 		case "Critical":

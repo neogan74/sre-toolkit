@@ -28,7 +28,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Severity classification (Critical/Warning/Info)
   - [x] Resource pressure warnings (Memory/Disk/PID/Network)
   - [x] Event analysis with Warning/Error filtering ✅ **COMPLETE**
-  - [ ] Resource limits check (CPU/Memory requests/limits)
+  - [x] Resource limits check (CPU/Memory requests/limits) ✅ **COMPLETE**
   - [ ] High-load node identification (CPU/memory usage metrics)
 
 - [ ] **Best Practices Audit** ⏳ **PLANNED (Phase 3)**
@@ -314,6 +314,62 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - pod-killer implementation
 
 **Technologies:** Ansible, Operator SDK, Molecule
+
+---
+
+### 9. slo-gen - SLO Generator & Tracker ⏳ **PROPOSED**
+**Priority:** MEDIUM
+**Complexity:** Medium
+
+#### Features:
+- [ ] **Data Analysis**
+  - [ ] Analyze Prometheus historical metrics (success/total)
+  - [ ] Suggest initial SLO targets based on specific percentile performance
+- [ ] **Generation**
+  - [ ] Generate Terraform/OpenTofu resources for PrometheusRules
+  - [ ] Generate Grafana dashboard JSON for SLO tracking
+- [ ] **Reporting**
+  - [ ] Error Budget burn rate calculation
+  - [ ] Alert on budget exhaustion
+
+**Technologies:** Go, Prometheus API
+
+---
+
+### 10. cost-optimizer - Cloud & K8s Cost Analysis ⏳ **PROPOSED**
+**Priority:** HIGH
+**Complexity:** Medium-High
+
+#### Features:
+- [ ] **Kubernetes Waste**
+  - [ ] Identify over-provisioned pods (Requests >> Usage)
+  - [ ] Identify under-provisioned pods (Throttling/OOM risks)
+  - [ ] Right-sizing recommendations
+- [ ] **Cloud Resources**
+  - [ ] Detect unattached volumes (EBS/PD)
+  - [ ] Identify idle Load Balancers
+  - [ ] Old snapshot retention analysis
+
+**Technologies:** Go, AWS SDK, GCP SDK, k8s client
+
+---
+
+### 11. incident-cli - Incident Management Helper ⏳ **PROPOSED**
+**Priority:** MEDIUM
+**Complexity:** Low-Medium
+
+#### Features:
+- [ ] **Timeline Construction**
+  - [ ] Parse logs to create automatic timeline events
+  - [ ] Import discussion from chat export (Slack/JSON)
+- [ ] **Post-Mortem**
+  - [ ] Scaffold standard Post-Mortem Markdown
+  - [ ] Auto-fill detection/resolution timestamps
+- [ ] **On-Call Integration**
+  - [ ] Check who is on-call (PagerDuty/OpsGenie)
+  - [ ] Ack/Resolve alerts via CLI
+
+**Technologies:** Go, PagerDuty API, Slack API
 
 ---
 
