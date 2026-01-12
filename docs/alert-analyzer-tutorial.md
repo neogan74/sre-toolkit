@@ -8,6 +8,7 @@
 
 - Access to a Prometheus server
 - Prometheus with alert history (ALERTS{} metric available)
+- Optional: Access to an Alertmanager server (for active alerts)
 - alert-analyzer binary installed
 
 ## Installation
@@ -43,6 +44,11 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d
 # Analyze last 24 hours with 1-minute resolution
 alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 24h --resolution 1m
 
+# Analyze including current active alerts from Alertmanager
+alert-analyzer analyze \
+  --prometheus-url http://prom:9090 \
+  --alertmanager-url http://alertmanager:9093
+
 # Show top 20 noisiest alerts
 alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20
 
@@ -59,6 +65,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 | `--resolution` | Query resolution (e.g., 1m, 5m, 15m) | `5m` |
 | `--output, -o` | Output format: table or json | `table` |
 | `--top-n` | Number of top alerts to show | `20` |
+| `--alertmanager-url` | Alertmanager server URL (optional) | - |
 | `--timeout` | Request timeout | `30s` |
 | `--insecure` | Skip TLS verification | `false` |
 
@@ -69,6 +76,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 - Queries `ALERTS{}` metric over specified time range
 - Extracts alert metadata (name, labels, state, timestamps)
 - Groups alerts by name and instance
+- (Optional) Connects to Alertmanager to fetch currently active alerts
 
 ### 2. Frequency Analysis
 - Calculates total firing count per alert

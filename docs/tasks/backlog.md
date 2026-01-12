@@ -80,7 +80,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Time range queries with configurable lookback
   - [x] Grouping by alert name
   - [x] Label extraction (severity, namespace, service)
-  - [ ] Alertmanager API connection
+  - [x] Alertmanager API connection
   - [ ] Multi-source support (multi-cluster)
 
 - [x] **Pattern Analysis** ✅ **PARTIAL**
