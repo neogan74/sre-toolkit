@@ -13,11 +13,13 @@ import (
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/collector"
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/reporter"
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/storage"
+	"github.com/neogan/sre-toolkit/pkg/alertmanager"
 	"github.com/neogan/sre-toolkit/pkg/cli"
 	"github.com/neogan/sre-toolkit/pkg/config"
 	"github.com/neogan/sre-toolkit/pkg/logging"
 	"github.com/neogan/sre-toolkit/pkg/metrics"
 	"github.com/neogan/sre-toolkit/pkg/prometheus"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -47,13 +49,14 @@ to reduce alert fatigue and improve alerting effectiveness.`
 
 func newAnalyzeCmd() *cobra.Command {
 	var (
-		prometheusURL string
-		lookback      string
-		resolution    string
-		output        string
-		topN          int
-		timeout       string
-		insecure      bool
+		prometheusURL   string
+		alertmanagerURL string
+		lookback        string
+		resolution      string
+		output          string
+		topN            int
+		timeout         string
+		insecure        bool
 	)
 
 	cmd := &cobra.Command{
@@ -72,12 +75,13 @@ time range, and performs frequency analysis to identify the most problematic ale
   # Show top 20 alerts in JSON format
   alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20 --output json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAnalyze(prometheusURL, lookback, resolution, output, topN, timeout, insecure)
+			return runAnalyze(prometheusURL, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure)
 		},
 	}
 
 	// Add flags
 	cmd.Flags().StringVar(&prometheusURL, "prometheus-url", "", "Prometheus server URL (required)")
+	cmd.Flags().StringVar(&alertmanagerURL, "alertmanager-url", "", "Alertmanager server URL (optional)")
 	cmd.Flags().StringVar(&lookback, "lookback", "7d", "Time range to analyze (e.g., 7d, 24h, 30d)")
 	cmd.Flags().StringVar(&resolution, "resolution", "5m", "Query resolution (e.g., 1m, 5m, 15m)")
 	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format: table or json")
@@ -100,7 +104,7 @@ func newVersionCmd() *cobra.Command {
 	}
 }
 
-func runAnalyze(prometheusURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure bool) error {
+func runAnalyze(prometheusURL, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure bool) error {
 	// Initialize configuration
 	cfg := config.Default()
 
@@ -215,5 +219,38 @@ func runAnalyze(prometheusURL, lookbackStr, resolutionStr, outputFormat string, 
 	}
 
 	logger.Info().Msg("Analysis complete")
+	// If Alertmanager URL is provided, connect and collect current alerts
+	// If Alertmanager URL is provided, connect and collect current alerts
+	if alertmanagerURL != "" {
+		if err := collectAlertmanagerData(ctx, alertmanagerURL, timeout, insecure, logger); err != nil {
+			// Don't fail the whole command, just log error
+			logger.Error().Err(err).Msg("Alertmanager collection failed")
+		}
+	}
+
+	return nil
+}
+
+func collectAlertmanagerData(ctx context.Context, url string, timeout time.Duration, insecure bool, logger zerolog.Logger) error {
+	amClient, err := alertmanager.NewClient(&alertmanager.Config{
+		URL:      url,
+		Timeout:  timeout,
+		Insecure: insecure,
+	}, &logger)
+	if err != nil {
+		return fmt.Errorf("failed to create Alertmanager client: %w", err)
+	}
+
+	if err := amClient.Ping(ctx); err != nil {
+		return fmt.Errorf("failed to connect to Alertmanager: %w", err)
+	}
+
+	amCollector := collector.NewAlertmanagerCollector(amClient, &logger)
+	amHistory, err := amCollector.CollectCurrentAlerts(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to collect from Alertmanager: %w", err)
+	}
+
+	logger.Info().Int("active_alerts", amHistory.CountAlerts()).Msg("Collected active alerts from Alertmanager")
 	return nil
 }

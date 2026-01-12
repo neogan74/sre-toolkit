@@ -48,6 +48,7 @@ Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
 
 **Features:**
 - Prometheus API integration for alert history collection
+- Alertmanager API integration for active alerts
 - Frequency analysis of firing alerts
 - Identification of noisy and flapping alerts
 - Support for custom lookback periods and resolutions
