@@ -141,7 +141,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Target URL support
   - [x] Duration-based runs
   - [x] Request limit support
-  - [ ] Various HTTP methods and payloads (currently GET only)
+  - [x] Various HTTP methods and payloads
   - [ ] Authentication support (Bearer, Basic)
 
 - [ ] **Chaos Scenarios**
