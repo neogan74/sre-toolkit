@@ -83,3 +83,40 @@ func TestPool_Error(t *testing.T) {
 	// but better to check the results slice if we could.
 	// Since we are checking if it works without panic, this is already a good start.
 }
+
+func TestPool_MethodsAndBody(t *testing.T) {
+	var receivedMethod string
+	var receivedBody string
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedMethod = r.Method
+		// read body
+		buf := make([]byte, 1024)
+		n, _ := r.Body.Read(buf)
+		receivedBody = string(buf[:n])
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	cfg := PoolConfig{
+		TargetURL:   server.URL,
+		Method:      "POST",
+		Body:        "hello world",
+		Concurrency: 1,
+		Duration:    time.Second,
+		Requests:    1,
+	}
+
+	pool := NewPool(cfg)
+	if err := pool.Run(); err != nil {
+		t.Fatalf("Pool.Run() failed: %v", err)
+	}
+
+	if receivedMethod != "POST" {
+		t.Errorf("expected method POST, got %s", receivedMethod)
+	}
+	if receivedBody != "hello world" {
+		t.Errorf("expected body 'hello world', got '%s'", receivedBody)
+	}
+}

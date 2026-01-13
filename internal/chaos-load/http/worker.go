@@ -4,6 +4,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 // PoolConfig holds configuration for the worker pool
 type PoolConfig struct {
 	TargetURL   string
+	Method      string
+	Body        string
 	Concurrency int
 	Duration    time.Duration
 	Requests    int // Optional limit on total requests
@@ -111,7 +114,28 @@ func (p *Pool) worker(ctx context.Context, _ /* id */ int, requests <-chan struc
 		}
 
 		start := time.Now()
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, p.config.TargetURL, http.NoBody)
+
+		method := p.config.Method
+		if method == "" {
+			method = http.MethodGet
+		}
+
+		var body *strings.Reader
+		if p.config.Body != "" {
+			body = strings.NewReader(p.config.Body)
+		}
+
+		// Re-create request for each iteration since body is read
+		// If body is needed we might need to reset reader or create new one.
+		// strings.NewReader creation is cheap.
+		var req *http.Request
+		var err error
+
+		if body != nil {
+			req, err = http.NewRequestWithContext(ctx, method, p.config.TargetURL, body)
+		} else {
+			req, err = http.NewRequestWithContext(ctx, method, p.config.TargetURL, http.NoBody)
+		}
 		var resp *http.Response
 		if err == nil {
 			resp, err = p.client.Do(req)

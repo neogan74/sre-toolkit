@@ -12,6 +12,8 @@ import (
 func newHTTPCmd() *cobra.Command {
 	var (
 		url         string
+		method      string
+		body        string
 		concurrency int
 		duration    time.Duration
 		requests    int
@@ -28,6 +30,8 @@ func newHTTPCmd() *cobra.Command {
 			// Initialize worker pool
 			pool := http.NewPool(http.PoolConfig{
 				TargetURL:   url,
+				Method:      method,
+				Body:        body,
 				Concurrency: concurrency,
 				Duration:    duration,
 				Requests:    requests,
@@ -43,6 +47,8 @@ func newHTTPCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&url, "url", "", "Target URL")
+	cmd.Flags().StringVar(&method, "method", "GET", "HTTP method (GET, POST, PUT, DELETE, etc.)")
+	cmd.Flags().StringVar(&body, "body", "", "Request body")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent workers")
 	cmd.Flags().DurationVar(&duration, "duration", 30*time.Second, "Duration of the test")
 	cmd.Flags().IntVar(&requests, "requests", 0, "Total number of requests (0 for unlimited)")
