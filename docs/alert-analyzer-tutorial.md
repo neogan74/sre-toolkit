@@ -68,6 +68,8 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 | `--alertmanager-url` | Alertmanager server URL (optional) | - |
 | `--timeout` | Request timeout | `30s` |
 | `--insecure` | Skip TLS verification | `false` |
+| `--show-flapping` | Include flapping alerts analysis | `false` |
+| `--flapping-threshold` | Flapping threshold (transitions/hour) | `3.0` |
 
 ## What Does Alert Analyzer Do?
 
@@ -89,6 +91,24 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 - Unique alert count
 - Time range analyzed
 - Top N noisiest alerts
+
+### 4. Flapping Detection
+
+Flapping alerts are those that constantly switch between firing and resolved states. These contribute to alert fatigue and indicate underlying instability.
+
+```bash
+# Include flapping analysis in output
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping
+
+# Adjust flapping threshold (default: 3 transitions/hour)
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --flapping-threshold 5.0
+```
+
+**Flapping Metrics:**
+- **Transition Count**: Number of state changes (firing→resolved or resolved→firing)
+- **Flapping Score**: Transitions per hour (normalized)
+- **Avg State Duration**: Average time spent in each state
+- **Is Flapping**: Whether alert exceeds threshold
 
 ## Example Output
 
@@ -578,19 +598,19 @@ After analyzing your alerts:
    - Measure noise reduction
    - Document improvements
 
-4. **Advanced Analysis** (Coming Soon)
-   - Flapping detection
-   - Alert correlation
-   - Temporal patterns
-   - Recommendations engine
+4. **Advanced Analysis**
+   - ✅ Flapping detection (now available with `--show-flapping`)
+   - Alert correlation (coming soon)
+   - Temporal patterns (coming soon)
+   - Recommendations engine (coming soon)
 
 ## Version Information
 
 Current version: 0.1.0
-Features: Frequency analysis, basic reporting
+Features: Frequency analysis, basic reporting, flapping detection
 
 See project roadmap for upcoming features:
-- Flapping alert detection
+- ✅ Flapping alert detection (available)
 - Alert correlation analysis
 - Temporal pattern recognition
 - Automated recommendations

@@ -88,7 +88,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Firing frequency calculation
   - [x] Total/unique alert counting
   - [x] Alert history tracking (fired/resolved times)
-  - [ ] Flapping alerts detection (constantly switching)
+  - [x] Flapping alerts detection (constantly switching) ✅ **NEW**
   - [ ] Alert correlation (which alerts fire together)
   - [ ] Temporal patterns (day of week, time of day)
 

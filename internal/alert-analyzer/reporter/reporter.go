@@ -168,6 +168,7 @@ type AnalysisReport struct {
 	Timestamp string                     `json:"timestamp"`
 	Summary   analyzer.SummaryStats      `json:"summary"`
 	Frequency []analyzer.FrequencyResult `json:"frequency_analysis"`
+	Flapping  []analyzer.FlappingResult  `json:"flapping_analysis,omitempty"`
 }
 
 // ReportComplete outputs a complete analysis report
@@ -190,4 +191,88 @@ func (r *Reporter) ReportComplete(stats analyzer.SummaryStats, frequency []analy
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
+}
+
+// ReportCompleteWithFlapping outputs a complete analysis report including flapping analysis
+func (r *Reporter) ReportCompleteWithFlapping(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult) error {
+	switch r.format {
+	case FormatTable:
+		if err := r.ReportSummary(stats); err != nil {
+			return err
+		}
+		if err := r.ReportFrequency(frequency); err != nil {
+			return err
+		}
+		return r.ReportFlapping(flapping)
+	case FormatJSON:
+		report := AnalysisReport{
+			Timestamp: time.Now().Format(time.RFC3339),
+			Summary:   stats,
+			Frequency: frequency,
+			Flapping:  flapping,
+		}
+		encoder := json.NewEncoder(r.writer)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(report)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// ReportFlapping outputs flapping analysis results
+func (r *Reporter) ReportFlapping(results []analyzer.FlappingResult) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportFlappingTable(results)
+	case FormatJSON:
+		return r.reportFlappingJSON(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// reportFlappingTable outputs flapping analysis in table format
+func (r *Reporter) reportFlappingTable(results []analyzer.FlappingResult) error {
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "\nNo flapping alerts detected.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(r.writer, 0, 0, 3, ' ', 0)
+
+	fmt.Fprintln(w, "\n=== Flapping Alerts Analysis ===")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "ALERT NAME\tTRANSITIONS\tFLAP SCORE\tAVG STATE DUR\tSHORTEST\tFLAPPING\tSEVERITY")
+	fmt.Fprintln(w, "----------\t-----------\t----------\t-------------\t--------\t--------\t--------")
+
+	for _, result := range results {
+		flappingStatus := "No"
+		if result.IsFlapping {
+			flappingStatus = "🔄 Yes"
+		}
+
+		severityIcon := getSeverityIcon(result.Severity)
+
+		fmt.Fprintf(w, "%s\t%d\t%.2f/hr\t%s\t%s\t%s\t%s %s\n",
+			result.AlertName,
+			result.TransitionCount,
+			result.FlappingScore,
+			formatDuration(result.AvgStateDuration),
+			formatDuration(result.ShortestDuration),
+			flappingStatus,
+			severityIcon,
+			result.Severity,
+		)
+	}
+
+	return w.Flush()
+}
+
+// reportFlappingJSON outputs flapping analysis in JSON format
+func (r *Reporter) reportFlappingJSON(results []analyzer.FlappingResult) error {
+	encoder := json.NewEncoder(r.writer)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(map[string]interface{}{
+		"flapping_analysis": results,
+	})
 }

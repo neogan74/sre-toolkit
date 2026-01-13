@@ -49,14 +49,16 @@ to reduce alert fatigue and improve alerting effectiveness.`
 
 func newAnalyzeCmd() *cobra.Command {
 	var (
-		prometheusURL   string
-		alertmanagerURL string
-		lookback        string
-		resolution      string
-		output          string
-		topN            int
-		timeout         string
-		insecure        bool
+		prometheusURL     string
+		alertmanagerURL   string
+		lookback          string
+		resolution        string
+		output            string
+		topN              int
+		timeout           string
+		insecure          bool
+		showFlapping      bool
+		flappingThreshold float64
 	)
 
 	cmd := &cobra.Command{
@@ -73,9 +75,12 @@ time range, and performs frequency analysis to identify the most problematic ale
   alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d --resolution 15m
 
   # Show top 20 alerts in JSON format
-  alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20 --output json`,
+  alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20 --output json
+
+  # Include flapping analysis with custom threshold
+  alert-analyzer analyze --prometheus-url http://prom:9090 --show-flapping --flapping-threshold 5.0`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAnalyze(prometheusURL, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure)
+			return runAnalyze(prometheusURL, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure, showFlapping, flappingThreshold)
 		},
 	}
 
@@ -88,6 +93,8 @@ time range, and performs frequency analysis to identify the most problematic ale
 	cmd.Flags().IntVar(&topN, "top-n", 20, "Number of top alerts to show")
 	cmd.Flags().StringVar(&timeout, "timeout", "30s", "Request timeout")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")
+	cmd.Flags().BoolVar(&showFlapping, "show-flapping", false, "Include flapping alerts analysis")
+	cmd.Flags().Float64Var(&flappingThreshold, "flapping-threshold", 3.0, "Flapping threshold (transitions per hour)")
 
 	cmd.MarkFlagRequired("prometheus-url")
 
@@ -104,7 +111,7 @@ func newVersionCmd() *cobra.Command {
 	}
 }
 
-func runAnalyze(prometheusURL, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure bool) error {
+func runAnalyze(prometheusURL, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure, showFlapping bool, flappingThreshold float64) error {
 	// Initialize configuration
 	cfg := config.Default()
 
@@ -203,13 +210,29 @@ func runAnalyze(prometheusURL, alertmanagerURL, lookbackStr, resolutionStr, outp
 	logger.Info().
 		Int("total_firings", stats.TotalFirings).
 		Int("unique_alerts", stats.UniqueAlerts).
-		Msg("Analysis complete")
+		Msg("Frequency analysis complete")
 
 	// Report results
 	rep := reporter.NewReporter(outputFormat, os.Stdout)
 
-	if err := rep.ReportComplete(stats, topAlerts); err != nil {
-		return fmt.Errorf("failed to generate report: %w", err)
+	// Perform flapping analysis if requested
+	if showFlapping {
+		flappingAnalyzer := analyzer.NewFlappingAnalyzer(history, flappingThreshold)
+		flappingAlerts := flappingAnalyzer.AnalyzeTopN(topN)
+
+		flappingSummary := flappingAnalyzer.GetSummary()
+		logger.Info().
+			Int("flapping_alerts", flappingSummary.FlappingAlerts).
+			Float64("threshold", flappingThreshold).
+			Msg("Flapping analysis complete")
+
+		if err := rep.ReportCompleteWithFlapping(stats, topAlerts, flappingAlerts); err != nil {
+			return fmt.Errorf("failed to generate report: %w", err)
+		}
+	} else {
+		if err := rep.ReportComplete(stats, topAlerts); err != nil {
+			return fmt.Errorf("failed to generate report: %w", err)
+		}
 	}
 
 	// Record metrics
