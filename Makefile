@@ -61,6 +61,11 @@ test-coverage: test ## Run tests with coverage report
 	@echo "$(CYAN)Generating coverage report...$(NC)"
 	$(GO) tool cover -html=$(COVERAGE_FILE)
 
+test-e2e: ## Run end-to-end integration tests
+	@echo "$(CYAN)Running e2e tests...$(NC)"
+	$(GO) test -v -timeout 10m ./tests/e2e/...
+
+
 lint: ## Run golangci-lint
 	@echo "$(CYAN)Running linter...$(NC)"
 	@if command -v golangci-lint > /dev/null; then \
