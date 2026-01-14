@@ -138,6 +138,10 @@ func (c *PrometheusCollector) parseAlerts(value model.Value, _ /* startTime */, 
 			// Update existing or new alert
 			// If value is 0, the alert was resolved
 			if value == 0 && alert.ResolvedAt == nil {
+				c.logger.Debug().
+					Str("alert", alertName).
+					Time("timestamp", timestamp).
+					Msg("Alert resolved (value=0)")
 				resolvedAt := timestamp
 				alert.ResolvedAt = &resolvedAt
 				alert.State = "inactive"
@@ -159,8 +163,23 @@ func createAlertKey(name string, labels map[string]string) string {
 	// Simple approach: concatenate name with sorted labels
 	// For production, consider using a hash function
 	key := name
-	for k, v := range labels {
-		key += fmt.Sprintf("_%s=%s", k, v)
+
+	// Sort keys for deterministic output
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	// Simple bubble sort for small number of labels
+	for i := 0; i < len(keys); i++ {
+		for j := i + 1; j < len(keys); j++ {
+			if keys[i] > keys[j] {
+				keys[i], keys[j] = keys[j], keys[i]
+			}
+		}
+	}
+
+	for _, k := range keys {
+		key += fmt.Sprintf("_%s=%s", k, labels[k])
 	}
 	return key
 }
