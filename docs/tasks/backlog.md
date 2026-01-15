@@ -32,7 +32,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] High-load node identification (CPU/memory usage metrics)
 
 - [ ] **Best Practices Audit** ⏳ **PLANNED (Phase 3)**
-  - [ ] Check for liveness/readiness probes
+  - [x] Check for liveness/readiness probes
   - [ ] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
   - [ ] NetworkPolicies check
   - [ ] RBAC permissions audit (excessive permissions)

@@ -341,6 +341,35 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 		w.Flush()
 		fmt.Fprintln(r.writer)
 	}
+
+	// Probe issues
+	if len(result.ProbeIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Probe Issues (%d) ===\n", len(result.ProbeIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tPOD\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t---\t--------\t-------")
+
+		for _, issue := range result.ProbeIssues {
+			severity := issue.Severity
+			switch issue.Severity {
+			case "Critical":
+				severity = "🔴 " + severity
+			case "Warning":
+				severity = "⚠️  " + severity
+			default:
+				severity = "ℹ️  " + severity
+			}
+
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+				issue.Namespace,
+				issue.Pod,
+				severity,
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
 	if result.Summary.TotalIssues == 0 {
 		fmt.Fprintf(r.writer, "✓ No issues found! Cluster is healthy.\n")
 	}
