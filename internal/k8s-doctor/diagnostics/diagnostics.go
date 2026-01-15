@@ -17,6 +17,7 @@ type Result struct {
 	SystemIssues   []SystemIssue
 	EventIssues    []EventIssue
 	ResourceIssues []ResourceIssue
+	ProbeIssues    []ProbeIssue
 }
 
 // Summary provides an overview of issues found
@@ -72,6 +73,14 @@ type ResourceIssue struct {
 	Message   string
 }
 
+// ProbeIssue represents a probe configuration issue
+type ProbeIssue struct {
+	Pod       string
+	Namespace string
+	Severity  string
+	Message   string
+}
+
 // RunDiagnostics performs comprehensive cluster diagnostics
 func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
 	result := &Result{
@@ -80,6 +89,7 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 		SystemIssues:   []SystemIssue{},
 		EventIssues:    []EventIssue{},
 		ResourceIssues: []ResourceIssue{},
+		ProbeIssues:    []ProbeIssue{},
 	}
 
 	// Check nodes
@@ -140,6 +150,20 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 		for _, container := range audit.Containers {
 			for _, issueMsg := range container.Issues {
 				result.ResourceIssues = append(result.ResourceIssues, ResourceIssue{
+					Pod:       audit.Pod,
+					Namespace: audit.Namespace,
+					Severity:  "Warning",
+					Message:   fmt.Sprintf("Container %s: %s", container.Name, issueMsg),
+				})
+			}
+		}
+	}
+
+	// Check probe configuration
+	for _, audit := range pods.ProbeAudit {
+		for _, container := range audit.Containers {
+			for _, issueMsg := range container.Issues {
+				result.ProbeIssues = append(result.ProbeIssues, ProbeIssue{
 					Pod:       audit.Pod,
 					Namespace: audit.Namespace,
 					Severity:  "Warning",
@@ -313,6 +337,19 @@ func calculateSummary(result *Result) Summary {
 
 	// Count resource issues
 	for _, issue := range result.ResourceIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	// Count probe issues
+	for _, issue := range result.ProbeIssues {
 		summary.TotalIssues++
 		switch issue.Severity {
 		case "Critical":

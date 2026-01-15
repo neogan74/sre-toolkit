@@ -20,6 +20,7 @@ type PodStatus struct {
 	Namespaces    map[string]int
 	ProblemPods   []ProblemPod
 	ResourceAudit []ResourceIssue
+	ProbeAudit    []ProbeIssue
 }
 
 // ResourceIssue represents a pod with resource limit/request issues
@@ -59,6 +60,7 @@ func CheckPods(ctx context.Context, clientset kubernetes.Interface, namespace st
 		Namespaces:    make(map[string]int),
 		ProblemPods:   []ProblemPod{},
 		ResourceAudit: []ResourceIssue{},
+		ProbeAudit:    []ProbeIssue{},
 	}
 
 	for _, pod := range pods.Items {
@@ -88,6 +90,11 @@ func CheckPods(ctx context.Context, clientset kubernetes.Interface, namespace st
 		// Check resource limits
 		if resourceIssue := auditPodResources(&pod); resourceIssue != nil {
 			status.ResourceAudit = append(status.ResourceAudit, *resourceIssue)
+		}
+
+		// Check probe configuration
+		if probeIssue := AuditPodProbes(&pod); probeIssue != nil {
+			status.ProbeAudit = append(status.ProbeAudit, *probeIssue)
 		}
 	}
 
