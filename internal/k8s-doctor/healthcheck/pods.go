@@ -21,6 +21,7 @@ type PodStatus struct {
 	ProblemPods   []ProblemPod
 	ResourceAudit []ResourceIssue
 	ProbeAudit    []ProbeIssue
+	SecurityAudit []SecurityContextIssue
 }
 
 // ResourceIssue represents a pod with resource limit/request issues
@@ -95,6 +96,11 @@ func CheckPods(ctx context.Context, clientset kubernetes.Interface, namespace st
 		// Check probe configuration
 		if probeIssue := AuditPodProbes(&pod); probeIssue != nil {
 			status.ProbeAudit = append(status.ProbeAudit, *probeIssue)
+		}
+
+		// Check security context
+		if securityIssue := AuditPodSecurityContext(&pod); securityIssue != nil {
+			status.SecurityAudit = append(status.SecurityAudit, *securityIssue)
 		}
 	}
 

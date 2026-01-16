@@ -18,6 +18,7 @@ type Result struct {
 	EventIssues    []EventIssue
 	ResourceIssues []ResourceIssue
 	ProbeIssues    []ProbeIssue
+	SecurityIssues []SecurityContextIssue
 }
 
 // Summary provides an overview of issues found
@@ -81,6 +82,14 @@ type ProbeIssue struct {
 	Message   string
 }
 
+// SecurityContextIssue represents a security context configuration issue
+type SecurityContextIssue struct {
+	Pod       string
+	Namespace string
+	Severity  string
+	Message   string
+}
+
 // RunDiagnostics performs comprehensive cluster diagnostics
 func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
 	result := &Result{
@@ -90,6 +99,7 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 		EventIssues:    []EventIssue{},
 		ResourceIssues: []ResourceIssue{},
 		ProbeIssues:    []ProbeIssue{},
+		SecurityIssues: []SecurityContextIssue{},
 	}
 
 	// Check nodes
@@ -164,6 +174,20 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 		for _, container := range audit.Containers {
 			for _, issueMsg := range container.Issues {
 				result.ProbeIssues = append(result.ProbeIssues, ProbeIssue{
+					Pod:       audit.Pod,
+					Namespace: audit.Namespace,
+					Severity:  "Warning",
+					Message:   fmt.Sprintf("Container %s: %s", container.Name, issueMsg),
+				})
+			}
+		}
+	}
+
+	// Check security context
+	for _, audit := range pods.SecurityAudit {
+		for _, container := range audit.Containers {
+			for _, issueMsg := range container.Issues {
+				result.SecurityIssues = append(result.SecurityIssues, SecurityContextIssue{
 					Pod:       audit.Pod,
 					Namespace: audit.Namespace,
 					Severity:  "Warning",
@@ -350,6 +374,19 @@ func calculateSummary(result *Result) Summary {
 
 	// Count probe issues
 	for _, issue := range result.ProbeIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	// Count security issues
+	for _, issue := range result.SecurityIssues {
 		summary.TotalIssues++
 		switch issue.Severity {
 		case "Critical":
