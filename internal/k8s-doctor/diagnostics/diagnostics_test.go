@@ -441,9 +441,10 @@ func TestCalculateSummary(t *testing.T) {
 		{
 			name: "no issues",
 			result: &Result{
-				NodeIssues:   []NodeIssue{},
-				PodIssues:    []PodIssue{},
-				SystemIssues: []SystemIssue{},
+				NodeIssues:     []NodeIssue{},
+				PodIssues:      []PodIssue{},
+				SystemIssues:   []SystemIssue{},
+				SecurityIssues: []SecurityContextIssue{},
 			},
 			wantTotal:    0,
 			wantCritical: 0,
@@ -470,6 +471,22 @@ func TestCalculateSummary(t *testing.T) {
 			wantCritical: 4,
 			wantWarning:  1,
 			wantInfo:     1,
+		},
+		{
+			name: "security issues only",
+			result: &Result{
+				NodeIssues:   []NodeIssue{},
+				PodIssues:    []PodIssue{},
+				SystemIssues: []SystemIssue{},
+				SecurityIssues: []SecurityContextIssue{
+					{Severity: "Warning"},
+					{Severity: "Warning"},
+				},
+			},
+			wantTotal:    2,
+			wantCritical: 0,
+			wantWarning:  2,
+			wantInfo:     0,
 		},
 	}
 
