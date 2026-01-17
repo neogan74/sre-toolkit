@@ -137,12 +137,53 @@ func TestReportFlapping(t *testing.T) {
 		assert.Contains(t, output, "Yes")
 		assert.Contains(t, output, "5.50/hr")
 	})
+
+	t.Run("JSON Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatJSON, &buf)
+		err := r.ReportFlapping(results)
+		assert.NoError(t, err)
+
+		var output map[string][]analyzer.FlappingResult
+		err = json.Unmarshal(buf.Bytes(), &output)
+		require.NoError(t, err)
+
+		assert.Len(t, output["flapping_analysis"], 1)
+		assert.Equal(t, "FlappingAlert", output["flapping_analysis"][0].AlertName)
+	})
+
+	t.Run("Table Format Empty", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportFlapping([]analyzer.FlappingResult{})
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "No flapping alerts detected")
+	})
+
+	t.Run("Unsupported Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter("csv", &buf)
+		err := r.ReportFlapping(results)
+		assert.Error(t, err)
+	})
 }
 
 func TestReportCompleteWithFlapping(t *testing.T) {
 	stats := analyzer.SummaryStats{TotalAlerts: 10}
 	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
 	flap := []analyzer.FlappingResult{{AlertName: "A1", IsFlapping: true}}
+
+	t.Run("Table Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportCompleteWithFlapping(stats, freq, flap)
+		assert.NoError(t, err)
+
+		output := buf.String()
+		assert.Contains(t, output, "=== Alert Analysis Summary ===")
+		assert.Contains(t, output, "=== Alert Frequency Analysis ===")
+		assert.Contains(t, output, "=== Flapping Alerts Analysis ===")
+	})
 
 	t.Run("JSON Format", func(t *testing.T) {
 		var buf bytes.Buffer
@@ -157,6 +198,14 @@ func TestReportCompleteWithFlapping(t *testing.T) {
 		assert.Contains(t, output, "summary")
 		assert.Contains(t, output, "frequency_analysis")
 		assert.Contains(t, output, "flapping_analysis")
+	})
+
+	t.Run("Unsupported Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter("yaml", &buf)
+		err := r.ReportCompleteWithFlapping(stats, freq, flap)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported format")
 	})
 }
 
