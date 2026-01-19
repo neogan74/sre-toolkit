@@ -25,6 +25,7 @@ in comprehensive tests. It helps verify system resilience and capability.`
 
 	// Add subcommands
 	rootCmd.AddCommand(newHTTPCmd())
+	rootCmd.AddCommand(newMockCmd())
 
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
