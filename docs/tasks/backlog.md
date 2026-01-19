@@ -145,7 +145,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [ ] Authentication support (Bearer, Basic)
 
 - [ ] **Chaos Scenarios**
-  - [ ] Random HTTP 5xx errors
+  - [x] Random HTTP 5xx errors
   - [ ] Network latency injection
   - [ ] Connection failures
   - [ ] Timeout simulation
