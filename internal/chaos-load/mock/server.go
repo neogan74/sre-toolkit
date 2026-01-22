@@ -14,6 +14,7 @@ type ServerConfig struct {
 	Port      int
 	ErrorRate int           // Percentage 0-100
 	Latency   time.Duration // Sleep duration
+	Jitter    time.Duration // Latency variation (+/-)
 }
 
 // Server represents a chaos mock server
@@ -46,6 +47,7 @@ func (s *Server) Run() error {
 		Int("port", s.config.Port).
 		Int("error_rate", s.config.ErrorRate).
 		Dur("latency", s.config.Latency).
+		Dur("jitter", s.config.Jitter).
 		Msg("Starting chaos mock server")
 
 	return s.server.ListenAndServe()
@@ -55,9 +57,19 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	logger := logging.GetLogger()
 	start := time.Now()
 
-	// Simulate latency
+	// Simulate latency with jitter
 	if s.config.Latency > 0 {
-		time.Sleep(s.config.Latency)
+		delay := s.config.Latency
+		if s.config.Jitter > 0 {
+			jitterNanos := s.config.Jitter.Nanoseconds()
+			// Random offset in range [-jitter, +jitter]
+			offsetNanos := rand.Int63n(2*jitterNanos+1) - jitterNanos
+			delay += time.Duration(offsetNanos)
+			if delay < 0 {
+				delay = 0
+			}
+		}
+		time.Sleep(delay)
 	}
 
 	// Simulate error
