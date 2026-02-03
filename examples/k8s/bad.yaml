@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-pod
+spec:
+  hostNetwork: true
+  containers:
+  - name: heavy
+    image: nginx:latest
+    securityContext:
+      privileged: true
+    # No resources defined
