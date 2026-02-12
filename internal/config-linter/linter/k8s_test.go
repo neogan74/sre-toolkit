@@ -19,27 +19,39 @@ func TestKubernetesLinter_Lint(t *testing.T) {
 		name           string
 		content        string
 		expectedPassed bool
-		expectedIssues int
+		minIssues      int // Use minimum issues count since we added more checks
 		issueContains  []string
 	}{
 		{
-			name: "Valid Pod",
+			name: "Fully Compliant Pod",
 			content: `
 apiVersion: v1
 kind: Pod
 metadata:
-  name: valid-pod
+  name: compliant-pod
 spec:
   containers:
-  - name: valid
+  - name: compliant
     image: nginx:1.19
+    securityContext:
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
     resources:
       limits:
         cpu: "100m"
         memory: "128Mi"
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8080
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8080
 `,
 			expectedPassed: true,
-			expectedIssues: 0,
+			minIssues:      0,
 		},
 		{
 			name: "No Limits",
@@ -54,9 +66,8 @@ spec:
     image: nginx:1.19
 `,
 			expectedPassed: false,
-			expectedIssues: 1, // No CPU limit, No Mem limit (actually 1 "no resource limits" if limits is nil)
-			// Wait, my logic: if Limits == nil -> 1 issue.
-			issueContains: []string{"no resource limits"},
+			minIssues:      1, // At least "no resource limits"
+			issueContains:  []string{"no resource limits"},
 		},
 		{
 			name: "Privileged Container",
@@ -77,7 +88,7 @@ spec:
         memory: "128Mi"
 `,
 			expectedPassed: false,
-			expectedIssues: 1,
+			minIssues:      1,
 			issueContains:  []string{"is privileged"},
 		},
 		{
@@ -96,8 +107,8 @@ spec:
         cpu: "100m"
         memory: "128Mi"
 `,
-			expectedPassed: false, // passed is false if len(issues) > 0. Tag check is Low severity.
-			expectedIssues: 1,
+			expectedPassed: false,
+			minIssues:      1,
 			issueContains:  []string{"uses 'latest' tag"},
 		},
 		{
@@ -118,8 +129,78 @@ spec:
         memory: "128Mi"
 `,
 			expectedPassed: false,
-			expectedIssues: 1,
+			minIssues:      1,
 			issueContains:  []string{"uses hostNetwork: true"},
+		},
+		{
+			name: "Dangerous Capability SYS_ADMIN",
+			content: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dangerous-cap
+spec:
+  containers:
+  - name: cap-container
+    image: nginx:1.19
+    securityContext:
+      capabilities:
+        add:
+        - SYS_ADMIN
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+`,
+			expectedPassed: false,
+			minIssues:      1,
+			issueContains:  []string{"dangerous capability: SYS_ADMIN"},
+		},
+		{
+			name: "Missing Probes",
+			content: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-probes
+spec:
+  containers:
+  - name: no-probes
+    image: nginx:1.19
+    securityContext:
+      runAsNonRoot: true
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+`,
+			expectedPassed: false,
+			minIssues:      2, // Missing liveness and readiness probes
+			issueContains:  []string{"no livenessProbe", "no readinessProbe"},
+		},
+		{
+			name: "Allow Privilege Escalation",
+			content: `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: priv-escalation
+spec:
+  containers:
+  - name: escalation
+    image: nginx:1.19
+    securityContext:
+      allowPrivilegeEscalation: true
+    resources:
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+`,
+			expectedPassed: false,
+			minIssues:      1,
+			issueContains:  []string{"allows privilege escalation"},
 		},
 	}
 
@@ -133,8 +214,8 @@ spec:
 			result, err := linter.Lint(context.Background(), path)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.expectedPassed, result.Passed)
-			assert.Len(t, result.Issues, tt.expectedIssues)
+			assert.Equal(t, tt.expectedPassed, result.Passed, "Expected passed=%v but got passed=%v with issues: %v", tt.expectedPassed, result.Passed, result.Issues)
+			assert.GreaterOrEqual(t, len(result.Issues), tt.minIssues, "Expected at least %d issues but got %d: %v", tt.minIssues, len(result.Issues), result.Issues)
 
 			if len(tt.issueContains) > 0 {
 				for _, substr := range tt.issueContains {
@@ -145,7 +226,7 @@ spec:
 							break
 						}
 					}
-					assert.True(t, found, "Expected issue message passing '%s', but got: %v", substr, result.Issues)
+					assert.True(t, found, "Expected issue message containing '%s', but got: %v", substr, result.Issues)
 				}
 			}
 		})

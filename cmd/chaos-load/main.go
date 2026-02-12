@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/neogan/sre-toolkit/pkg/cli"
 	"github.com/neogan/sre-toolkit/pkg/config"
 	"github.com/neogan/sre-toolkit/pkg/logging"
+	"github.com/neogan/sre-toolkit/pkg/tracing"
 )
 
 func main() {
@@ -15,6 +17,14 @@ func main() {
 	// Initialize logging
 	logging.Init(cfg.Logging)
 	logger := logging.GetLogger()
+
+	// Initialize tracing
+	shutdownTracer, err := tracing.InitTracer("chaos-load", *cfg.Tracing)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to initialize tracing")
+	} else {
+		defer shutdownTracer(context.Background())
+	}
 
 	// Create root command
 	rootCmd := cli.NewRootCmd()

@@ -185,11 +185,12 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Complexity:** Medium
 
 #### Features:
-- [ ] **Kubernetes YAML**
-  - Schema validation (OpenAPI)
-  - Best practices (anti-patterns)
-  - Security checks (privileged, hostNetwork)
-  - Resource limits requirements
+- [x] **Kubernetes YAML** ✅ **COMPLETE**
+  - [x] Schema validation (client-go decoder)
+  - [x] Best practices (anti-patterns: latest tag, missing probes)
+  - [x] Security checks (privileged, hostNetwork, hostPID, hostIPC, runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation, dangerous capabilities)
+  - [x] Resource limits requirements (CPU/Memory)
+  - [x] JSON/Table output formats
 
 - [ ] **Helm Charts**
   - Template validation

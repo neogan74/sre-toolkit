@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,11 +22,22 @@ func newLintCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringP("path", "p", ".", "Path to directory or file to lint")
+	cmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
 	return cmd
+}
+
+// LintReport is the JSON output structure
+type LintReport struct {
+	Path        string         `json:"path"`
+	FilesPassed int            `json:"files_passed"`
+	FilesFailed int            `json:"files_failed"`
+	TotalIssues int            `json:"total_issues"`
+	Issues      []linter.Issue `json:"issues,omitempty"`
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
 	path, _ := cmd.Flags().GetString("path")
+	outputFormat, _ := cmd.Flags().GetString("output")
 	logger := logging.GetLogger()
 
 	logger.Info().Str("path", path).Msg("Starting linting scan")
@@ -82,27 +94,46 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error walking path: %w", err)
 	}
 
-	// Print Report
-	fmt.Println("\n--- Lint Report ---")
-	fmt.Printf("Scanned Path: %s\n", path)
-	fmt.Printf("Files Passed: %d\n", passedFiles)
-	fmt.Printf("Files Failed: %d\n", failedFiles)
-	fmt.Printf("Total Issues: %d\n\n", len(totalIssues))
+	// Build report
+	report := LintReport{
+		Path:        path,
+		FilesPassed: passedFiles,
+		FilesFailed: failedFiles,
+		TotalIssues: len(totalIssues),
+		Issues:      totalIssues,
+	}
+
+	// Output based on format
+	if outputFormat == "json" {
+		output, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal JSON: %w", err)
+		}
+		fmt.Println(string(output))
+	} else {
+		// Table output
+		fmt.Println("\n--- Lint Report ---")
+		fmt.Printf("Scanned Path: %s\n", path)
+		fmt.Printf("Files Passed: %d\n", passedFiles)
+		fmt.Printf("Files Failed: %d\n", failedFiles)
+		fmt.Printf("Total Issues: %d\n\n", len(totalIssues))
+
+		if len(totalIssues) > 0 {
+			fmt.Printf("%-10s | %-30s | %s\n", "SEVERITY", "FILE", "MESSAGE")
+			fmt.Println("--------------------------------------------------------------------------------")
+			for _, issue := range totalIssues {
+				// Truncate file path if too long
+				shortFile := issue.File
+				if len(shortFile) > 30 {
+					shortFile = "..." + shortFile[len(shortFile)-27:]
+				}
+				fmt.Printf("%-10s | %-30s | %s\n", issue.Severity, shortFile, issue.Message)
+			}
+			fmt.Println("")
+		}
+	}
 
 	if len(totalIssues) > 0 {
-		fmt.Printf("%-10s | %-30s | %s\n", "SEVERITY", "FILE", "MESSAGE")
-		fmt.Println("--------------------------------------------------------------------------------")
-		for _, issue := range totalIssues {
-			// Truncate file path if too long
-			shortFile := issue.File
-			if len(shortFile) > 30 {
-				shortFile = "..." + shortFile[len(shortFile)-27:]
-			}
-
-			// Colorize severity (using simple valid ANSI codes if we wanted, but let's stick to text for now)
-			fmt.Printf("%-10s | %-30s | %s\n", issue.Severity, shortFile, issue.Message)
-		}
-		fmt.Println("")
 		return fmt.Errorf("linting failed with %d issues", len(totalIssues))
 	}
 
