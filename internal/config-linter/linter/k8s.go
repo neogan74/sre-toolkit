@@ -104,6 +104,49 @@ func (l *KubernetesLinter) checkPodSpec(result *Result, spec *corev1.PodSpec, pa
 			})
 		}
 
+		// allowPrivilegeEscalation Check
+		if container.SecurityContext == nil || container.SecurityContext.AllowPrivilegeEscalation == nil || *container.SecurityContext.AllowPrivilegeEscalation {
+			result.Issues = append(result.Issues, Issue{
+				Severity: "Medium",
+				Message:  fmt.Sprintf("Container '%s' in %s '%s' allows privilege escalation (set allowPrivilegeEscalation: false)", container.Name, kind, name),
+				File:     path,
+			})
+		}
+
+		// runAsNonRoot Check
+		if container.SecurityContext == nil || container.SecurityContext.RunAsNonRoot == nil || !*container.SecurityContext.RunAsNonRoot {
+			result.Issues = append(result.Issues, Issue{
+				Severity: "Low",
+				Message:  fmt.Sprintf("Container '%s' in %s '%s' does not enforce runAsNonRoot", container.Name, kind, name),
+				File:     path,
+			})
+		}
+
+		// readOnlyRootFilesystem Check
+		if container.SecurityContext == nil || container.SecurityContext.ReadOnlyRootFilesystem == nil || !*container.SecurityContext.ReadOnlyRootFilesystem {
+			result.Issues = append(result.Issues, Issue{
+				Severity: "Low",
+				Message:  fmt.Sprintf("Container '%s' in %s '%s' does not use readOnlyRootFilesystem", container.Name, kind, name),
+				File:     path,
+			})
+		}
+
+		// Capabilities Check - dangerous capabilities
+		if container.SecurityContext != nil && container.SecurityContext.Capabilities != nil {
+			dangerousCaps := []string{"SYS_ADMIN", "NET_ADMIN", "ALL", "SYS_PTRACE", "SYS_MODULE"}
+			for _, cap := range container.SecurityContext.Capabilities.Add {
+				for _, dangerous := range dangerousCaps {
+					if string(cap) == dangerous {
+						result.Issues = append(result.Issues, Issue{
+							Severity: "High",
+							Message:  fmt.Sprintf("Container '%s' in %s '%s' adds dangerous capability: %s", container.Name, kind, name, cap),
+							File:     path,
+						})
+					}
+				}
+			}
+		}
+
 		// Resource Limits Check
 		if container.Resources.Limits == nil {
 			result.Issues = append(result.Issues, Issue{
@@ -133,6 +176,24 @@ func (l *KubernetesLinter) checkPodSpec(result *Result, spec *corev1.PodSpec, pa
 			result.Issues = append(result.Issues, Issue{
 				Severity: "Low",
 				Message:  fmt.Sprintf("Container '%s' in %s '%s' uses 'latest' tag or no tag", container.Name, kind, name),
+				File:     path,
+			})
+		}
+
+		// Liveness Probe Check (Best Practice)
+		if container.LivenessProbe == nil {
+			result.Issues = append(result.Issues, Issue{
+				Severity: "Low",
+				Message:  fmt.Sprintf("Container '%s' in %s '%s' has no livenessProbe", container.Name, kind, name),
+				File:     path,
+			})
+		}
+
+		// Readiness Probe Check (Best Practice)
+		if container.ReadinessProbe == nil {
+			result.Issues = append(result.Issues, Issue{
+				Severity: "Low",
+				Message:  fmt.Sprintf("Container '%s' in %s '%s' has no readinessProbe", container.Name, kind, name),
 				File:     path,
 			})
 		}
