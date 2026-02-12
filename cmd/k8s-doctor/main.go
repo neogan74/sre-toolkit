@@ -14,27 +14,15 @@ import (
 	"github.com/neogan/sre-toolkit/pkg/k8s"
 	"github.com/neogan/sre-toolkit/pkg/logging"
 	"github.com/neogan/sre-toolkit/pkg/metrics"
+	"github.com/neogan/sre-toolkit/pkg/tracing"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func main() {
 	// Initialize configuration
 	cfg := config.Default()
-
-	// Initialize logging
-	logging.Init(cfg.Logging)
-	logger := logging.GetLogger()
-
-	// Initialize metrics server
-	metricsServer := metrics.NewServer(cfg.Metrics)
-	if cfg.Metrics.Enabled {
-		go func() {
-			if err := metricsServer.Start(); err != nil {
-				logger.Error().Err(err).Msg("Failed to start metrics server")
-			}
-		}()
-		defer metricsServer.Stop()
-	}
+	var shutdownTracer func(context.Context) error
 
 	// Create root command
 	rootCmd := cli.NewRootCmd()
@@ -44,6 +32,45 @@ func main() {
 It performs health checks, identifies issues, and provides recommendations
 for improving your cluster's reliability and security.`
 
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// Load config from viper
+		if err := viper.Unmarshal(cfg); err != nil {
+			return err
+		}
+
+		// Initialize logging
+		logging.Init(cfg.Logging)
+		logger := logging.GetLogger()
+
+		// Initialize metrics server
+		metricsServer := metrics.NewServer(cfg.Metrics)
+		if cfg.Metrics.Enabled {
+			go func() {
+				if err := metricsServer.Start(); err != nil {
+					logger.Error().Err(err).Msg("Failed to start metrics server")
+				}
+			}()
+			// Note: Metrics server stop is not easily handled in PreRun/PostRun split without globals
+			// For now we let it run until exit.
+		}
+
+		// Initialize tracing
+		var err error
+		shutdownTracer, err = tracing.InitTracer("k8s-doctor", *cfg.Tracing)
+		if err != nil {
+			logger.Error().Err(err).Msg("Failed to initialize tracing")
+		}
+
+		return nil
+	}
+
+	rootCmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+		if shutdownTracer != nil {
+			return shutdownTracer(context.Background())
+		}
+		return nil
+	}
+
 	// Add subcommands
 	rootCmd.AddCommand(newHealthCheckCmd())
 	rootCmd.AddCommand(newDiagnosticsCmd())
@@ -52,7 +79,8 @@ for improving your cluster's reliability and security.`
 
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
-		logger.Error().Err(err).Msg("Command execution failed")
+		l := logging.GetLogger()
+		l.Error().Err(err).Msg("Command execution failed")
 		// Don't use os.Exit here to allow deferred cleanup
 		return
 	}
