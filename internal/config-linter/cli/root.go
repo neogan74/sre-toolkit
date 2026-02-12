@@ -16,7 +16,8 @@ Kubernetes YAML, Helm charts, Terraform, Dockerfiles, and CI/CD configs.
 It checks for syntax errors, best practices, and security issues.`
 
 	// Add subcommands here
-	// rootCmd.AddCommand(newLintCmd())
+	// Add subcommands here
+	rootCmd.AddCommand(newLintCmd())
 
 	return rootCmd
 }

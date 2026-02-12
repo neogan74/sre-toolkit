@@ -17,8 +17,8 @@ type Result struct {
 
 // Issue represents a single linting issue
 type Issue struct {
-	Severity string
-	Message  string
-	File     string
-	Line     int
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+	File     string `json:"file"`
+	Line     int    `json:"line,omitempty"`
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/neogan/sre-toolkit/pkg/logging"
 	"github.com/neogan/sre-toolkit/pkg/metrics"
 	"github.com/neogan/sre-toolkit/pkg/prometheus"
+	"github.com/neogan/sre-toolkit/pkg/tracing"
 	"github.com/rs/zerolog"
 )
 
@@ -119,6 +120,14 @@ func runAnalyze(prometheusURL, alertmanagerURL, lookbackStr, resolutionStr, outp
 	logging.Init(cfg.Logging)
 	logger := logging.GetLogger()
 	logger.Info().Msg("Starting alert-analyzer")
+
+	// Initialize tracing
+	shutdownTracer, err := tracing.InitTracer("alert-analyzer", *cfg.Tracing)
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to initialize tracing")
+	} else {
+		defer shutdownTracer(context.Background())
+	}
 
 	// Start metrics server if enabled
 	if cfg.Metrics.Enabled {
