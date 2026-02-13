@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/neogan/sre-toolkit/internal/config-linter/linter"
 	"github.com/neogan/sre-toolkit/pkg/logging"
@@ -55,36 +56,33 @@ func runLint(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
-		// Check if it's a YAML file (rough check, linter does deeper check)
-		ext := filepath.Ext(filePath)
-		if ext != ".yaml" && ext != ".yml" {
-			return nil
-		}
 
+
+		ext := filepath.Ext(filePath)
 		logger.Debug().Str("file", filePath).Msg("Linting file")
 
 		// Run Kubernetes Linter
-		result, err := k8sLinter.Lint(context.Background(), filePath)
-		if err != nil {
-			logger.Error().Err(err).Str("file", filePath).Msg("Failed to lint file")
-			return nil // Don't stop walk
-		}
-
-		if result == nil {
-			// Skipped (not a K8s file or ignored)
+		if ext == ".yaml" || ext == ".yml" {
+			result, err := k8sLinter.Lint(context.Background(), filePath)
+			if err != nil {
+				logger.Error().Err(err).Str("file", filePath).Msg("Failed to lint file")
+				return nil
+			}
+			processResult(result, &passedFiles, &failedFiles, &totalIssues)
 			return nil
 		}
 
-		// If no issues, passed
-		if result.Passed {
-			// passedFiles++ // Only count if we are sure it was a targeted file?
-			// For now let's just count it if it returned a result object.
-			// But check if it was empty result (no issues, passed=true).
-			// The linter returns Issues if failed.
-			passedFiles++
-		} else {
-			failedFiles++
-			totalIssues = append(totalIssues, result.Issues...)
+		// Run Dockerfile Linter
+		fName := filepath.Base(filePath)
+		if fName == "Dockerfile" || strings.HasSuffix(fName, ".Dockerfile") || strings.HasSuffix(fName, ".dockerfile") {
+			dockerLinter := linter.NewDockerfileLinter()
+			result, err := dockerLinter.Lint(context.Background(), filePath)
+			if err != nil {
+				logger.Error().Err(err).Str("file", filePath).Msg("Failed to lint file")
+				return nil
+			}
+			processResult(result, &passedFiles, &failedFiles, &totalIssues)
+			return nil
 		}
 
 		return nil
@@ -139,6 +137,18 @@ func runLint(cmd *cobra.Command, args []string) error {
 
 	logger.Info().Msg("Linting completed successfully")
 	return nil
+}
+
+func processResult(result *linter.Result, passed *int, failed *int, issues *[]linter.Issue) {
+	if result == nil {
+		return
+	}
+	if result.Passed {
+		*passed++
+	} else {
+		*failed++
+		*issues = append(*issues, result.Issues...)
+	}
 }
 
 // Map zerolog level to string if needed, but we use string in Issue struct.

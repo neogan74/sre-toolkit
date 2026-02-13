@@ -45,6 +45,7 @@ build-all: ## Build all tools
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/k8s-doctor ./cmd/k8s-doctor
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/alert-analyzer ./cmd/alert-analyzer
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/chaos-load ./cmd/chaos-load
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/config-linter ./cmd/config-linter
 	@echo "$(GREEN)All builds complete$(NC)"
 
 install: build ## Install the binary to GOPATH/bin
