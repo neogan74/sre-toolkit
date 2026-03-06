@@ -43,3 +43,4 @@ tmp/
 # Build artifacts
 dist/
 release/
+AGENTS.md
