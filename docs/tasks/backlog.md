@@ -33,7 +33,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 - [ ] **Best Practices Audit** ⏳ **PLANNED (Phase 3)**
   - [x] Check for liveness/readiness probes
-  - [ ] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
+  - [х] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
   - [ ] NetworkPolicies check
   - [ ] RBAC permissions audit (excessive permissions)
   - [ ] Resource quotas check in namespace
