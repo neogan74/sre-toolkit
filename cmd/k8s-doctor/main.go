@@ -179,6 +179,22 @@ func newHealthCheckCmd() *cobra.Command {
 				return err
 			}
 
+			// Check Network Policies
+			logger.Info().Msg("Checking network policies...")
+			networkPolicies, err := healthcheck.CheckNetworkPolicies(ctx, client.Clientset(), namespace)
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to check network policies")
+				return err
+			}
+			logger.Info().Int("namespaces_checked", networkPolicies.TotalNamespaces).Msg("Network policies checked")
+
+			if output == "table" {
+				logger.Info().Msg("\n=== Network Policies ===")
+			}
+			if err := rep.ReportNetworkPolicies(networkPolicies); err != nil {
+				return err
+			}
+
 			logger.Info().Msg("Health check completed successfully")
 			return nil
 		},
