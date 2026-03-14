@@ -81,7 +81,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Grouping by alert name
   - [x] Label extraction (severity, namespace, service)
   - [x] Alertmanager API connection
-  - [ ] Multi-source support (multi-cluster)
+  - [x] Multi-source support (multi-cluster)
 
 - [x] **Pattern Analysis** ✅ **PARTIAL**
   - [x] Top "noisy" alerts (highest firing count)
