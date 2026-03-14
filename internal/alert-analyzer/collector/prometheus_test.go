@@ -53,7 +53,7 @@ func TestPrometheusCollector_Collect(t *testing.T) {
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		history, err := collector.Collect(context.Background(), 1*time.Hour, 1*time.Minute)
+		history, err := collector.Collect(context.Background(), "test-cluster", 1*time.Hour, 1*time.Minute)
 		assert.NoError(t, err)
 		assert.NotNil(t, history)
 		assert.Equal(t, 1, history.CountUniqueAlerts())
@@ -81,7 +81,7 @@ func TestPrometheusCollector_Collect(t *testing.T) {
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		history, err := collector.Collect(context.Background(), 1*time.Hour, 1*time.Minute)
+		history, err := collector.Collect(context.Background(), "test-cluster", 1*time.Hour, 1*time.Minute)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, history.CountAlerts())
 	})
@@ -97,7 +97,7 @@ func TestPrometheusCollector_Collect(t *testing.T) {
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		_, err = collector.Collect(context.Background(), 1*time.Hour, 1*time.Minute)
+		_, err = collector.Collect(context.Background(), "test-cluster", 1*time.Hour, 1*time.Minute)
 		assert.Error(t, err)
 	})
 }
@@ -145,7 +145,7 @@ func TestPrometheusCollector_CollectCurrentAlerts(t *testing.T) {
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		alerts, err := collector.CollectCurrentAlerts(context.Background())
+		alerts, err := collector.CollectCurrentAlerts(context.Background(), "test-cluster")
 		assert.NoError(t, err)
 		assert.Len(t, alerts, 1)
 		assert.Equal(t, "DiskFull", alerts[0].Name)

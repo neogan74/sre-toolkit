@@ -17,8 +17,9 @@ type Result struct {
 	SystemIssues   []SystemIssue
 	EventIssues    []EventIssue
 	ResourceIssues []ResourceIssue
-	ProbeIssues    []ProbeIssue
-	SecurityIssues []SecurityContextIssue
+	ProbeIssues         []ProbeIssue
+	SecurityIssues      []SecurityContextIssue
+	NetworkPolicyIssues []healthcheck.NetworkPolicyIssue
 }
 
 // Summary provides an overview of issues found
@@ -98,8 +99,9 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 		SystemIssues:   []SystemIssue{},
 		EventIssues:    []EventIssue{},
 		ResourceIssues: []ResourceIssue{},
-		ProbeIssues:    []ProbeIssue{},
-		SecurityIssues: []SecurityContextIssue{},
+		ProbeIssues:         []ProbeIssue{},
+		SecurityIssues:      []SecurityContextIssue{},
+		NetworkPolicyIssues: []healthcheck.NetworkPolicyIssue{},
 	}
 
 	// Check nodes
@@ -195,6 +197,15 @@ func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespa
 				})
 			}
 		}
+	}
+
+	// Check network policies
+	networkPolicies, err := healthcheck.CheckNetworkPolicies(ctx, clientset, namespace)
+	if err != nil {
+		// Log error but continue with other diagnostics
+		fmt.Printf("Warning: failed to check network policies: %v\n", err)
+	} else if networkPolicies != nil {
+		result.NetworkPolicyIssues = networkPolicies.Issues
 	}
 
 	// Calculate summary
@@ -387,6 +398,19 @@ func calculateSummary(result *Result) Summary {
 
 	// Count security issues
 	for _, issue := range result.SecurityIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
+	// Count network policy issues
+	for _, issue := range result.NetworkPolicyIssues {
 		summary.TotalIssues++
 		switch issue.Severity {
 		case "Critical":

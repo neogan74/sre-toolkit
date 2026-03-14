@@ -75,6 +75,18 @@ func (r *Reporter) ReportComponentHealth(components []healthcheck.ComponentStatu
 	}
 }
 
+// ReportNetworkPolicies reports network policies status
+func (r *Reporter) ReportNetworkPolicies(status *healthcheck.NetworkPoliciesStatus) error {
+	switch r.format {
+	case FormatJSON:
+		return r.reportJSON(status)
+	case FormatTable:
+		return r.reportNetworkPoliciesTable(status)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
 // ReportDiagnostics reports diagnostics results
 func (r *Reporter) ReportDiagnostics(result *diagnostics.Result) error {
 	switch r.format {
@@ -194,6 +206,43 @@ func (r *Reporter) reportComponentTable(components []healthcheck.ComponentStatus
 	}
 
 	return w.Flush()
+}
+
+// reportNetworkPoliciesTable outputs network policies as a table
+func (r *Reporter) reportNetworkPoliciesTable(status *healthcheck.NetworkPoliciesStatus) error {
+	fmt.Fprintf(r.writer, "\n=== Network Policies Summary ===\n")
+	fmt.Fprintf(r.writer, "Namespaces Checked: %d\n", status.TotalNamespaces)
+	fmt.Fprintf(r.writer, "Total Policies:     %d\n", status.TotalPolicies)
+	fmt.Fprintf(r.writer, "\n")
+
+	if len(status.Issues) > 0 {
+		fmt.Fprintf(r.writer, "=== Missing Network Policies (%d) ===\n", len(status.Issues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t--------\t-------")
+
+		for _, issue := range status.Issues {
+			severity := issue.Severity
+			switch issue.Severity {
+			case "Critical":
+				severity = "🔴 " + severity
+			case "Warning":
+				severity = "⚠️  " + severity
+			default:
+				severity = "ℹ️  " + severity
+			}
+
+			fmt.Fprintf(w, "%s\t%s\t%s\n",
+				issue.Namespace,
+				severity,
+				issue.Message,
+			)
+		}
+
+		w.Flush()
+	}
+
+	return nil
 }
 
 // reportDiagnosticsTable outputs diagnostics as a table
@@ -370,6 +419,64 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 		w.Flush()
 		fmt.Fprintln(r.writer)
 	}
+
+	// Security issues
+	if len(result.SecurityIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Security Issues (%d) ===\n", len(result.SecurityIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tPOD\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t---\t--------\t-------")
+
+		for _, issue := range result.SecurityIssues {
+			severity := issue.Severity
+			switch issue.Severity {
+			case "Critical":
+				severity = "🔴 " + severity
+			case "Warning":
+				severity = "⚠️  " + severity
+			default:
+				severity = "ℹ️  " + severity
+			}
+
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+				issue.Namespace,
+				issue.Pod,
+				severity,
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
+	// Network Policy issues
+	if len(result.NetworkPolicyIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Network Policy Issues (%d) ===\n", len(result.NetworkPolicyIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t--------\t-------")
+
+		for _, issue := range result.NetworkPolicyIssues {
+			severity := issue.Severity
+			switch issue.Severity {
+			case "Critical":
+				severity = "🔴 " + severity
+			case "Warning":
+				severity = "⚠️  " + severity
+			default:
+				severity = "ℹ️  " + severity
+			}
+
+			fmt.Fprintf(w, "%s\t%s\t%s\n",
+				issue.Namespace,
+				severity,
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
 	if result.Summary.TotalIssues == 0 {
 		fmt.Fprintf(r.writer, "✓ No issues found! Cluster is healthy.\n")
 	}

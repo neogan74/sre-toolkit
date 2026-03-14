@@ -28,7 +28,7 @@ func NewPrometheusCollector(client *prometheus.Client, logger *zerolog.Logger) *
 }
 
 // Collect fetches alert history from Prometheus for the specified time range
-func (c *PrometheusCollector) Collect(ctx context.Context, lookback, resolution time.Duration) (*AlertHistory, error) {
+func (c *PrometheusCollector) Collect(ctx context.Context, clusterName string, lookback, resolution time.Duration) (*AlertHistory, error) {
 	endTime := time.Now()
 	startTime := endTime.Add(-lookback)
 
@@ -56,7 +56,7 @@ func (c *PrometheusCollector) Collect(ctx context.Context, lookback, resolution 
 	}
 
 	// Parse the result into Alert structs
-	alerts, err := c.parseAlerts(result, startTime, endTime)
+	alerts, err := c.parseAlerts(result, clusterName, startTime, endTime)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse alerts: %w", err)
 	}
@@ -77,7 +77,7 @@ func (c *PrometheusCollector) Collect(ctx context.Context, lookback, resolution 
 }
 
 // parseAlerts converts Prometheus query result into Alert structs
-func (c *PrometheusCollector) parseAlerts(value model.Value, _ /* startTime */, _ /* endTime */ time.Time) ([]Alert, error) {
+func (c *PrometheusCollector) parseAlerts(value model.Value, clusterName string, _ /* startTime */, _ /* endTime */ time.Time) ([]Alert, error) {
 	matrix, ok := value.(model.Matrix)
 	if !ok {
 		return nil, fmt.Errorf("unexpected result type: %s", value.Type())
@@ -125,6 +125,7 @@ func (c *PrometheusCollector) parseAlerts(value model.Value, _ /* startTime */, 
 				// Create new alert instance
 				alert = &Alert{
 					Name:        alertName,
+					Cluster:     clusterName,
 					Labels:      labels,
 					Annotations: annotations,
 					State:       "firing",
@@ -185,7 +186,7 @@ func createAlertKey(name string, labels map[string]string) string {
 }
 
 // CollectCurrentAlerts fetches only currently firing alerts
-func (c *PrometheusCollector) CollectCurrentAlerts(ctx context.Context) ([]Alert, error) {
+func (c *PrometheusCollector) CollectCurrentAlerts(ctx context.Context, clusterName string) ([]Alert, error) {
 	c.logger.Info().Msg("Collecting currently firing alerts from Prometheus")
 
 	// Query for currently firing alerts
@@ -221,6 +222,7 @@ func (c *PrometheusCollector) CollectCurrentAlerts(ctx context.Context) ([]Alert
 
 		alert := Alert{
 			Name:     alertName,
+			Cluster:  clusterName,
 			Labels:   labels,
 			State:    "firing",
 			Value:    float64(sample.Value),

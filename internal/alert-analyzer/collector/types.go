@@ -5,6 +5,7 @@ import "time"
 // Alert represents a single alert instance
 type Alert struct {
 	Name        string            `json:"name"`
+	Cluster     string            `json:"cluster,omitempty"`
 	Labels      map[string]string `json:"labels"`
 	Annotations map[string]string `json:"annotations"`
 	State       string            `json:"state"` // firing, pending, inactive
@@ -24,6 +25,14 @@ type AlertHistory struct {
 
 // GetAlertName returns the alert name
 func (a *Alert) GetAlertName() string {
+	return a.Name
+}
+
+// GetGroupingKey returns a unique key for grouping (name + cluster)
+func (a *Alert) GetGroupingKey() string {
+	if a.Cluster != "" {
+		return a.Name + " [" + a.Cluster + "]"
+	}
 	return a.Name
 }
 
@@ -76,12 +85,12 @@ type AlertGroup struct {
 	Alerts []Alert
 }
 
-// GroupAlertsByName groups alerts by their alert name
+// GroupAlertsByName groups alerts by their alert name and cluster
 func GroupAlertsByName(alerts []Alert) map[string][]Alert {
 	groups := make(map[string][]Alert)
 	for _, alert := range alerts {
-		name := alert.GetAlertName()
-		groups[name] = append(groups[name], alert)
+		key := alert.GetGroupingKey()
+		groups[key] = append(groups[key], alert)
 	}
 	return groups
 }
@@ -91,11 +100,30 @@ func (h *AlertHistory) CountAlerts() int {
 	return len(h.Alerts)
 }
 
+// Merge combines another AlertHistory into this one.
+func (h *AlertHistory) Merge(other *AlertHistory) {
+	if other == nil {
+		return
+	}
+	h.Alerts = append(h.Alerts, other.Alerts...)
+	if other.StartTime.Before(h.StartTime) || h.StartTime.IsZero() {
+		h.StartTime = other.StartTime
+	}
+	if other.EndTime.After(h.EndTime) || h.EndTime.IsZero() {
+		h.EndTime = other.EndTime
+	}
+	if h.Source == "" {
+		h.Source = other.Source
+	} else if h.Source != other.Source && other.Source != "" {
+		h.Source += ", " + other.Source
+	}
+}
+
 // CountUniqueAlerts returns the number of unique alert names
 func (h *AlertHistory) CountUniqueAlerts() int {
 	unique := make(map[string]bool)
 	for _, alert := range h.Alerts {
-		unique[alert.GetAlertName()] = true
+		unique[alert.GetGroupingKey()] = true
 	}
 	return len(unique)
 }
@@ -104,7 +132,7 @@ func (h *AlertHistory) CountUniqueAlerts() int {
 func (h *AlertHistory) GetAlertNames() []string {
 	unique := make(map[string]bool)
 	for _, alert := range h.Alerts {
-		unique[alert.GetAlertName()] = true
+		unique[alert.GetGroupingKey()] = true
 	}
 
 	names := make([]string, 0, len(unique))

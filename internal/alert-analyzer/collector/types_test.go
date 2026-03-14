@@ -80,14 +80,38 @@ func TestAlertHistory_Counts(t *testing.T) {
 
 func TestGroupAlertsByName(t *testing.T) {
 	alerts := []Alert{
-		{Name: "Alert1", Labels: map[string]string{"instance": "1"}},
+		{Name: "Alert1", Cluster: "cluster1", Labels: map[string]string{"instance": "1"}},
+		{Name: "Alert1", Cluster: "cluster2", Labels: map[string]string{"instance": "1"}},
 		{Name: "Alert2", Labels: map[string]string{"instance": "1"}},
-		{Name: "Alert1", Labels: map[string]string{"instance": "2"}},
 	}
 
 	groups := GroupAlertsByName(alerts)
 
-	assert.Len(t, groups, 2)
-	assert.Len(t, groups["Alert1"], 2)
+	assert.Len(t, groups, 3)
+	assert.Len(t, groups["Alert1 [cluster1]"], 1)
+	assert.Len(t, groups["Alert1 [cluster2]"], 1)
 	assert.Len(t, groups["Alert2"], 1)
+}
+
+func TestAlertHistory_Merge(t *testing.T) {
+	history1 := &AlertHistory{
+		Alerts:    []Alert{{Name: "Alert1"}},
+		StartTime: time.Now().Add(-2 * time.Hour),
+		EndTime:   time.Now().Add(-1 * time.Hour),
+		Source:    "prometheus1",
+	}
+
+	history2 := &AlertHistory{
+		Alerts:    []Alert{{Name: "Alert2"}},
+		StartTime: time.Now().Add(-3 * time.Hour), // earlier start
+		EndTime:   time.Now(),                     // later end
+		Source:    "prometheus2",
+	}
+
+	history1.Merge(history2)
+
+	assert.Len(t, history1.Alerts, 2)
+	assert.Equal(t, history2.StartTime, history1.StartTime)
+	assert.Equal(t, history2.EndTime, history1.EndTime)
+	assert.Equal(t, "prometheus1, prometheus2", history1.Source)
 }

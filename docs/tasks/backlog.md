@@ -33,8 +33,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 - [ ] **Best Practices Audit** ⏳ **PLANNED (Phase 3)**
   - [x] Check for liveness/readiness probes
-  - [ ] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
-  - [ ] NetworkPolicies check
+  - [х] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
+  - [x] NetworkPolicies check
   - [ ] RBAC permissions audit (excessive permissions)
   - [ ] Resource quotas check in namespace
 
@@ -81,7 +81,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Grouping by alert name
   - [x] Label extraction (severity, namespace, service)
   - [x] Alertmanager API connection
-  - [ ] Multi-source support (multi-cluster)
+  - [x] Multi-source support (multi-cluster)
 
 - [x] **Pattern Analysis** ✅ **PARTIAL**
   - [x] Top "noisy" alerts (highest firing count)
