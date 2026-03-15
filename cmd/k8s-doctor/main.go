@@ -3,9 +3,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
+	"github.com/neogan/sre-toolkit/internal/k8s-doctor/audit"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/diagnostics"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/reporter"
@@ -295,6 +297,13 @@ func newDiagnosticsCmd() *cobra.Command {
 }
 
 func newAuditCmd() *cobra.Command {
+	var (
+		kubeconfig string
+		namespace  string
+		output     string
+		timeout    time.Duration
+	)
+
 	cmd := &cobra.Command{
 		Use:   "audit",
 		Short: "Run security and best practices audit",
@@ -302,11 +311,69 @@ func newAuditCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
 			logger.Info().Msg("Running audit...")
-			// TODO: Implement audit logic
-			logger.Info().Msg("Audit completed (not yet implemented)")
+
+			client, err := k8s.NewClient(&k8s.Config{
+				Kubeconfig: kubeconfig,
+			})
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to create Kubernetes client")
+				return err
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), timeout)
+			defer cancel()
+
+			if err := client.Ping(ctx); err != nil {
+				logger.Error().Err(err).Msg("Failed to connect to cluster")
+				return err
+			}
+
+			version, err := client.ServerVersion(ctx)
+			if err != nil {
+				logger.Warn().Err(err).Msg("Could not get server version")
+			}
+			logger.Info().Str("version", version).Msg("Connected to cluster")
+
+			result, err := audit.RunAudit(ctx, client.Clientset(), namespace)
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to run audit")
+				return err
+			}
+
+			format := reporter.FormatTable
+			if output == "json" {
+				format = reporter.FormatJSON
+			}
+			rep := reporter.NewReporter(format, os.Stdout)
+
+			if err := rep.ReportAudit(result); err != nil {
+				return err
+			}
+
+			logger.Info().
+				Int("total_issues", result.Summary.TotalIssues).
+				Int("critical", result.Summary.CriticalCount).
+				Int("warning", result.Summary.WarningCount).
+				Int("info", result.Summary.InfoCount).
+				Msg("Audit completed")
+
+			if result.Summary.CriticalCount > 0 || result.Summary.WarningCount > 0 {
+				return fmt.Errorf(
+					"audit found %d issues (%d critical, %d warning)",
+					result.Summary.TotalIssues,
+					result.Summary.CriticalCount,
+					result.Summary.WarningCount,
+				)
+			}
+
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to audit (empty for all)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
 }

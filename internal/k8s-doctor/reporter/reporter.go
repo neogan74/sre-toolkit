@@ -8,6 +8,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/neogan/sre-toolkit/internal/k8s-doctor/audit"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/diagnostics"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
 )
@@ -94,6 +95,18 @@ func (r *Reporter) ReportDiagnostics(result *diagnostics.Result) error {
 		return r.reportJSON(result)
 	case FormatTable:
 		return r.reportDiagnosticsTable(result)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// ReportAudit reports audit results.
+func (r *Reporter) ReportAudit(result *audit.Result) error {
+	switch r.format {
+	case FormatJSON:
+		return r.reportJSON(result)
+	case FormatTable:
+		return r.reportAuditTable(result)
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -482,4 +495,98 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 	}
 
 	return nil
+}
+
+// reportAuditTable outputs audit results as a table.
+func (r *Reporter) reportAuditTable(result *audit.Result) error {
+	fmt.Fprintf(r.writer, "\n=== Audit Summary ===\n")
+	fmt.Fprintf(r.writer, "Total Issues:   %d\n", result.Summary.TotalIssues)
+	fmt.Fprintf(r.writer, "Critical:       %d\n", result.Summary.CriticalCount)
+	fmt.Fprintf(r.writer, "Warning:        %d\n", result.Summary.WarningCount)
+	fmt.Fprintf(r.writer, "Info:           %d\n", result.Summary.InfoCount)
+	fmt.Fprintf(r.writer, "\n")
+
+	if len(result.SecurityIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Security Issues (%d) ===\n", len(result.SecurityIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tPOD\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t---\t--------\t-------")
+		for _, issue := range result.SecurityIssues {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+				issue.Namespace,
+				issue.Pod,
+				renderSeverity(issue.Severity),
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
+	if len(result.ResourceIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Resource Issues (%d) ===\n", len(result.ResourceIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tPOD\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t---\t--------\t-------")
+		for _, issue := range result.ResourceIssues {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+				issue.Namespace,
+				issue.Pod,
+				renderSeverity(issue.Severity),
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
+	if len(result.ProbeIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Probe Issues (%d) ===\n", len(result.ProbeIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tPOD\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t---\t--------\t-------")
+		for _, issue := range result.ProbeIssues {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+				issue.Namespace,
+				issue.Pod,
+				renderSeverity(issue.Severity),
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
+	if len(result.NetworkPolicyIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Network Policy Issues (%d) ===\n", len(result.NetworkPolicyIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t--------\t-------")
+		for _, issue := range result.NetworkPolicyIssues {
+			fmt.Fprintf(w, "%s\t%s\t%s\n",
+				issue.Namespace,
+				renderSeverity(issue.Severity),
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
+	if result.Summary.TotalIssues == 0 {
+		fmt.Fprintf(r.writer, "✓ No audit issues found.\n")
+	}
+
+	return nil
+}
+
+func renderSeverity(severity string) string {
+	switch severity {
+	case "Critical":
+		return "🔴 " + severity
+	case "Warning":
+		return "⚠️  " + severity
+	default:
+		return "ℹ️  " + severity
+	}
 }
