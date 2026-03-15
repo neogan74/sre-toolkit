@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
+	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -19,6 +20,7 @@ type Result struct {
 	ProbeIssues         []ProbeIssue
 	SecurityIssues      []SecurityIssue
 	RBACIssues          []RBACIssue
+	ResourceQuotaIssues []ResourceQuotaIssue
 	NetworkPolicyIssues []healthcheck.NetworkPolicyIssue
 }
 
@@ -63,6 +65,13 @@ type RBACIssue struct {
 	Message   string
 }
 
+// ResourceQuotaIssue represents a namespace-level resource quota issue.
+type ResourceQuotaIssue struct {
+	Namespace string
+	Severity  string
+	Message   string
+}
+
 // RunAudit performs a namespace-scoped or cluster-wide audit.
 func RunAudit(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
 	result := &Result{
@@ -70,6 +79,7 @@ func RunAudit(ctx context.Context, clientset kubernetes.Interface, namespace str
 		ProbeIssues:         []ProbeIssue{},
 		SecurityIssues:      []SecurityIssue{},
 		RBACIssues:          []RBACIssue{},
+		ResourceQuotaIssues: []ResourceQuotaIssue{},
 		NetworkPolicyIssues: []healthcheck.NetworkPolicyIssue{},
 	}
 
@@ -129,6 +139,12 @@ func RunAudit(ctx context.Context, clientset kubernetes.Interface, namespace str
 	}
 	result.RBACIssues = rbacIssues
 
+	resourceQuotaIssues, err := auditResourceQuotas(ctx, clientset, namespace)
+	if err != nil {
+		return nil, fmt.Errorf("failed to audit resource quotas: %w", err)
+	}
+	result.ResourceQuotaIssues = resourceQuotaIssues
+
 	result.Summary = calculateSummary(result)
 
 	return result, nil
@@ -185,6 +201,18 @@ func calculateSummary(result *Result) Summary {
 		}
 	}
 
+	for _, issue := range result.ResourceQuotaIssues {
+		summary.TotalIssues++
+		switch issue.Severity {
+		case "Critical":
+			summary.CriticalCount++
+		case "Warning":
+			summary.WarningCount++
+		case "Info":
+			summary.InfoCount++
+		}
+	}
+
 	for _, issue := range result.NetworkPolicyIssues {
 		summary.TotalIssues++
 		switch issue.Severity {
@@ -198,6 +226,31 @@ func calculateSummary(result *Result) Summary {
 	}
 
 	return summary
+}
+
+func auditResourceQuotas(ctx context.Context, clientset kubernetes.Interface, namespace string) ([]ResourceQuotaIssue, error) {
+	namespaces, err := namespacesToAudit(ctx, clientset, namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	issues := make([]ResourceQuotaIssue, 0, len(namespaces))
+	for _, ns := range namespaces {
+		quotas, err := clientset.CoreV1().ResourceQuotas(ns).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list resource quotas in namespace %s: %w", ns, err)
+		}
+
+		if len(quotas.Items) == 0 {
+			issues = append(issues, ResourceQuotaIssue{
+				Namespace: ns,
+				Severity:  "Warning",
+				Message:   fmt.Sprintf("Namespace %s has no ResourceQuota defined", ns),
+			})
+		}
+	}
+
+	return issues, nil
 }
 
 func auditRBAC(ctx context.Context, clientset kubernetes.Interface, namespace string) ([]RBACIssue, error) {
@@ -405,6 +458,37 @@ func relevantSubjects(subjects []rbacv1.Subject, namespace string) []string {
 		relevant = append(relevant, formatSubject(subject))
 	}
 	return relevant
+}
+
+func namespacesToAudit(ctx context.Context, clientset kubernetes.Interface, namespace string) ([]string, error) {
+	if namespace != "" {
+		return []string{namespace}, nil
+	}
+
+	nsList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list namespaces: %w", err)
+	}
+
+	namespaces := make([]string, 0, len(nsList.Items))
+	for _, ns := range nsList.Items {
+		if isSystemNamespace(ns) {
+			continue
+		}
+		namespaces = append(namespaces, ns.Name)
+	}
+
+	return namespaces, nil
+}
+
+func isSystemNamespace(namespace corev1.Namespace) bool {
+	name := namespace.Name
+	switch name {
+	case "kube-system", "kube-public", "kube-node-lease", "local-path-storage", "cert-manager", "ingress-nginx":
+		return true
+	default:
+		return strings.HasPrefix(name, "kube-")
+	}
 }
 
 func formatSubject(subject rbacv1.Subject) string {

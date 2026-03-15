@@ -22,6 +22,7 @@ func TestRunAudit(t *testing.T) {
 		wantProbes          int
 		wantSecurity        int
 		wantRBAC            int
+		wantResourceQuotas  int
 		wantNetworkPolicies int
 		wantCritical        int
 		wantWarning         int
@@ -31,11 +32,13 @@ func TestRunAudit(t *testing.T) {
 			objects: []runtime.Object{
 				makeNamespace("default"),
 				makeHealthyPod("app", "default"),
+				makeResourceQuota("default", "compute-quota"),
 			},
 			wantResources:       0,
 			wantProbes:          0,
 			wantSecurity:        0,
 			wantRBAC:            0,
+			wantResourceQuotas:  0,
 			wantNetworkPolicies: 1,
 			wantCritical:        0,
 			wantWarning:         1,
@@ -48,11 +51,13 @@ func TestRunAudit(t *testing.T) {
 				makeNamespace("other"),
 				makeBrokenPod("app", "default"),
 				makeBrokenPod("app", "other"),
+				makeResourceQuota("default", "compute-quota"),
 			},
 			wantResources:       4,
 			wantProbes:          2,
 			wantSecurity:        2,
 			wantRBAC:            0,
+			wantResourceQuotas:  0,
 			wantNetworkPolicies: 1,
 			wantCritical:        2,
 			wantWarning:         7,
@@ -63,11 +68,13 @@ func TestRunAudit(t *testing.T) {
 				makeNamespace("secure"),
 				makeHealthyPod("app", "secure"),
 				makeNetworkPolicy("default-deny", "secure"),
+				makeResourceQuota("secure", "compute-quota"),
 			},
 			wantResources:       0,
 			wantProbes:          0,
 			wantSecurity:        0,
 			wantRBAC:            0,
+			wantResourceQuotas:  0,
 			wantNetworkPolicies: 0,
 			wantCritical:        0,
 			wantWarning:         0,
@@ -94,6 +101,9 @@ func TestRunAudit(t *testing.T) {
 			}
 			if len(got.RBACIssues) != tt.wantRBAC {
 				t.Fatalf("RunAudit() RBAC issues = %d, want %d", len(got.RBACIssues), tt.wantRBAC)
+			}
+			if len(got.ResourceQuotaIssues) != tt.wantResourceQuotas {
+				t.Fatalf("RunAudit() resource quota issues = %d, want %d", len(got.ResourceQuotaIssues), tt.wantResourceQuotas)
 			}
 			if len(got.NetworkPolicyIssues) != tt.wantNetworkPolicies {
 				t.Fatalf("RunAudit() network policy issues = %d, want %d", len(got.NetworkPolicyIssues), tt.wantNetworkPolicies)
@@ -138,6 +148,7 @@ func TestRunAuditRBAC(t *testing.T) {
 			namespace: "default",
 			objects: []runtime.Object{
 				makeNetworkPolicy("default-deny", "default"),
+				makeResourceQuota("default", "compute-quota"),
 				makeRole("default", "secret-reader", []rbacv1.PolicyRule{
 					{Resources: []string{"secrets"}, Verbs: []string{"get", "list"}},
 				}),
@@ -164,6 +175,7 @@ func TestRunAuditRBAC(t *testing.T) {
 			namespace: "team-a",
 			objects: []runtime.Object{
 				makeNetworkPolicy("default-deny", "team-a"),
+				makeResourceQuota("team-a", "compute-quota"),
 				makeClusterRoleBinding("team-a-admin", "cluster-admin", rbacv1.Subject{
 					Kind:      "ServiceAccount",
 					Name:      "runner",
@@ -203,6 +215,67 @@ func TestRunAuditRBAC(t *testing.T) {
 	}
 }
 
+func TestRunAuditResourceQuotas(t *testing.T) {
+	tests := []struct {
+		name               string
+		namespace          string
+		objects            []runtime.Object
+		wantResourceQuotas int
+		wantWarning        int
+	}{
+		{
+			name: "missing quota in target namespace produces warning",
+			objects: []runtime.Object{
+				makeNamespace("default"),
+				makeNetworkPolicy("default-deny", "default"),
+			},
+			wantResourceQuotas: 1,
+			wantWarning:        1,
+		},
+		{
+			name:      "namespace filter ignores quotas outside scope",
+			namespace: "team-a",
+			objects: []runtime.Object{
+				makeNamespace("team-a"),
+				makeNamespace("team-b"),
+				makeNetworkPolicy("default-deny", "team-a"),
+				makeResourceQuota("team-b", "compute-quota"),
+			},
+			wantResourceQuotas: 1,
+			wantWarning:        1,
+		},
+		{
+			name: "system namespaces are skipped in cluster wide audit",
+			objects: []runtime.Object{
+				makeNamespace("default"),
+				makeNamespace("kube-system"),
+				makeNetworkPolicy("default-deny", "default"),
+				makeResourceQuota("default", "compute-quota"),
+			},
+			wantResourceQuotas: 0,
+			wantWarning:        0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clientset := fake.NewSimpleClientset(tt.objects...)
+
+			got, err := RunAudit(context.Background(), clientset, tt.namespace)
+			if err != nil {
+				t.Fatalf("RunAudit() error = %v", err)
+			}
+
+			if len(got.ResourceQuotaIssues) != tt.wantResourceQuotas {
+				t.Fatalf("RunAudit() resource quota issues = %d, want %d", len(got.ResourceQuotaIssues), tt.wantResourceQuotas)
+			}
+			if got.Summary.WarningCount != tt.wantWarning {
+				t.Fatalf("RunAudit() warning count = %d, want %d", got.Summary.WarningCount, tt.wantWarning)
+			}
+		})
+	}
+}
+
 func makeNamespace(name string) *corev1.Namespace {
 	return &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
@@ -211,6 +284,15 @@ func makeNamespace(name string) *corev1.Namespace {
 
 func makeNetworkPolicy(name, namespace string) runtime.Object {
 	return &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+}
+
+func makeResourceQuota(namespace, name string) runtime.Object {
+	return &corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,

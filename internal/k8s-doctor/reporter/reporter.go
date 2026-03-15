@@ -583,6 +583,22 @@ func (r *Reporter) reportAuditTable(result *audit.Result) error {
 		fmt.Fprintln(r.writer)
 	}
 
+	if len(result.ResourceQuotaIssues) > 0 {
+		fmt.Fprintf(r.writer, "=== Resource Quota Issues (%d) ===\n", len(result.ResourceQuotaIssues))
+		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "NAMESPACE\tSEVERITY\tMESSAGE")
+		fmt.Fprintln(w, "---------\t--------\t-------")
+		for _, issue := range result.ResourceQuotaIssues {
+			fmt.Fprintf(w, "%s\t%s\t%s\n",
+				issue.Namespace,
+				renderSeverity(issue.Severity),
+				issue.Message,
+			)
+		}
+		w.Flush()
+		fmt.Fprintln(r.writer)
+	}
+
 	if len(result.NetworkPolicyIssues) > 0 {
 		fmt.Fprintf(r.writer, "=== Network Policy Issues (%d) ===\n", len(result.NetworkPolicyIssues))
 		w := tabwriter.NewWriter(r.writer, 0, 0, 2, ' ', 0)
