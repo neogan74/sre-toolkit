@@ -102,7 +102,7 @@ func TestRunDiagnostics(t *testing.T) {
 			wantPodIssues:    1, // Only default namespace
 			wantSystemIssues: 0,
 			wantCritical:     1,
-			wantWarning:      0,
+			wantWarning:      1, // No NetworkPolicies in default namespace
 			wantErr:          false,
 		},
 	}
