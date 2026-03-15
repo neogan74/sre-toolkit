@@ -56,10 +56,19 @@ func runLint(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
-
-
 		ext := filepath.Ext(filePath)
 		logger.Debug().Str("file", filePath).Msg("Linting file")
+		// Check if it's a Chart metadata file
+		if filepath.Base(filePath) == "Chart.yaml" {
+			helmLinter := linter.NewHelmLinter()
+			result, err := helmLinter.Lint(context.Background(), filePath)
+			if err != nil {
+				logger.Error().Err(err).Str("file", filePath).Msg("Failed to lint Helm chart")
+				return nil
+			}
+			processResult(result, &passedFiles, &failedFiles, &totalIssues)
+			return nil
+		}
 
 		// Run Kubernetes Linter
 		if ext == ".yaml" || ext == ".yml" {
