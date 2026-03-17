@@ -168,6 +168,54 @@ func TestReportFlapping(t *testing.T) {
 	})
 }
 
+func TestReportCorrelation(t *testing.T) {
+	results := []analyzer.CorrelationResult{
+		{
+			AlertA:            "AlertA",
+			AlertB:            "AlertB",
+			CoOccurrenceCount: 3,
+			CorrelationScore:  0.75,
+			AvgOverlap:        5 * time.Minute,
+			TotalOverlap:      15 * time.Minute,
+		},
+	}
+
+	t.Run("Table Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportCorrelation(results)
+		assert.NoError(t, err)
+
+		output := buf.String()
+		assert.Contains(t, output, "=== Alert Correlation Analysis ===")
+		assert.Contains(t, output, "AlertA")
+		assert.Contains(t, output, "AlertB")
+		assert.Contains(t, output, "0.75")
+	})
+
+	t.Run("JSON Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatJSON, &buf)
+		err := r.ReportCorrelation(results)
+		assert.NoError(t, err)
+
+		var output map[string][]analyzer.CorrelationResult
+		err = json.Unmarshal(buf.Bytes(), &output)
+		require.NoError(t, err)
+
+		assert.Len(t, output["correlation_analysis"], 1)
+		assert.Equal(t, "AlertA", output["correlation_analysis"][0].AlertA)
+	})
+
+	t.Run("Empty Results", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportCorrelation([]analyzer.CorrelationResult{})
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "No correlated alert pairs detected")
+	})
+}
+
 func TestReportCompleteWithFlapping(t *testing.T) {
 	stats := analyzer.SummaryStats{TotalAlerts: 10}
 	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
@@ -206,6 +254,42 @@ func TestReportCompleteWithFlapping(t *testing.T) {
 		err := r.ReportCompleteWithFlapping(stats, freq, flap)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "unsupported format")
+	})
+}
+
+func TestReportCompleteWithInsights(t *testing.T) {
+	stats := analyzer.SummaryStats{TotalAlerts: 10}
+	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
+	flap := []analyzer.FlappingResult{{AlertName: "A1", IsFlapping: true}}
+	corr := []analyzer.CorrelationResult{{AlertA: "A1", AlertB: "A2", CorrelationScore: 0.8}}
+
+	t.Run("Table Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr)
+		assert.NoError(t, err)
+
+		output := buf.String()
+		assert.Contains(t, output, "=== Alert Analysis Summary ===")
+		assert.Contains(t, output, "=== Alert Frequency Analysis ===")
+		assert.Contains(t, output, "=== Flapping Alerts Analysis ===")
+		assert.Contains(t, output, "=== Alert Correlation Analysis ===")
+	})
+
+	t.Run("JSON Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatJSON, &buf)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr)
+		assert.NoError(t, err)
+
+		var output map[string]interface{}
+		err = json.Unmarshal(buf.Bytes(), &output)
+		require.NoError(t, err)
+
+		assert.Contains(t, output, "summary")
+		assert.Contains(t, output, "frequency_analysis")
+		assert.Contains(t, output, "flapping_analysis")
+		assert.Contains(t, output, "correlation_analysis")
 	})
 }
 
