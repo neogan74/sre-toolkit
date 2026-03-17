@@ -17,15 +17,15 @@
 
 ```bash
 cd sre-toolkit
-make build
+make build-all
 # Binary will be in bin/alert-analyzer
 ```
 
 ### Install to PATH
 
 ```bash
-make install
-# Installs to $GOPATH/bin
+go install ./cmd/alert-analyzer
+# Or: go install github.com/neogan/sre-toolkit/cmd/alert-analyzer@latest
 ```
 
 ## Basic Usage
@@ -54,6 +54,9 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20
 
 # Output as JSON for automation
 alert-analyzer analyze --prometheus-url http://prom:9090 --output json
+
+# Include alert correlation analysis
+alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
 ```
 
 ### Command Flags
@@ -69,6 +72,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 | `--timeout` | Request timeout | `30s` |
 | `--insecure` | Skip TLS verification | `false` |
 | `--show-flapping` | Include flapping alerts analysis | `false` |
+| `--show-correlation` | Include alert correlation analysis | `false` |
 | `--flapping-threshold` | Flapping threshold (transitions/hour) | `3.0` |
 
 ## What Does Alert Analyzer Do?
@@ -109,6 +113,24 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --
 - **Flapping Score**: Transitions per hour (normalized)
 - **Avg State Duration**: Average time spent in each state
 - **Is Flapping**: Whether alert exceeds threshold
+
+### 5. Alert Correlation
+
+Correlation analysis shows which alerts fire in overlapping time windows. This is useful when you want to identify shared failure domains, cascading symptoms, or alert pairs that should be reviewed together.
+
+```bash
+# Include correlation analysis in output
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
+
+# Combine flapping and correlation insights
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --show-correlation
+```
+
+**Correlation Metrics:**
+- **Co-Occurrence Count**: Number of overlapping firing intervals between two alerts
+- **Coverage A / Coverage B**: Fraction of each alert's firings that overlapped the paired alert
+- **Correlation Score**: Average overlap coverage across both alerts
+- **Avg Overlap / Total Overlap**: How long the alerts tend to be active together
 
 ## Example Output
 
@@ -600,18 +622,18 @@ After analyzing your alerts:
 
 4. **Advanced Analysis**
    - ✅ Flapping detection (now available with `--show-flapping`)
-   - Alert correlation (coming soon)
+   - ✅ Alert correlation analysis (now available with `--show-correlation`)
    - Temporal patterns (coming soon)
    - Recommendations engine (coming soon)
 
 ## Version Information
 
 Current version: 0.1.0
-Features: Frequency analysis, basic reporting, flapping detection
+Features: Frequency analysis, basic reporting, flapping detection, alert correlation
 
 See project roadmap for upcoming features:
 - ✅ Flapping alert detection (available)
-- Alert correlation analysis
+- ✅ Alert correlation analysis (available)
 - Temporal pattern recognition
 - Automated recommendations
 - Grafana dashboard integration
