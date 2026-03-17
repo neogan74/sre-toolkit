@@ -60,7 +60,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `internal/k8s-doctor/diagnostics/diagnostics_test.go` ✅ **NEW**
 
 **Next Steps:**
-- [ ] Integration tests with kind (Phase 2.5)
+- [x] Integration tests with kind (Phase 2.5) ✅ **COMPLETE**
 - [ ] Implement audit command
 - [ ] Add event analysis
 - [ ] Resource limits checking
