@@ -1,10 +1,11 @@
-package e2e
+package integration
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -124,18 +125,52 @@ func TestHealthCheck(t *testing.T) {
 	// Add assertions here based on expected output for a healthy kind cluster
 }
 
-func TestDiagnostics(t *testing.T) {
+func TestDiagnosticsWithFailure(t *testing.T) {
+	// Create a failing pod
+	t.Log("Creating a failing pod...")
+	cmd := exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "run", "failing-pod", "--image=busybox", "--", "sh", "-c", "exit 1")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Failed to create failing pod: %v\nOutput: %s", err, output)
+	}
+
+	// Defer cleanup
+	defer func() {
+		_ = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "delete", "pod", "failing-pod", "--force", "--grace-period=0").Run()
+	}()
+
+	// Wait for pod to enter Error/CrashLoopBackOff or just wait a few seconds
+	t.Log("Waiting for pod to manifest error...")
+	time.Sleep(10 * time.Second)
+
 	rootDir, err := filepath.Abs("../../")
 	if err != nil {
 		t.Fatalf("Failed to get root dir: %v", err)
 	}
 
-	cmd := exec.Command("go", "run", "./cmd/k8s-doctor", "diagnostics", "--kubeconfig", kubeconfigPath)
+	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "diagnostics", "--kubeconfig", kubeconfigPath)
 	cmd.Dir = rootDir
-	output, err := cmd.CombinedOutput()
+	output, err = cmd.CombinedOutput()
+	// We expect err != nil if there are critical issues, as k8s-doctor exits with 1.
+	// We only fail the test if there was a problem running the command itself.
 	if err != nil {
-		t.Fatalf("Diagnostics command failed: %v\nOutput: %s", err, output)
+		if _, ok := err.(*exec.ExitError); !ok {
+			t.Fatalf("Diagnostics command failed to execute: %v\nOutput: %s", err, output)
+		}
 	}
 
-	fmt.Printf("Diagnostics output:\n%s\n", output)
+	t.Logf("Diagnostics output:\n%s\n", output)
+	
+	// Assertions
+	outputStr := string(output)
+	if !contains(outputStr, "failing-pod") {
+		t.Error("Expected failing-pod to be mentioned in diagnostics report")
+	}
+	if !contains(outputStr, "🔴") && !contains(outputStr, "⚠️") {
+		t.Error("Expected error/warning emoji in output")
+	}
+}
+
+func contains(s, substr string) bool {
+	return strings.Contains(s, substr)
 }
