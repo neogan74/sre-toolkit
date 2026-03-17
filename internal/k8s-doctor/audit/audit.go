@@ -590,15 +590,21 @@ func evaluateSecretAccess(rule rbacv1.PolicyRule) (string, bool) {
 }
 
 func hasDangerousVerbs(rule rbacv1.PolicyRule) bool {
-	dangerous := []string{"exec", "attach", "proxy"}
-	for _, v := range dangerous {
-		if contains(rule.Verbs, v) || hasWildcard(rule.Verbs) {
+	dangerous := []string{"pods/exec", "pods/attach", "pods/portforward"}
+	for _, r := range rule.Resources {
+		if r == "*" {
 			return true
+		}
+		for _, d := range dangerous {
+			if r == d {
+				if hasWildcard(rule.Verbs) || contains(rule.Verbs, "create") || contains(rule.Verbs, "get") {
+					return true
+				}
+			}
 		}
 	}
 	return false
 }
-
 func hasHostAccess(rule rbacv1.PolicyRule) bool {
 	hostResources := []string{"nodes/proxy", "nodes/stats", "nodes/log"}
 	for _, r := range rule.Resources {
