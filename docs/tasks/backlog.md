@@ -35,8 +35,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Check for liveness/readiness probes
   - [х] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
   - [x] NetworkPolicies check
-  - [ ] RBAC permissions audit (excessive permissions)
-  - [ ] Resource quotas check in namespace
+- [x] RBAC permissions audit (excessive permissions)
+  - [x] Resource quotas check in namespace
 
 - [x] **Reports and Export** ✅ **PARTIAL**
   - [x] JSON/Table output formats (tabwriter with alignment)
@@ -61,7 +61,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 **Next Steps:**
 - [x] Integration tests with kind (Phase 2.5) ✅ **COMPLETE**
-- [ ] Implement audit command
+- [x] Implement audit command ✅ **COMPLETE**
 - [ ] Add event analysis
 - [ ] Resource limits checking
 - [ ] Benchmark tests for performance
@@ -448,7 +448,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 5. [ ] k8s-doctor integration tests (kind)
 6. [ ] alert-analyzer unit tests
 7. [ ] chaos-load unit tests
-8. [ ] k8s-doctor audit command
+8. [x] k8s-doctor audit command ✅ **COMPLETE**
 
 **Status:** 65% COMPLETE
 **Current Focus:** Testing & Production Readiness
