@@ -171,6 +171,105 @@ func TestDiagnosticsWithFailure(t *testing.T) {
 	}
 }
 
+func TestAudit(t *testing.T) {
+	rootDir, err := filepath.Abs("../../")
+	if err != nil {
+		t.Fatalf("Failed to get root dir: %v", err)
+	}
+
+	// Case 1: Healthy cluster audit
+	cmd := exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "--kubeconfig", kubeconfigPath)
+	cmd.Dir = rootDir
+	output, err := cmd.CombinedOutput()
+	// Audit might return 1 if there are warnings (like missing network policies in default)
+	if err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			t.Fatalf("Audit command failed to execute: %v\nOutput: %s", err, output)
+		}
+	}
+
+	t.Logf("Initial audit output:\n%s\n", output)
+
+	// Case 2: Create a dangerously over-privileged role
+	t.Log("Creating over-privileged cluster role...")
+	manifest := `
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dangerous-role
+rules:
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dangerous-binding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: dangerous-role
+  apiGroup: rbac.authorization.k8s.io
+`
+	tmpfile, err := os.CreateTemp("", "manifest-*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpfile.Name())
+	if _, err := tmpfile.Write([]byte(manifest)); err != nil {
+		t.Fatal(err)
+	}
+	tmpfile.Close()
+
+	applyCmd := exec.Command("kubectl", "apply", "-f", tmpfile.Name(), "--kubeconfig", kubeconfigPath)
+	if out, err := applyCmd.CombinedOutput(); err != nil {
+		t.Fatalf("Failed to apply dangerous role: %v\nOutput: %s", err, out)
+	}
+
+	// Wait a bit for it to settle
+	time.Sleep(2 * time.Second)
+
+	// Run audit again
+	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "--kubeconfig", kubeconfigPath)
+	cmd.Dir = rootDir
+	output, err = cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("Expected audit to fail with critical issues, but it succeeded")
+	}
+
+	t.Logf("Audit with dangerous role output:\n%s\n", output)
+
+	// Verify the output contains the expected critical issues
+	if !strings.Contains(string(output), "dangerous-role") {
+		t.Errorf("Expected output to contain 'dangerous-role', but got:\n%s", output)
+	}
+	if !strings.Contains(string(output), "dangerous execution verbs") {
+		t.Errorf("Expected output to contain 'dangerous execution verbs', but got:\n%s", output)
+	}
+
+	// Case 3: Missing resource quota in a new namespace
+	t.Log("Checking missing resource quota...")
+	nsCmd := exec.Command("kubectl", "create", "namespace", "empty-ns", "--kubeconfig", kubeconfigPath)
+	if out, err := nsCmd.CombinedOutput(); err != nil {
+		t.Fatalf("Failed to create namespace: %v\nOutput: %s", err, out)
+	}
+
+	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
+	cmd.Dir = rootDir
+	output, err = cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("Expected audit to fail in empty-ns due to missing quota, but it succeeded. Output:\n%s", output)
+	}
+
+	if !strings.Contains(string(output), "ResourceQuota defined") {
+		t.Errorf("Expected output to contain 'ResourceQuota defined', but got:\n%s", output)
+	}
+}
+
 func contains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }

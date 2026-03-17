@@ -376,6 +376,33 @@ func analyzePolicyRules(kind, namespace, name string, rules []rbacv1.PolicyRule)
 				Message:   "RBAC rule allows impersonation",
 			})
 		}
+
+		if hasDangerousVerbs(rule) {
+			issues = append(issues, RBACIssue{
+				Namespace: namespace,
+				Resource:  resourceRef,
+				Severity:  "Critical",
+				Message:   "RBAC rule grants dangerous execution verbs (exec, attach, proxy)",
+			})
+		}
+
+		if hasHostAccess(rule) {
+			issues = append(issues, RBACIssue{
+				Namespace: namespace,
+				Resource:  resourceRef,
+				Severity:  "Critical",
+				Message:   "RBAC rule grants host-level access (nodes/proxy, nodes/stats)",
+			})
+		}
+
+		if hasPVDestruction(rule) {
+			issues = append(issues, RBACIssue{
+				Namespace: namespace,
+				Resource:  resourceRef,
+				Severity:  "Warning",
+				Message:   "RBAC rule allows persistent volume destruction (delete/patch)",
+			})
+		}
 	}
 
 	return issues
@@ -550,4 +577,58 @@ func evaluateSecretAccess(rule rbacv1.PolicyRule) (string, bool) {
 		return "Warning", true
 	}
 	return "", false
+}
+
+func hasDangerousVerbs(rule rbacv1.PolicyRule) bool {
+	dangerous := []string{"exec", "attach", "proxy"}
+	for _, v := range dangerous {
+		if contains(rule.Verbs, v) || hasWildcard(rule.Verbs) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasHostAccess(rule rbacv1.PolicyRule) bool {
+	hostResources := []string{"nodes/proxy", "nodes/stats", "nodes/log"}
+	for _, r := range rule.Resources {
+		if r == "*" {
+			return true
+		}
+		for _, h := range hostResources {
+			if r == h {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasPVDestruction(rule rbacv1.PolicyRule) bool {
+	pvResources := []string{"persistentvolumes", "persistentvolumeclaims"}
+	destructiveVerbs := []string{"delete", "patch", "deletecollection"}
+	
+	hasDestructiveVerb := false
+	for _, v := range destructiveVerbs {
+		if contains(rule.Verbs, v) || hasWildcard(rule.Verbs) {
+			hasDestructiveVerb = true
+			break
+		}
+	}
+	
+	if !hasDestructiveVerb {
+		return false
+	}
+
+	for _, r := range rule.Resources {
+		if r == "*" {
+			return true
+		}
+		for _, pv := range pvResources {
+			if r == pv {
+				return true
+			}
+		}
+	}
+	return false
 }

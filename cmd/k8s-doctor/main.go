@@ -83,8 +83,7 @@ for improving your cluster's reliability and security.`
 	if err := rootCmd.Execute(); err != nil {
 		l := logging.GetLogger()
 		l.Error().Err(err).Msg("Command execution failed")
-		// Don't use os.Exit here to allow deferred cleanup
-		return
+		os.Exit(1)
 	}
 }
 
