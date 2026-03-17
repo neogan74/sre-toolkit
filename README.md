@@ -42,6 +42,8 @@ k8s-doctor diagnostics
 k8s-doctor audit
 ```
 
+Landing pages hub: [docs/landing/index.html](docs/landing/index.html)
+
 ### 📊 alert-analyzer - Prometheus Alert Optimizer (✅ Available)
 
 Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
@@ -285,5 +287,3 @@ Created by [@neogan](https://github.com/neogan)
 ---
 
 **Note**: This project is under active development. Some tools are not yet implemented (marked with 🚧).
-
-

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chaos-load | Load and Resilience Experiments</title>
+  <meta
+    name="description"
+    content="chaos-load is a practical CLI for HTTP load generation and early-stage chaos experiments."
+  >
+  <link rel="stylesheet" href="./assets/site.css">
+</head>
+<body style="--accent:#b34c42; --accent-2:#186f7c; --bg-top:#f5ece8; --bg-bottom:#e2d7d0;">
+  <div class="grain"></div>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">CL</span>
+          <span>chaos-load</span>
+        </a>
+        <nav class="nav-links">
+          <a href="./index.html">Toolkit</a>
+          <a href="../chaos-load-tutorial.md">Tutorial</a>
+          <a href="./k8s-doctor.html">k8s-doctor</a>
+          <a class="nav-cta" href="../../README.md">Repository</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div class="panel hero-copy reveal is-visible">
+            <div class="eyebrow">Load Testing • Resilience • Tail Latency</div>
+            <h1>Push systems on purpose before production does it for you.</h1>
+            <p class="lead">
+              <strong>chaos-load</strong> is the toolkit’s practical stress utility: lightweight HTTP load generation,
+              latency-focused reporting, and a clean base for future chaos scenarios.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="../chaos-load-tutorial.md">Read Tutorial</a>
+              <a class="button button-secondary" href="./index.html">Back to Toolkit</a>
+            </div>
+          </div>
+
+          <aside class="panel reveal is-visible">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>load run</span>
+              </div>
+              <pre>$ chaos-load http --url https://api.example.com/health --duration 45s --concurrency 30
+
+=== Load Test Results ===
+Total Requests: 7641
+Total Duration: 45.01s
+Requests/sec:   169.76
+Errors:         2
+
+Latency:
+  p50: 41.8ms
+  p95: 96.2ms
+  p99: 144.7ms
+  Max: 201.5ms
+
+Status Codes:
+  [200]: 7639
+  [502]: 2</pre>
+            </div>
+          </aside>
+        </div>
+
+        <div class="wrap metric-strip reveal">
+          <div class="metric">
+            <strong>HTTP-first</strong>
+            <span>Start with a URL and concurrency, not a heavyweight test suite.</span>
+          </div>
+          <div class="metric">
+            <strong>Latency centric</strong>
+            <span>p50, p95, p99, and max are front and center in the output.</span>
+          </div>
+          <div class="metric">
+            <strong>Request caps</strong>
+            <span>Run bounded workloads or sustained duration-based stress tests.</span>
+          </div>
+          <div class="metric">
+            <strong>Chaos path</strong>
+            <span>Structured to grow into pod, node, and fault-oriented experiments.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Fit</div>
+              <h2>Use it when full load rigs are too much friction.</h2>
+              <p class="section-copy">
+                `chaos-load` is useful when you need a fast confidence check: can the endpoint take more traffic,
+                where does latency bend, and how noisy do failures become under pressure?
+              </p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <article class="card">
+              <h3>Smoke load</h3>
+              <p>Quick pre-release checks for throughput and error rate without setting up JMeter-sized machinery.</p>
+              <span class="label">Fast feedback</span>
+            </article>
+            <article class="card">
+              <h3>Tail latency checks</h3>
+              <p>Focus on p95 and p99 to see where user experience starts to degrade under pressure.</p>
+              <span class="label">Performance reality</span>
+            </article>
+            <article class="card">
+              <h3>Chaos runway</h3>
+              <p>Acts as the base layer for more deliberate failure injection and resilience testing later.</p>
+              <span class="label">Evolution path</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Command Pack</div>
+              <h2>Three useful starting points.</h2>
+            </div>
+          </div>
+          <div class="split-grid">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>smoke</span>
+              </div>
+              <pre>chaos-load http --url https://example.com --duration 30s --concurrency 10</pre>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>stress</span>
+              </div>
+              <pre>chaos-load http --url https://api.example.com --duration 2m --concurrency 100</pre>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>fixed workload</span>
+              </div>
+              <pre>chaos-load http --url https://api.example.com --requests 10000 --concurrency 50 --duration 10m</pre>
+            </div>
+            <article class="card">
+              <h3>Natural pairing</h3>
+              <p>Run `chaos-load` to apply pressure, then use `k8s-doctor` to inspect how the cluster and workloads react.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="install-grid reveal">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">Install</div>
+                <h2>Build and run in minutes.</h2>
+              </div>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>setup</span>
+              </div>
+              <pre>git clone https://github.com/neogan/sre-toolkit.git
+cd sre-toolkit
+make chaos-load
+
+./bin/chaos-load http --url https://example.com --duration 30s --concurrency 10</pre>
+            </div>
+          </div>
+          <aside class="cta-card">
+            <div>
+              <div class="eyebrow">Next Step</div>
+              <h2>Need more examples?</h2>
+              <p>The tutorial covers parameters, result interpretation, and best practices for safe load testing.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="button button-primary" href="../chaos-load-tutorial.md">Open Tutorial</a>
+              <a class="button button-secondary" href="./index.html">Toolkit Hub</a>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        Product page for <strong>chaos-load</strong>.
+        <div class="footer-links">
+          <a href="./index.html">Toolkit Hub</a>
+          <a href="../chaos-load-tutorial.md">Tutorial</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script src="./assets/site.js"></script>
+</body>
+</html>

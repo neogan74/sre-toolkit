@@ -6,6 +6,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -20,6 +21,8 @@ func TestRunAudit(t *testing.T) {
 		wantResources       int
 		wantProbes          int
 		wantSecurity        int
+		wantRBAC            int
+		wantResourceQuotas  int
 		wantNetworkPolicies int
 		wantCritical        int
 		wantWarning         int
@@ -29,10 +32,13 @@ func TestRunAudit(t *testing.T) {
 			objects: []runtime.Object{
 				makeNamespace("default"),
 				makeHealthyPod("app", "default"),
+				makeResourceQuota("default", "compute-quota"),
 			},
 			wantResources:       0,
 			wantProbes:          0,
 			wantSecurity:        0,
+			wantRBAC:            0,
+			wantResourceQuotas:  0,
 			wantNetworkPolicies: 1,
 			wantCritical:        0,
 			wantWarning:         1,
@@ -45,10 +51,13 @@ func TestRunAudit(t *testing.T) {
 				makeNamespace("other"),
 				makeBrokenPod("app", "default"),
 				makeBrokenPod("app", "other"),
+				makeResourceQuota("default", "compute-quota"),
 			},
 			wantResources:       4,
 			wantProbes:          2,
 			wantSecurity:        2,
+			wantRBAC:            0,
+			wantResourceQuotas:  0,
 			wantNetworkPolicies: 1,
 			wantCritical:        2,
 			wantWarning:         7,
@@ -59,10 +68,13 @@ func TestRunAudit(t *testing.T) {
 				makeNamespace("secure"),
 				makeHealthyPod("app", "secure"),
 				makeNetworkPolicy("default-deny", "secure"),
+				makeResourceQuota("secure", "compute-quota"),
 			},
 			wantResources:       0,
 			wantProbes:          0,
 			wantSecurity:        0,
+			wantRBAC:            0,
+			wantResourceQuotas:  0,
 			wantNetworkPolicies: 0,
 			wantCritical:        0,
 			wantWarning:         0,
@@ -87,11 +99,175 @@ func TestRunAudit(t *testing.T) {
 			if len(got.SecurityIssues) != tt.wantSecurity {
 				t.Fatalf("RunAudit() security issues = %d, want %d", len(got.SecurityIssues), tt.wantSecurity)
 			}
+			if len(got.RBACIssues) != tt.wantRBAC {
+				t.Fatalf("RunAudit() RBAC issues = %d, want %d", len(got.RBACIssues), tt.wantRBAC)
+			}
+			if len(got.ResourceQuotaIssues) != tt.wantResourceQuotas {
+				t.Fatalf("RunAudit() resource quota issues = %d, want %d", len(got.ResourceQuotaIssues), tt.wantResourceQuotas)
+			}
 			if len(got.NetworkPolicyIssues) != tt.wantNetworkPolicies {
 				t.Fatalf("RunAudit() network policy issues = %d, want %d", len(got.NetworkPolicyIssues), tt.wantNetworkPolicies)
 			}
 			if got.Summary.CriticalCount != tt.wantCritical {
 				t.Fatalf("RunAudit() critical count = %d, want %d", got.Summary.CriticalCount, tt.wantCritical)
+			}
+			if got.Summary.WarningCount != tt.wantWarning {
+				t.Fatalf("RunAudit() warning count = %d, want %d", got.Summary.WarningCount, tt.wantWarning)
+			}
+		})
+	}
+}
+
+func TestRunAuditRBAC(t *testing.T) {
+	tests := []struct {
+		name         string
+		namespace    string
+		objects      []runtime.Object
+		wantRBAC     int
+		wantCritical int
+		wantWarning  int
+	}{
+		{
+			name: "cluster wide wildcard role and binding are critical",
+			objects: []runtime.Object{
+				makeClusterRole("platform-admin", []rbacv1.PolicyRule{
+					{Resources: []string{"*"}, Verbs: []string{"*"}},
+				}),
+				makeClusterRoleBinding("platform-admin-binding", "platform-admin", rbacv1.Subject{
+					Kind:      "ServiceAccount",
+					Name:      "deployer",
+					Namespace: "default",
+				}),
+			},
+			wantRBAC:     2,
+			wantCritical: 2,
+			wantWarning:  0,
+		},
+		{
+			name:      "namespace scoped audit ignores out of scope bindings",
+			namespace: "default",
+			objects: []runtime.Object{
+				makeNetworkPolicy("default-deny", "default"),
+				makeResourceQuota("default", "compute-quota"),
+				makeRole("default", "secret-reader", []rbacv1.PolicyRule{
+					{Resources: []string{"secrets"}, Verbs: []string{"get", "list"}},
+				}),
+				makeRoleBinding("default", "secret-reader-binding", "Role", "secret-reader", rbacv1.Subject{
+					Kind:      "ServiceAccount",
+					Name:      "app",
+					Namespace: "default",
+				}),
+				makeRole("other", "secret-reader", []rbacv1.PolicyRule{
+					{Resources: []string{"secrets"}, Verbs: []string{"get", "list"}},
+				}),
+				makeRoleBinding("other", "secret-reader-binding", "Role", "secret-reader", rbacv1.Subject{
+					Kind:      "ServiceAccount",
+					Name:      "app",
+					Namespace: "other",
+				}),
+			},
+			wantRBAC:     2,
+			wantCritical: 0,
+			wantWarning:  2,
+		},
+		{
+			name:      "cluster admin binding for namespace service account is detected",
+			namespace: "team-a",
+			objects: []runtime.Object{
+				makeNetworkPolicy("default-deny", "team-a"),
+				makeResourceQuota("team-a", "compute-quota"),
+				makeClusterRoleBinding("team-a-admin", "cluster-admin", rbacv1.Subject{
+					Kind:      "ServiceAccount",
+					Name:      "runner",
+					Namespace: "team-a",
+				}),
+				makeClusterRoleBinding("team-b-admin", "cluster-admin", rbacv1.Subject{
+					Kind:      "ServiceAccount",
+					Name:      "runner",
+					Namespace: "team-b",
+				}),
+			},
+			wantRBAC:     1,
+			wantCritical: 1,
+			wantWarning:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clientset := fake.NewSimpleClientset(tt.objects...)
+
+			got, err := RunAudit(context.Background(), clientset, tt.namespace)
+			if err != nil {
+				t.Fatalf("RunAudit() error = %v", err)
+			}
+
+			if len(got.RBACIssues) != tt.wantRBAC {
+				t.Fatalf("RunAudit() RBAC issues = %d, want %d", len(got.RBACIssues), tt.wantRBAC)
+			}
+			if got.Summary.CriticalCount != tt.wantCritical {
+				t.Fatalf("RunAudit() critical count = %d, want %d", got.Summary.CriticalCount, tt.wantCritical)
+			}
+			if got.Summary.WarningCount != tt.wantWarning {
+				t.Fatalf("RunAudit() warning count = %d, want %d", got.Summary.WarningCount, tt.wantWarning)
+			}
+		})
+	}
+}
+
+func TestRunAuditResourceQuotas(t *testing.T) {
+	tests := []struct {
+		name               string
+		namespace          string
+		objects            []runtime.Object
+		wantResourceQuotas int
+		wantWarning        int
+	}{
+		{
+			name: "missing quota in target namespace produces warning",
+			objects: []runtime.Object{
+				makeNamespace("default"),
+				makeNetworkPolicy("default-deny", "default"),
+			},
+			wantResourceQuotas: 1,
+			wantWarning:        1,
+		},
+		{
+			name:      "namespace filter ignores quotas outside scope",
+			namespace: "team-a",
+			objects: []runtime.Object{
+				makeNamespace("team-a"),
+				makeNamespace("team-b"),
+				makeNetworkPolicy("default-deny", "team-a"),
+				makeResourceQuota("team-b", "compute-quota"),
+			},
+			wantResourceQuotas: 1,
+			wantWarning:        1,
+		},
+		{
+			name: "system namespaces are skipped in cluster wide audit",
+			objects: []runtime.Object{
+				makeNamespace("default"),
+				makeNamespace("kube-system"),
+				makeNetworkPolicy("default-deny", "default"),
+				makeResourceQuota("default", "compute-quota"),
+			},
+			wantResourceQuotas: 0,
+			wantWarning:        0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clientset := fake.NewSimpleClientset(tt.objects...)
+
+			got, err := RunAudit(context.Background(), clientset, tt.namespace)
+			if err != nil {
+				t.Fatalf("RunAudit() error = %v", err)
+			}
+
+			if len(got.ResourceQuotaIssues) != tt.wantResourceQuotas {
+				t.Fatalf("RunAudit() resource quota issues = %d, want %d", len(got.ResourceQuotaIssues), tt.wantResourceQuotas)
 			}
 			if got.Summary.WarningCount != tt.wantWarning {
 				t.Fatalf("RunAudit() warning count = %d, want %d", got.Summary.WarningCount, tt.wantWarning)
@@ -108,6 +284,15 @@ func makeNamespace(name string) *corev1.Namespace {
 
 func makeNetworkPolicy(name, namespace string) runtime.Object {
 	return &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+}
+
+func makeResourceQuota(namespace, name string) runtime.Object {
+	return &corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -165,5 +350,53 @@ func makeBrokenPod(name, namespace string) *corev1.Pod {
 				},
 			},
 		},
+	}
+}
+
+func makeRole(namespace, name string, rules []rbacv1.PolicyRule) runtime.Object {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Rules: rules,
+	}
+}
+
+func makeClusterRole(name string, rules []rbacv1.PolicyRule) runtime.Object {
+	return &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Rules: rules,
+	}
+}
+
+func makeRoleBinding(namespace, name, roleKind, roleName string, subjects ...rbacv1.Subject) runtime.Object {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     roleKind,
+			Name:     roleName,
+		},
+		Subjects: subjects,
+	}
+}
+
+func makeClusterRoleBinding(name, roleName string, subjects ...rbacv1.Subject) runtime.Object {
+	return &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "ClusterRole",
+			Name:     roleName,
+		},
+		Subjects: subjects,
 	}
 }

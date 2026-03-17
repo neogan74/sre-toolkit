@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alert-analyzer | Alert Noise and Flapping Analysis</title>
+  <meta
+    name="description"
+    content="alert-analyzer helps SRE teams inspect noisy and flapping Prometheus alerts using a production-friendly CLI."
+  >
+  <link rel="stylesheet" href="./assets/site.css">
+</head>
+<body style="--accent:#9b3d2e; --accent-2:#2f7d8f; --bg-top:#f5ece7; --bg-bottom:#e4d8d1;">
+  <div class="grain"></div>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">AA</span>
+          <span>alert-analyzer</span>
+        </a>
+        <nav class="nav-links">
+          <a href="./index.html">Toolkit</a>
+          <a href="../alert-analyzer-tutorial.md">Tutorial</a>
+          <a href="./k8s-doctor.html">k8s-doctor</a>
+          <a class="nav-cta" href="../../README.md">Repository</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div class="panel hero-copy reveal is-visible">
+            <div class="eyebrow">Prometheus • Alertmanager • Noise Reduction</div>
+            <h1>Reduce alert fatigue with evidence, not vibes.</h1>
+            <p class="lead">
+              <strong>alert-analyzer</strong> turns raw alert history into something operationally useful:
+              noisiest alerts, flapping candidates, and machine-readable summaries for rule reviews.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="../alert-analyzer-tutorial.md">Read Tutorial</a>
+              <a class="button button-secondary" href="./index.html">Back to Toolkit</a>
+            </div>
+          </div>
+
+          <aside class="panel reveal is-visible">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>analyze last 30 days</span>
+              </div>
+              <pre>$ alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d --show-flapping
+
+=== Alert Analysis Summary ===
+Time Range:     30 days
+Total Firings:  4,821
+Unique Alerts:  63
+
+=== Top 10 Noisiest Alerts ===
+HighMemoryUsage            941
+DatabaseConnectionFlap     616
+PodRestartingFrequently    403
+
+=== Flapping Alerts ===
+DatabaseConnectionFlap   score=5.8 transitions/hour
+APILatencyHigh           score=3.4 transitions/hour</pre>
+            </div>
+          </aside>
+        </div>
+
+        <div class="wrap metric-strip reveal">
+          <div class="metric">
+            <strong>Frequency view</strong>
+            <span>See which alerts consume the most human attention over time.</span>
+          </div>
+          <div class="metric">
+            <strong>Flapping analysis</strong>
+            <span>Highlight rules that oscillate instead of informing.</span>
+          </div>
+          <div class="metric">
+            <strong>Multi-source ready</strong>
+            <span>Prometheus and optional Alertmanager inputs in one CLI flow.</span>
+          </div>
+          <div class="metric">
+            <strong>JSON output</strong>
+            <span>Push summaries into pipelines, scripts, or review workflows.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">What It Solves</div>
+              <h2>From “too many alerts” to an actual shortlist.</h2>
+              <p class="section-copy">
+                If you already know you have alert fatigue, the next problem is prioritization.
+                This tool exists to rank the offenders and give you data for threshold, `for:`,
+                and signal-to-noise conversations.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <article class="card">
+              <h3>Noisy alert ranking</h3>
+              <p>Identify the alerts with the highest firing counts so review effort goes where it matters.</p>
+              <span class="label">Prioritization</span>
+            </article>
+            <article class="card">
+              <h3>Flapping detection</h3>
+              <p>Catch unstable rules that constantly switch state and erode operator trust.</p>
+              <span class="label">Stability</span>
+            </article>
+            <article class="card">
+              <h3>Exportable summaries</h3>
+              <p>Use JSON output to feed audits, dashboards, or change-review notes.</p>
+              <span class="label">Automation</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Command Pack</div>
+              <h2>Three practical runs.</h2>
+            </div>
+          </div>
+          <div class="split-grid">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>default analysis</span>
+              </div>
+              <pre>alert-analyzer analyze --prometheus-url http://prom:9090</pre>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>deep flapping pass</span>
+              </div>
+              <pre>alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 14d --show-flapping</pre>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>automation</span>
+              </div>
+              <pre>alert-analyzer analyze --prometheus-url http://prom:9090 --output json</pre>
+            </div>
+            <article class="card">
+              <h3>Where it fits</h3>
+              <p>Use it in weekly alert review, postmortem follow-up, or as prep before changing rule thresholds.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="install-grid reveal">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">Install</div>
+                <h2>Run it against your alert history.</h2>
+              </div>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>setup</span>
+              </div>
+              <pre>git clone https://github.com/neogan/sre-toolkit.git
+cd sre-toolkit
+make build-all
+
+./bin/alert-analyzer analyze --prometheus-url http://localhost:9090</pre>
+            </div>
+          </div>
+          <aside class="cta-card">
+            <div>
+              <div class="eyebrow">Next Step</div>
+              <h2>Need flags and longer examples?</h2>
+              <p>The tutorial covers lookback, resolution, Alertmanager integration, and flapping thresholds.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="button button-primary" href="../alert-analyzer-tutorial.md">Open Tutorial</a>
+              <a class="button button-secondary" href="./index.html">Toolkit Hub</a>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        Product page for <strong>alert-analyzer</strong>.
+        <div class="footer-links">
+          <a href="./index.html">Toolkit Hub</a>
+          <a href="../alert-analyzer-tutorial.md">Tutorial</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script src="./assets/site.js"></script>
+</body>
+</html>
