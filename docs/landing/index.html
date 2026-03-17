@@ -3,868 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>k8s-doctor | Kubernetes Health, Diagnostics, and Audit CLI</title>
+  <title>SRE Toolkit | Tool Pages</title>
   <meta
     name="description"
-    content="k8s-doctor is a production-minded Kubernetes CLI for health checks, diagnostics, and security audits with JSON and terminal-friendly output."
+    content="Static landing pages for SRE Toolkit: k8s-doctor, alert-analyzer, chaos-load, and config-linter."
   >
-  <style>
-    :root {
-      --bg: #f3efe5;
-      --bg-strong: #e7dcc7;
-      --panel: rgba(252, 249, 242, 0.9);
-      --panel-strong: #fffdf8;
-      --ink: #102033;
-      --muted: #556272;
-      --line: rgba(16, 32, 51, 0.12);
-      --accent: #c95d2a;
-      --accent-2: #1c7c74;
-      --accent-3: #d6a33d;
-      --shadow: 0 24px 80px rgba(16, 32, 51, 0.12);
-      --radius-xl: 30px;
-      --radius-lg: 22px;
-      --radius-md: 16px;
-      --max-width: 1180px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at top left, rgba(201, 93, 42, 0.18), transparent 28%),
-        radial-gradient(circle at 85% 10%, rgba(28, 124, 116, 0.18), transparent 24%),
-        linear-gradient(180deg, #f7f1e6 0%, #f3efe5 46%, #ece5d6 100%);
-      min-height: 100vh;
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
-
-    img {
-      max-width: 100%;
-    }
-
-    .page-shell {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .grain {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.08;
-      background-image:
-        linear-gradient(rgba(16, 32, 51, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16, 32, 51, 0.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mask-image: radial-gradient(circle at center, black 38%, transparent 90%);
-    }
-
-    .wrap {
-      width: min(calc(100% - 32px), var(--max-width));
-      margin: 0 auto;
-    }
-
-    .site-header {
-      padding: 22px 0;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(12px);
-      background: rgba(243, 239, 229, 0.7);
-      border-bottom: 1px solid rgba(16, 32, 51, 0.06);
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-    }
-
-    .brand-mark {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      background:
-        linear-gradient(145deg, rgba(201, 93, 42, 0.95), rgba(214, 163, 61, 0.9));
-      color: #fff7ef;
-      box-shadow: 0 18px 40px rgba(201, 93, 42, 0.28);
-      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
-      font-size: 1.15rem;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 0.96rem;
-    }
-
-    .nav-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 18px;
-      border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
-      box-shadow: 0 12px 30px rgba(16, 32, 51, 0.18);
-    }
-
-    .hero {
-      padding: 56px 0 34px;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
-      gap: 28px;
-      align-items: stretch;
-    }
-
-    .hero-copy,
-    .hero-panel,
-    .stat-strip,
-    .section-card,
-    .tool-card,
-    .proof-card,
-    .cta-panel {
-      background: var(--panel);
-      border: 1px solid rgba(255, 255, 255, 0.55);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-    }
-
-    .hero-copy {
-      border-radius: var(--radius-xl);
-      padding: 38px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero-copy::after {
-      content: "";
-      position: absolute;
-      right: -120px;
-      top: -50px;
-      width: 260px;
-      height: 260px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(28, 124, 116, 0.2), transparent 65%);
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: rgba(16, 32, 51, 0.06);
-      color: var(--muted);
-      font-size: 0.88rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    h1,
-    h2,
-    h3 {
-      margin: 0;
-      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-    }
-
-    h1 {
-      margin-top: 20px;
-      font-size: clamp(3rem, 7vw, 6rem);
-      line-height: 0.93;
-      max-width: 10ch;
-    }
-
-    .hero-copy p {
-      margin: 22px 0 0;
-      max-width: 42rem;
-      font-size: 1.08rem;
-      line-height: 1.7;
-      color: var(--muted);
-    }
-
-    .hero-actions {
-      margin-top: 30px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-height: 48px;
-      padding: 0 20px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      font-weight: 600;
-      transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
-    }
-
-    .button:hover {
-      transform: translateY(-2px);
-    }
-
-    .button-primary {
-      background: linear-gradient(135deg, var(--accent), #dd7b3f);
-      color: #fffaf4;
-      box-shadow: 0 16px 32px rgba(201, 93, 42, 0.24);
-    }
-
-    .button-secondary {
-      border-color: var(--line);
-      color: var(--ink);
-      background: rgba(255, 255, 255, 0.6);
-    }
-
-    .hero-panel {
-      border-radius: var(--radius-xl);
-      padding: 22px;
-      display: grid;
-      gap: 18px;
-      align-content: start;
-    }
-
-    .panel-label {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      color: var(--muted);
-      font-size: 0.88rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .terminal {
-      border-radius: 22px;
-      overflow: hidden;
-      background: #0f1a26;
-      color: #d9e4f1;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .terminal-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 14px 18px;
-      background: rgba(255, 255, 255, 0.04);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      font-size: 0.9rem;
-    }
-
-    .lights {
-      display: inline-flex;
-      gap: 8px;
-    }
-
-    .lights span {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: block;
-    }
-
-    .lights span:nth-child(1) {
-      background: #ea6a5f;
-    }
-
-    .lights span:nth-child(2) {
-      background: #e0b54b;
-    }
-
-    .lights span:nth-child(3) {
-      background: #67c26f;
-    }
-
-    .terminal pre {
-      margin: 0;
-      padding: 20px 22px 24px;
-      min-height: 360px;
-      font-family: "SFMono-Regular", "Menlo", "Monaco", monospace;
-      font-size: 0.92rem;
-      line-height: 1.68;
-      white-space: pre-wrap;
-      color: #dce7f3;
-    }
-
-    .stat-strip {
-      margin-top: 26px;
-      border-radius: var(--radius-lg);
-      padding: 14px;
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .stat {
-      border-radius: 16px;
-      padding: 18px 16px;
-      background: rgba(255, 255, 255, 0.45);
-      border: 1px solid rgba(16, 32, 51, 0.06);
-    }
-
-    .stat strong {
-      display: block;
-      font-size: 1.4rem;
-      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
-    }
-
-    .stat span {
-      display: block;
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-
-    main {
-      padding: 28px 0 80px;
-    }
-
-    section {
-      margin-top: 28px;
-    }
-
-    .section-card {
-      border-radius: var(--radius-xl);
-      padding: 30px;
-    }
-
-    .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 24px;
-    }
-
-    .section-head p {
-      margin: 12px 0 0;
-      max-width: 42rem;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .pill-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .pill {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(16, 32, 51, 0.06);
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-
-    .feature-grid,
-    .tool-grid,
-    .proof-grid,
-    .steps {
-      display: grid;
-      gap: 16px;
-    }
-
-    .feature-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .tool-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .proof-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .steps {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .feature-card,
-    .tool-card,
-    .proof-card,
-    .step {
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      background: rgba(255, 255, 255, 0.5);
-      border: 1px solid rgba(16, 32, 51, 0.08);
-    }
-
-    .feature-card h3,
-    .tool-card h3,
-    .proof-card h3,
-    .step h3 {
-      font-size: 1.35rem;
-      margin-bottom: 12px;
-    }
-
-    .feature-card p,
-    .tool-card p,
-    .proof-card p,
-    .step p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .feature-card strong {
-      display: inline-block;
-      margin-top: 18px;
-      font-size: 0.84rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .tool-card:nth-child(2) {
-      transform: translateY(14px);
-    }
-
-    .tool-card:nth-child(3) {
-      transform: translateY(-10px);
-    }
-
-    .demo-shell {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: 20px;
-    }
-
-    .demo-menu {
-      display: grid;
-      gap: 10px;
-      align-content: start;
-    }
-
-    .demo-tab {
-      border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.56);
-      border-radius: 18px;
-      padding: 16px;
-      text-align: left;
-      color: inherit;
-      cursor: pointer;
-      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease;
-    }
-
-    .demo-tab strong {
-      display: block;
-      font-size: 1rem;
-      margin-bottom: 6px;
-    }
-
-    .demo-tab span {
-      display: block;
-      color: var(--muted);
-      line-height: 1.5;
-      font-size: 0.92rem;
-    }
-
-    .demo-tab.is-active {
-      background: linear-gradient(135deg, rgba(201, 93, 42, 0.12), rgba(28, 124, 116, 0.12));
-      border-color: rgba(201, 93, 42, 0.25);
-      transform: translateX(4px);
-    }
-
-    .demo-output {
-      border-radius: 24px;
-      overflow: hidden;
-      background: #0f1a26;
-      color: #dce7f3;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 22px 50px rgba(16, 32, 51, 0.22);
-    }
-
-    .demo-output pre {
-      margin: 0;
-      padding: 18px 20px 24px;
-      min-height: 390px;
-      font-family: "SFMono-Regular", "Menlo", "Monaco", monospace;
-      font-size: 0.92rem;
-      line-height: 1.65;
-      white-space: pre-wrap;
-    }
-
-    .mini-grid {
-      margin-top: 16px;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .mini-card {
-      border-radius: 18px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.56);
-      border: 1px solid rgba(16, 32, 51, 0.08);
-    }
-
-    .mini-card strong {
-      display: block;
-      font-size: 0.78rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .mini-card span {
-      display: block;
-      margin-top: 8px;
-      font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
-      font-size: 1.55rem;
-    }
-
-    .install {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 0.75fr);
-      gap: 20px;
-      align-items: stretch;
-    }
-
-    .install .terminal pre {
-      min-height: 220px;
-    }
-
-    .cta-panel {
-      border-radius: var(--radius-xl);
-      padding: 32px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .cta-panel p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-
-    .footer {
-      padding: 0 0 44px;
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
-
-    .reveal {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 500ms ease, transform 500ms ease;
-    }
-
-    .reveal.is-visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    @media (max-width: 1080px) {
-      .hero-grid,
-      .demo-shell,
-      .install,
-      .feature-grid,
-      .tool-grid,
-      .proof-grid,
-      .steps {
-        grid-template-columns: 1fr;
-      }
-
-      .stat-strip {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .tool-card:nth-child(2),
-      .tool-card:nth-child(3) {
-        transform: none;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .site-header {
-        position: static;
-      }
-
-      .hero-copy,
-      .hero-panel,
-      .section-card,
-      .cta-panel {
-        padding: 24px;
-      }
-
-      h1 {
-        max-width: none;
-        font-size: clamp(2.6rem, 14vw, 4.4rem);
-      }
-
-      .nav {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .nav-links {
-        justify-content: space-between;
-      }
-
-      .stat-strip,
-      .mini-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="./assets/site.css">
 </head>
-<body>
+<body style="--accent:#b85c34; --accent-2:#1f6f8b; --bg-top:#f4eee3; --bg-bottom:#e4dac6;">
   <div class="grain"></div>
   <div class="page-shell">
     <header class="site-header">
       <div class="wrap nav">
-        <a class="brand" href="#top">
-          <span class="brand-mark">K8</span>
-          <span>k8s-doctor</span>
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">ST</span>
+          <span>SRE Toolkit</span>
         </a>
         <nav class="nav-links">
-          <a href="#why">Why</a>
-          <a href="#demo">Demo</a>
-          <a href="#features">Features</a>
-          <a href="#install">Install</a>
-          <a class="nav-cta" href="../../README.md">Open Repository</a>
+          <a href="./k8s-doctor.html">k8s-doctor</a>
+          <a href="./alert-analyzer.html">alert-analyzer</a>
+          <a href="./chaos-load.html">chaos-load</a>
+          <a href="./config-linter.html">config-linter</a>
+          <a class="nav-cta" href="../../README.md">Repository</a>
         </nav>
       </div>
     </header>
 
-    <main id="top">
+    <main>
       <section class="hero">
         <div class="wrap hero-grid">
-          <div class="hero-copy reveal is-visible">
-            <div class="eyebrow">Kubernetes CLI • Healthcheck • Diagnostics • Audit</div>
-            <h1>Find the cluster problems before the pager does.</h1>
-            <p>
-              <strong>k8s-doctor</strong> is a production-minded command line utility for
-              SRE teams that need a fast read on cluster health, noisy workloads, and
-              policy gaps. It speaks fluent terminal, exports JSON for CI, and now ships
-              with audit checks for probes, security context, RBAC, network policies, and
-              resource quotas.
+          <div class="panel hero-copy reveal is-visible">
+            <div class="eyebrow">Static Product Pages • No Build Chain</div>
+            <h1>One toolkit. Four stories. One front door.</h1>
+            <p class="lead">
+              This landing area turns the repo from “a collection of CLI binaries” into something
+              presentable: a shared hub for the suite and dedicated product pages for each major tool.
+              It is built as plain HTML, CSS, and a tiny reveal script, so you can use it as a mock,
+              docs home, or GitHub Pages seed.
             </p>
             <div class="hero-actions">
-              <a class="button button-primary" href="#demo">See Live Demo</a>
-              <a class="button button-secondary" href="../k8s-doctor-tutorial.md">Read Tutorial</a>
+              <a class="button button-primary" href="./k8s-doctor.html">Open k8s-doctor</a>
+              <a class="button button-secondary" href="./alert-analyzer.html">Open alert-analyzer</a>
             </div>
           </div>
 
-          <aside class="hero-panel reveal is-visible">
-            <div class="panel-label">
-              <span>Terminal-first workflow</span>
-              <span>v0.1.x</span>
-            </div>
-            <div class="terminal" aria-label="k8s-doctor overview demo">
+          <aside class="panel reveal is-visible">
+            <div class="terminal">
               <div class="terminal-top">
                 <span class="lights"><span></span><span></span><span></span></span>
-                <span>/clusters/prod-eu-west</span>
+                <span>toolkit surface</span>
               </div>
-              <pre id="hero-demo">$ k8s-doctor audit --namespace payments
+              <pre>SRE Toolkit
 
-=== Audit Summary ===
-Total Issues:   8
-Critical:       3
-Warning:        5
-Info:           0
+Available product pages:
+  ./k8s-doctor.html
+  ./alert-analyzer.html
+  ./chaos-load.html
+  ./config-linter.html
 
-=== Security Issues (2) ===
-payments   checkout-api   🔴 Critical   Container api: RunAsNonRoot is not set to true
-payments   worker         🔴 Critical   Container jobs: ReadOnlyRootFilesystem is not set to true
+What this site is good for:
+  - repo demos
+  - internal platform reviews
+  - GitHub Pages publishing
+  - sharing one tool at a time
 
-=== RBAC Issues (2) ===
-payments   Binding/release-admin   ServiceAccount/payments/deployer   🔴 Critical   Binding grants cluster-admin via ClusterRole/cluster-admin
-payments   Role/secret-reader      -                                  ⚠️  Warning    RBAC rule grants access to secrets
-
-=== Resource Quota Issues (1) ===
-payments   ⚠️  Warning   Namespace payments has no ResourceQuota defined</pre>
+What it avoids:
+  - frontend build chains
+  - framework lock-in
+  - runtime dependencies</pre>
             </div>
           </aside>
         </div>
 
-        <div class="wrap stat-strip reveal">
-          <div class="stat">
-            <strong>3 flows</strong>
-            <span>healthcheck, diagnostics, audit with terminal-first UX.</span>
+        <div class="wrap metric-strip reveal">
+          <div class="metric">
+            <strong>4 pages</strong>
+            <span>Dedicated messaging and demos for the current tools.</span>
           </div>
-          <div class="stat">
-            <strong>2 outputs</strong>
-            <span>table for humans and JSON for pipelines or automation.</span>
+          <div class="metric">
+            <strong>1 hub</strong>
+            <span>A shared entry page to route people by problem area.</span>
           </div>
-          <div class="stat">
-            <strong>5 audit signals</strong>
-            <span>probes, security context, RBAC, network policies, resource quotas.</span>
+          <div class="metric">
+            <strong>0 build steps</strong>
+            <span>Everything is static and can be hosted almost anywhere.</span>
           </div>
-          <div class="stat">
-            <strong>Go CLI</strong>
-            <span>fast startup, no UI runtime, easy to drop into CI jobs and runbooks.</span>
-          </div>
-        </div>
-      </section>
-
-      <section id="why" class="wrap">
-        <div class="section-card reveal">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow">Why This Exists</div>
-              <h2>One CLI for the first ten minutes of triage.</h2>
-              <p>
-                Most Kubernetes incidents waste time in tool switching: cluster health in one place,
-                pod failures in another, security posture in a spreadsheet, and CI checks nowhere.
-                <strong>k8s-doctor</strong> compresses that first response loop into one command surface.
-              </p>
-            </div>
-            <div class="pill-row">
-              <span class="pill">Fast to run</span>
-              <span class="pill">Easy to automate</span>
-              <span class="pill">Opinionated enough to matter</span>
-            </div>
-          </div>
-
-          <div class="feature-grid">
-            <article class="feature-card">
-              <h3>Healthcheck</h3>
-              <p>Readiness of nodes, pods, and control plane components without diving into multiple kubectl views.</p>
-              <strong>For cluster posture</strong>
-            </article>
-            <article class="feature-card">
-              <h3>Diagnostics</h3>
-              <p>CrashLoopBackOff, ImagePullBackOff, restart storms, events, and workload-level audit findings in one summary.</p>
-              <strong>For incident triage</strong>
-            </article>
-            <article class="feature-card">
-              <h3>Audit</h3>
-              <p>Probe coverage, security context gaps, risky RBAC grants, missing network segmentation, and absent quotas.</p>
-              <strong>For prevention</strong>
-            </article>
-            <article class="feature-card">
-              <h3>CI Output</h3>
-              <p>Table output for operators, JSON for machines, and non-zero exits when warnings or critical findings matter.</p>
-              <strong>For pipelines</strong>
-            </article>
+          <div class="metric">
+            <strong>Repo-native</strong>
+            <span>Links point back into tutorials and README content that already exists.</span>
           </div>
         </div>
       </section>
 
-      <section id="demo" class="wrap">
+      <section class="wrap">
         <div class="section-card reveal">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Demo</div>
-              <h2>Swap between the core flows.</h2>
-              <p>
-                This is static content for a landing page, but the examples mirror the current command set
-                and audit capabilities already implemented in the repository.
+              <div class="eyebrow">Pages</div>
+              <h2>Choose the story you want to tell.</h2>
+              <p class="section-copy">
+                The hub is intentionally broad. Each tool page goes narrower and speaks in the language
+                of the user problem: Kubernetes triage, alert noise, load testing, or config validation.
               </p>
             </div>
           </div>
 
-          <div class="demo-shell">
-            <div class="demo-menu" role="tablist" aria-label="CLI demo modes">
-              <button class="demo-tab is-active" data-demo="healthcheck" role="tab" aria-selected="true">
-                <strong>Healthcheck</strong>
-                <span>Fast status view of nodes, pods, and core components.</span>
-              </button>
-              <button class="demo-tab" data-demo="diagnostics" role="tab" aria-selected="false">
-                <strong>Diagnostics</strong>
-                <span>Problem-oriented analysis for restart loops and unhealthy workloads.</span>
-              </button>
-              <button class="demo-tab" data-demo="audit" role="tab" aria-selected="false">
-                <strong>Audit</strong>
-                <span>Policy and best-practice coverage for platform teams and CI gates.</span>
-              </button>
-            </div>
-
-            <div>
-              <div class="demo-output" aria-live="polite">
-                <div class="terminal-top">
-                  <span class="lights"><span></span><span></span><span></span></span>
-                  <span id="demo-title">healthcheck on prod-us-east</span>
-                </div>
-                <pre id="demo-screen"></pre>
+          <div class="grid-2">
+            <article class="tool-card">
+              <h3>k8s-doctor</h3>
+              <p>Kubernetes healthcheck, diagnostics, and audit with RBAC, network policy, and resource quota coverage.</p>
+              <span class="label">Most complete</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./k8s-doctor.html">Open Page</a>
               </div>
-              <div class="mini-grid" id="demo-metrics"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="features" class="wrap">
-        <div class="section-card reveal">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow">Feature Coverage</div>
-              <h2>Built for SRE workflows, not screenshot demos.</h2>
-              <p>
-                The pitch is not “observability, but prettier.” The pitch is fewer context switches,
-                more predictable output, and a CLI that can become part of incident docs, platform audits,
-                and CI guardrails.
-              </p>
-            </div>
-          </div>
-
-          <div class="tool-grid">
-            <article class="tool-card">
-              <h3>Cluster Signals</h3>
-              <p>
-                Node readiness, component health, pod phase distribution, and namespace-aware filtering
-                for focused checks during partial outages.
-              </p>
             </article>
             <article class="tool-card">
-              <h3>Workload Signals</h3>
-              <p>
-                Problem pod analysis with restart thresholds, event correlation, and resource/probe/security
-                findings that surface why the workload is fragile.
-              </p>
+              <h3>alert-analyzer</h3>
+              <p>Prometheus and Alertmanager analysis for noisy alerts, flapping rules, and signal-to-noise improvement.</p>
+              <span class="label">Operational analytics</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./alert-analyzer.html">Open Page</a>
+              </div>
             </article>
             <article class="tool-card">
-              <h3>Policy Signals</h3>
-              <p>
-                Audit output now spans risky RBAC rules and bindings, missing network policies, and namespaces
-                with no resource quotas.
-              </p>
+              <h3>chaos-load</h3>
+              <p>HTTP load generation and chaos-oriented experiments for resilience validation and performance smoke tests.</p>
+              <span class="label">Resilience testing</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./chaos-load.html">Open Page</a>
+              </div>
+            </article>
+            <article class="tool-card">
+              <h3>config-linter</h3>
+              <p>Configuration validation for Kubernetes YAML, Dockerfiles, and emerging Helm coverage.</p>
+              <span class="label">Build-time safety</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./config-linter.html">Open Page</a>
+              </div>
             </article>
           </div>
         </div>
@@ -874,233 +149,46 @@ payments   ⚠️  Warning   Namespace payments has no ResourceQuota defined</pr
         <div class="section-card reveal">
           <div class="section-head">
             <div>
-              <div class="eyebrow">How Teams Use It</div>
-              <h2>Three concrete entry points.</h2>
+              <div class="eyebrow">Packaging</div>
+              <h2>Ready for sharing, not just local browsing.</h2>
+              <p class="section-copy">
+                Because everything lives under <code>docs/landing/</code>, this can later become a GitHub Pages site
+                with minimal friction. The hub gives you a neutral starting point for demos and the tool pages let you
+                send product-specific links without dragging the whole repo context along.
+              </p>
             </div>
           </div>
 
           <div class="steps">
             <article class="step">
-              <h3>During incidents</h3>
-              <p>Run `diagnostics` when the cluster looks noisy but the failure mode is unclear.</p>
+              <h3>For internal reviews</h3>
+              <p>Share one page per tool depending on the audience: platform, monitoring, or developer experience.</p>
             </article>
             <article class="step">
-              <h3>Before releases</h3>
-              <p>Run `audit --output json` in CI to reject workloads with predictable platform or security gaps.</p>
+              <h3>For public repo polish</h3>
+              <p>Use the hub as a higher-level “what is this?” layer on top of README and tutorials.</p>
             </article>
             <article class="step">
-              <h3>For platform reviews</h3>
-              <p>Use namespace-scoped audits to quickly compare team environments and spot policy drift.</p>
+              <h3>For future expansion</h3>
+              <p>Add `cert-monitor`, `log-parser`, or `db-toolkit` pages later without redesigning the structure.</p>
             </article>
           </div>
-        </div>
-      </section>
-
-      <section class="wrap">
-        <div class="section-card reveal">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow">Proof Points</div>
-              <h2>What the current codebase already supports.</h2>
-            </div>
-          </div>
-
-          <div class="proof-grid">
-            <article class="proof-card">
-              <h3>CLI Architecture</h3>
-              <p>Cobra-based commands with config, logging, metrics, and tracing already wired into the repo.</p>
-            </article>
-            <article class="proof-card">
-              <h3>Automation Ready</h3>
-              <p>JSON output and exit-code semantics make it usable in pipelines and periodic health jobs.</p>
-            </article>
-            <article class="proof-card">
-              <h3>Incremental Surface</h3>
-              <p>The new audit flow already covers probes, security context, RBAC, network policies, and quotas.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section id="install" class="wrap">
-        <div class="install reveal">
-          <div class="section-card">
-            <div class="section-head">
-              <div>
-                <div class="eyebrow">Install</div>
-                <h2>Fastest path to trying it.</h2>
-                <p>Open the repo, build from source, or install just the CLI binary.</p>
-              </div>
-            </div>
-            <div class="terminal">
-              <div class="terminal-top">
-                <span class="lights"><span></span><span></span><span></span></span>
-                <span>setup</span>
-              </div>
-              <pre>git clone https://github.com/neogan/sre-toolkit.git
-cd sre-toolkit
-make build
-
-# or install directly
-go install github.com/neogan/sre-toolkit/cmd/k8s-doctor@latest
-
-# first run
-k8s-doctor healthcheck --output table
-k8s-doctor diagnostics --namespace payments
-k8s-doctor audit --namespace payments --output json</pre>
-            </div>
-          </div>
-
-          <aside class="cta-panel">
-            <div>
-              <div class="eyebrow">Assets</div>
-              <h2>Everything needed for a product-style pitch page is now in-repo.</h2>
-              <p>
-                This landing page is static HTML and can be used as a mock, a docs front page,
-                or a GitHub Pages starting point without adding any frontend build chain.
-              </p>
-            </div>
-            <div class="hero-actions">
-              <a class="button button-primary" href="../../README.md">Read the Repository</a>
-              <a class="button button-secondary" href="../k8s-doctor-tutorial.md">Open Tutorial</a>
-            </div>
-          </aside>
         </div>
       </section>
     </main>
 
     <footer class="footer">
       <div class="wrap">
-        Landing page mockup for <strong>k8s-doctor</strong>. File lives at <code>docs/landing/index.html</code>.
+        Toolkit landing hub at <code>docs/landing/index.html</code>.
+        <div class="footer-links">
+          <a href="./k8s-doctor.html">k8s-doctor</a>
+          <a href="./alert-analyzer.html">alert-analyzer</a>
+          <a href="./chaos-load.html">chaos-load</a>
+          <a href="./config-linter.html">config-linter</a>
+        </div>
       </div>
     </footer>
   </div>
-
-  <script>
-    const demos = {
-      healthcheck: {
-        title: "healthcheck on prod-us-east",
-        output: `$ k8s-doctor healthcheck --namespace payments
-
-=== Node Health ===
-NODE            STATUS      ROLES           VERSION    CPU   MEM   ISSUES
-worker-a-01     ✓ Ready     worker          v1.31.2    46%   58%   0
-worker-a-02     ✓ Ready     worker          v1.31.2    51%   64%   0
-control-a-01    ✓ Ready     control-plane   v1.31.2    39%   44%   0
-
-=== Pod Summary ===
-Total Pods:     112
-Running:        109
-Pending:        2
-Failed:         1
-
-=== Component Health ===
-COMPONENT            STATUS         MESSAGE
-scheduler            ✓ Healthy      ok
-controller-manager   ✓ Healthy      ok
-etcd                 ✓ Healthy      ok`,
-        stats: [
-          ["Nodes Ready", "3 / 3"],
-          ["Problem Pods", "3"],
-          ["Control Plane", "Healthy"]
-        ]
-      },
-      diagnostics: {
-        title: "diagnostics on payments namespace",
-        output: `$ k8s-doctor diagnostics --namespace payments
-
-=== Diagnostics Summary ===
-Total Issues:   6
-Critical:       2
-Warning:        4
-Info:           0
-
-=== Pod Issues (2) ===
-payments   checkout-api-7bf9d   🔴 Critical   CrashLoopBackOff   14
-payments   worker-85d65         ⚠️  Warning    FrequentRestarts   7
-
-=== Event Issues (2) ===
-Deployment/checkout-api   ⚠️  Warning   BackOff      31   Back-off restarting failed container
-Pod/worker-85d65          ⚠️  Warning   FailedMount   4   Unable to attach or mount volumes
-
-=== Resource Issues (1) ===
-checkout-api-7bf9d   ⚠️  Warning   Container api: CPU limit not set`,
-        stats: [
-          ["Criticals", "2"],
-          ["Warnings", "4"],
-          ["Events Seen", "35"]
-        ]
-      },
-      audit: {
-        title: "audit on payments namespace",
-        output: `$ k8s-doctor audit --namespace payments --output table
-
-=== Audit Summary ===
-Total Issues:   9
-Critical:       3
-Warning:        6
-Info:           0
-
-=== Security Issues (2) ===
-payments   checkout-api   🔴 Critical   Container api: RunAsNonRoot is not set to true
-payments   worker         🔴 Critical   Container jobs: ReadOnlyRootFilesystem is not set to true
-
-=== RBAC Issues (2) ===
-payments   Binding/release-admin   ServiceAccount/payments/deployer   🔴 Critical   Binding grants cluster-admin via ClusterRole/cluster-admin
-payments   Role/secret-reader      -                                  ⚠️  Warning    RBAC rule grants access to secrets
-
-=== Resource Quota Issues (1) ===
-payments   ⚠️  Warning   Namespace payments has no ResourceQuota defined`,
-        stats: [
-          ["RBAC Findings", "2"],
-          ["Quota Gaps", "1"],
-          ["Exit Code", "1"]
-        ]
-      }
-    };
-
-    const demoScreen = document.getElementById("demo-screen");
-    const demoTitle = document.getElementById("demo-title");
-    const demoMetrics = document.getElementById("demo-metrics");
-    const demoTabs = [...document.querySelectorAll(".demo-tab")];
-
-    function renderDemo(key) {
-      const selected = demos[key];
-      demoTitle.textContent = selected.title;
-      demoScreen.textContent = selected.output;
-      demoMetrics.innerHTML = selected.stats.map(([label, value]) => `
-        <article class="mini-card">
-          <strong>${label}</strong>
-          <span>${value}</span>
-        </article>
-      `).join("");
-
-      demoTabs.forEach((tab) => {
-        const active = tab.dataset.demo === key;
-        tab.classList.toggle("is-active", active);
-        tab.setAttribute("aria-selected", active ? "true" : "false");
-      });
-    }
-
-    demoTabs.forEach((tab) => {
-      tab.addEventListener("click", () => renderDemo(tab.dataset.demo));
-    });
-
-    renderDemo("healthcheck");
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-        }
-      });
-    }, { threshold: 0.15 });
-
-    document.querySelectorAll(".reveal").forEach((node) => {
-      if (!node.classList.contains("is-visible")) {
-        observer.observe(node);
-      }
-    });
-  </script>
+  <script src="./assets/site.js"></script>
 </body>
 </html>

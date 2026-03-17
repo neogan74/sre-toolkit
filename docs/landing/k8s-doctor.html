@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>k8s-doctor | Kubernetes Triage CLI</title>
+  <meta
+    name="description"
+    content="k8s-doctor is a Kubernetes CLI for health checks, diagnostics, and security-focused audits."
+  >
+  <link rel="stylesheet" href="./assets/site.css">
+</head>
+<body style="--accent:#c95d2a; --accent-2:#1c7c74; --bg-top:#f4eee2; --bg-bottom:#e8dfcc;">
+  <div class="grain"></div>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">K8</span>
+          <span>k8s-doctor</span>
+        </a>
+        <nav class="nav-links">
+          <a href="./index.html">Toolkit</a>
+          <a href="../k8s-doctor-tutorial.md">Tutorial</a>
+          <a href="./alert-analyzer.html">alert-analyzer</a>
+          <a class="nav-cta" href="../../README.md">Repository</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div class="panel hero-copy reveal is-visible">
+            <div class="eyebrow">Kubernetes Health • Diagnostics • Audit</div>
+            <h1>See the cluster the way an incident commander needs to.</h1>
+            <p class="lead">
+              <strong>k8s-doctor</strong> compresses the first stretch of Kubernetes triage into one CLI:
+              health checks for posture, diagnostics for broken workloads, and audits for the policies that
+              quietly create future outages.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="../k8s-doctor-tutorial.md">Read Tutorial</a>
+              <a class="button button-secondary" href="./index.html">Back to Toolkit</a>
+            </div>
+          </div>
+
+          <aside class="panel reveal is-visible">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>audit on payments namespace</span>
+              </div>
+              <pre>$ k8s-doctor audit --namespace payments
+
+=== Audit Summary ===
+Total Issues:   9
+Critical:       3
+Warning:        6
+Info:           0
+
+=== Security Issues (2) ===
+payments   checkout-api   🔴 Critical   Container api: RunAsNonRoot is not set to true
+
+=== RBAC Issues (2) ===
+payments   Binding/release-admin   ServiceAccount/payments/deployer   🔴 Critical   Binding grants cluster-admin via ClusterRole/cluster-admin
+
+=== Resource Quota Issues (1) ===
+payments   ⚠️  Warning   Namespace payments has no ResourceQuota defined</pre>
+            </div>
+          </aside>
+        </div>
+
+        <div class="wrap metric-strip reveal">
+          <div class="metric">
+            <strong>3 commands</strong>
+            <span>`healthcheck`, `diagnostics`, and `audit` cover the main triage loop.</span>
+          </div>
+          <div class="metric">
+            <strong>5 audit checks</strong>
+            <span>probes, security context, RBAC, network policies, and quotas.</span>
+          </div>
+          <div class="metric">
+            <strong>JSON-ready</strong>
+            <span>Use it in CI, cron checks, or runbooks without changing the interface.</span>
+          </div>
+          <div class="metric">
+            <strong>Namespace aware</strong>
+            <span>Run broad cluster reviews or focus on a single team’s environment.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Core Flows</div>
+              <h2>Built for the first ten minutes of cluster trouble.</h2>
+              <p class="section-copy">
+                The value here is not “another kubectl wrapper.” The value is collapsing posture checks,
+                failure analysis, and preventive audits into one predictable command surface.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <article class="card">
+              <h3>Healthcheck</h3>
+              <p>Read node state, pod distribution, and core component status when you need a clean baseline.</p>
+              <span class="label">Posture</span>
+            </article>
+            <article class="card">
+              <h3>Diagnostics</h3>
+              <p>Surface CrashLoopBackOff, restart storms, event pressure, and resource or probe gaps in one report.</p>
+              <span class="label">Triage</span>
+            </article>
+            <article class="card">
+              <h3>Audit</h3>
+              <p>Catch risky RBAC bindings, insecure security contexts, missing quotas, and weak namespace isolation.</p>
+              <span class="label">Prevention</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Command Pack</div>
+              <h2>Three ways teams use it.</h2>
+            </div>
+          </div>
+          <div class="split-grid">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>healthcheck</span>
+              </div>
+              <pre>k8s-doctor healthcheck --namespace platform --output table</pre>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>diagnostics</span>
+              </div>
+              <pre>k8s-doctor diagnostics --namespace payments --output json</pre>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>audit</span>
+              </div>
+              <pre>k8s-doctor audit --namespace payments --output table</pre>
+            </div>
+            <article class="card">
+              <h3>Why operators keep it close</h3>
+              <p>It fits into runbooks naturally: start broad, focus on one namespace, and export machine-readable data when the incident moves into automation.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="install-grid reveal">
+          <div class="section-card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">Install</div>
+                <h2>Run it without ceremony.</h2>
+              </div>
+            </div>
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>setup</span>
+              </div>
+              <pre>git clone https://github.com/neogan/sre-toolkit.git
+cd sre-toolkit
+make build
+
+go install github.com/neogan/sre-toolkit/cmd/k8s-doctor@latest</pre>
+            </div>
+          </div>
+          <aside class="cta-card">
+            <div>
+              <div class="eyebrow">Next Step</div>
+              <h2>Want the deeper walkthrough?</h2>
+              <p>The tutorial covers flags, examples, and troubleshooting for real clusters.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="button button-primary" href="../k8s-doctor-tutorial.md">Open Tutorial</a>
+              <a class="button button-secondary" href="./index.html">Toolkit Hub</a>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        Product page for <strong>k8s-doctor</strong>.
+        <div class="footer-links">
+          <a href="./index.html">Toolkit Hub</a>
+          <a href="../k8s-doctor-tutorial.md">Tutorial</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script src="./assets/site.js"></script>
+</body>
+</html>
