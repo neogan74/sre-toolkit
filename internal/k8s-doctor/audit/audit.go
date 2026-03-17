@@ -418,14 +418,24 @@ func analyzeRoleBinding(ctx context.Context, clientset kubernetes.Interface, bin
 }
 
 func analyzeClusterRoleBinding(ctx context.Context, clientset kubernetes.Interface, binding rbacv1.ClusterRoleBinding, namespace string) ([]RBACIssue, error) {
-	subjects := relevantSubjects(binding.Subjects, namespace)
+	var filteredSubjects []rbacv1.Subject
+	if namespace != "" {
+		for _, s := range binding.Subjects {
+			if s.Kind == "ServiceAccount" && s.Namespace == namespace {
+				filteredSubjects = append(filteredSubjects, s)
+			}
+		}
+	} else {
+		filteredSubjects = binding.Subjects
+	}
+
+	subjects := relevantSubjects(filteredSubjects, namespace)
 	if len(subjects) == 0 {
 		return nil, nil
 	}
 
 	return analyzeRoleRef(ctx, clientset, binding.RoleRef, "", binding.Name, subjects)
 }
-
 func analyzeRoleRef(ctx context.Context, clientset kubernetes.Interface, roleRef rbacv1.RoleRef, bindingNamespace, bindingName string, subjects []string) ([]RBACIssue, error) {
 	issues := []RBACIssue{}
 	bindingRef := fmt.Sprintf("%s/%s", roleRef.Kind, roleRef.Name)
