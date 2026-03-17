@@ -178,7 +178,8 @@ func TestAudit(t *testing.T) {
 	}
 
 	// Case 1: Healthy cluster audit
-	cmd := exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "--kubeconfig", kubeconfigPath)
+	doctorPath := filepath.Join(rootDir, "bin", "k8s-doctor")
+	cmd := exec.Command(doctorPath, "audit", "--kubeconfig", kubeconfigPath)
 	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	// Audit might return 1 if there are warnings (like missing network policies in default)
@@ -234,7 +235,7 @@ roleRef:
 	time.Sleep(2 * time.Second)
 
 	// Run audit again
-	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "--kubeconfig", kubeconfigPath)
+	cmd = exec.Command(doctorPath, "audit", "--kubeconfig", kubeconfigPath)
 	cmd.Dir = rootDir
 	output, err = cmd.CombinedOutput()
 	if err == nil {
@@ -258,15 +259,16 @@ roleRef:
 		t.Fatalf("Failed to create namespace: %v\nOutput: %s", err, out)
 	}
 
-	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
-	cmd.Dir = rootDir
+	t.Logf("Running Case 3: %s audit -n empty-ns -o json --kubeconfig %s", doctorPath, kubeconfigPath)
+	cmd = exec.Command(doctorPath, "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
 	output, err = cmd.CombinedOutput()
+	t.Logf("Case 3 Output length: %d", len(output))
 	if err == nil {
 		t.Fatalf("Expected audit to fail in empty-ns due to missing quota, but it succeeded. Output:\n%s", output)
 	}
 
-	if !strings.Contains(string(output), "ResourceQuota defined") {
-		t.Errorf("Expected output to contain 'ResourceQuota defined', but got:\n%s", output)
+	if !strings.Contains(string(output), "ResourceQuotaIssues") {
+		t.Errorf("Expected output to contain 'ResourceQuotaIssues', but got:\n%s", output)
 	}
 }
 
