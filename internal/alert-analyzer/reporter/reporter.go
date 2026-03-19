@@ -55,6 +55,18 @@ func (r *Reporter) ReportFrequency(results []analyzer.FrequencyResult) error {
 	}
 }
 
+// ReportCorrelation outputs correlation analysis results.
+func (r *Reporter) ReportCorrelation(results []analyzer.CorrelationResult) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportCorrelationTable(results)
+	case FormatJSON:
+		return r.reportCorrelationJSON(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
 // reportSummaryTable outputs summary in table format
 func (r *Reporter) reportSummaryTable(stats analyzer.SummaryStats) error {
 	fmt.Fprintln(r.writer, "\n=== Alert Analysis Summary ===")
@@ -165,10 +177,11 @@ func getSeverityIcon(severity string) string {
 
 // AnalysisReport contains all analysis results for JSON export
 type AnalysisReport struct {
-	Timestamp string                     `json:"timestamp"`
-	Summary   analyzer.SummaryStats      `json:"summary"`
-	Frequency []analyzer.FrequencyResult `json:"frequency_analysis"`
-	Flapping  []analyzer.FlappingResult  `json:"flapping_analysis,omitempty"`
+	Timestamp   string                       `json:"timestamp"`
+	Summary     analyzer.SummaryStats        `json:"summary"`
+	Frequency   []analyzer.FrequencyResult   `json:"frequency_analysis"`
+	Flapping    []analyzer.FlappingResult    `json:"flapping_analysis,omitempty"`
+	Correlation []analyzer.CorrelationResult `json:"correlation_analysis,omitempty"`
 }
 
 // ReportComplete outputs a complete analysis report
@@ -195,6 +208,16 @@ func (r *Reporter) ReportComplete(stats analyzer.SummaryStats, frequency []analy
 
 // ReportCompleteWithFlapping outputs a complete analysis report including flapping analysis
 func (r *Reporter) ReportCompleteWithFlapping(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult) error {
+	return r.ReportCompleteWithInsights(stats, frequency, flapping, nil)
+}
+
+// ReportCompleteWithCorrelation outputs a complete analysis report including correlation analysis.
+func (r *Reporter) ReportCompleteWithCorrelation(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, correlation []analyzer.CorrelationResult) error {
+	return r.ReportCompleteWithInsights(stats, frequency, nil, correlation)
+}
+
+// ReportCompleteWithInsights outputs a complete analysis report including optional flapping and correlation analysis.
+func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult) error {
 	switch r.format {
 	case FormatTable:
 		if err := r.ReportSummary(stats); err != nil {
@@ -203,13 +226,24 @@ func (r *Reporter) ReportCompleteWithFlapping(stats analyzer.SummaryStats, frequ
 		if err := r.ReportFrequency(frequency); err != nil {
 			return err
 		}
-		return r.ReportFlapping(flapping)
+		if len(flapping) > 0 {
+			if err := r.ReportFlapping(flapping); err != nil {
+				return err
+			}
+		}
+		if len(correlation) > 0 {
+			if err := r.ReportCorrelation(correlation); err != nil {
+				return err
+			}
+		}
+		return nil
 	case FormatJSON:
 		report := AnalysisReport{
-			Timestamp: time.Now().Format(time.RFC3339),
-			Summary:   stats,
-			Frequency: frequency,
-			Flapping:  flapping,
+			Timestamp:   time.Now().Format(time.RFC3339),
+			Summary:     stats,
+			Frequency:   frequency,
+			Flapping:    flapping,
+			Correlation: correlation,
 		}
 		encoder := json.NewEncoder(r.writer)
 		encoder.SetIndent("", "  ")
@@ -274,5 +308,42 @@ func (r *Reporter) reportFlappingJSON(results []analyzer.FlappingResult) error {
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(map[string]interface{}{
 		"flapping_analysis": results,
+	})
+}
+
+// reportCorrelationTable outputs correlation analysis in table format.
+func (r *Reporter) reportCorrelationTable(results []analyzer.CorrelationResult) error {
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "\nNo correlated alert pairs detected.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(r.writer, 0, 0, 3, ' ', 0)
+
+	fmt.Fprintln(w, "\n=== Alert Correlation Analysis ===")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "ALERT A\tALERT B\tCO-OCCUR\tSCORE\tAVG OVERLAP\tTOTAL OVERLAP")
+	fmt.Fprintln(w, "-------\t-------\t--------\t-----\t-----------\t-------------")
+
+	for _, result := range results {
+		fmt.Fprintf(w, "%s\t%s\t%d\t%.2f\t%s\t%s\n",
+			result.AlertA,
+			result.AlertB,
+			result.CoOccurrenceCount,
+			result.CorrelationScore,
+			formatDuration(result.AvgOverlap),
+			formatDuration(result.TotalOverlap),
+		)
+	}
+
+	return w.Flush()
+}
+
+// reportCorrelationJSON outputs correlation analysis in JSON format.
+func (r *Reporter) reportCorrelationJSON(results []analyzer.CorrelationResult) error {
+	encoder := json.NewEncoder(r.writer)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(map[string]interface{}{
+		"correlation_analysis": results,
 	})
 }

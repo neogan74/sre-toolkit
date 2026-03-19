@@ -89,7 +89,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Total/unique alert counting
   - [x] Alert history tracking (fired/resolved times)
   - [x] Flapping alerts detection (constantly switching) ✅ **NEW**
-  - [ ] Alert correlation (which alerts fire together)
+  - [x] Alert correlation (which alerts fire together) ✅ **NEW**
   - [ ] Temporal patterns (day of week, time of day)
 
 - [ ] **Recommendations** ⏳ **PLANNED (Phase 2)**
@@ -123,7 +123,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Next Steps:**
 - [ ] Unit tests (80%+ coverage target) 🔴 **HIGH PRIORITY**
 - [ ] Flapping detection algorithm
-- [ ] Alert correlation analysis
+- [x] Alert correlation analysis ✅ **NEW**
 - [ ] Recommendations engine
 - [ ] Grafana dashboard
 - [ ] Victoria Metrics compatibility testing

@@ -159,6 +159,21 @@ APILatencyHigh               67        warning     production      API p95 > 500
 ...
 ```
 
+### Table Format with Correlation Insights
+
+```bash
+$ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
+```
+
+```
+=== Alert Correlation Analysis ===
+ALERT A                     ALERT B                     CO-OCCUR    SCORE    AVG OVERLAP    TOTAL OVERLAP
+-------                     -------                     --------    -----    -----------    -------------
+DatabaseConnectionFlap      APILatencyHigh             18          0.81     4m30s          1h21m0s
+HighSystemLoad              CPUHighUsage               12          0.74     6m0s           1h12m0s
+PodRestartingFrequently     ContainerOOMKilled         9           0.68     7m20s          1h6m0s
+```
+
 ### JSON Format
 
 ```bash
@@ -190,6 +205,30 @@ $ alert-analyzer analyze --prometheus-url http://localhost:9090 -o json | jq '.'
     }
   ]
 }
+```
+
+### JSON Format with Correlation Insights
+
+```bash
+$ alert-analyzer analyze --prometheus-url http://localhost:9090 \
+  --show-flapping \
+  --show-correlation \
+  -o json | jq '.correlation_analysis'
+```
+
+```json
+[
+  {
+    "alert_a": "DatabaseConnectionFlap",
+    "alert_b": "APILatencyHigh",
+    "co_occurrence_count": 18,
+    "coverage_a": 0.82,
+    "coverage_b": 0.79,
+    "correlation_score": 0.81,
+    "avg_overlap": 270000000000,
+    "total_overlap": 4860000000000
+  }
+]
 ```
 
 ## Advanced Usage
@@ -270,13 +309,14 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d --top-n 
 alert-analyzer analyze \
   --prometheus-url http://prom:9090 \
   --lookback 2h \
+  --show-correlation \
   --resolution 1m
 ```
 
 **Actions:**
 - Identify alert storm patterns
+- See which alerts consistently fired together
 - Find alerts that should have fired but didn't
-- Improve alert correlation
 
 ### 4. CI/CD Integration
 
@@ -354,7 +394,10 @@ alert-analyzer analyze --prometheus-url http://localhost:9090
 # 4. Test JSON output
 alert-analyzer analyze --prometheus-url http://localhost:9090 -o json | jq '.summary'
 
-# 5. Stop environment
+# 5. Inspect correlated alert pairs
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
+
+# 6. Stop environment
 docker-compose down
 ```
 
@@ -389,6 +432,26 @@ See `deployments/docker/alert-analyzer/README.md` for complete setup guide.
       "severity": string,      // Label value
       "namespace": string,     // Label value
       "percentage": float      // % of total firings
+    }
+  ],
+  "flapping_analysis": [
+    {
+      "name": string,
+      "transition_count": int,
+      "flapping_score": float,
+      "is_flapping": bool
+    }
+  ],
+  "correlation_analysis": [
+    {
+      "alert_a": string,
+      "alert_b": string,
+      "co_occurrence_count": int,
+      "coverage_a": float,
+      "coverage_b": float,
+      "correlation_score": float,
+      "avg_overlap": int64,
+      "total_overlap": int64
     }
   ]
 }
@@ -516,6 +579,18 @@ Integrate with existing workflows:
 # Export to CSV for spreadsheet analysis
 alert-analyzer analyze --prometheus-url http://prom:9090 -o json | \
   jq -r '.top_alerts[] | [.name, .firing_count, .severity] | @csv'
+```
+
+### 6. Review Correlated Alert Pairs
+
+Use correlation output to identify shared failure domains and duplicate paging paths:
+
+```bash
+alert-analyzer analyze \
+  --prometheus-url http://prom:9090 \
+  --lookback 14d \
+  --show-correlation \
+  -o json | jq '.correlation_analysis[] | select(.correlation_score > 0.7)'
 ```
 
 ## Integration Examples
