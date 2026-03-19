@@ -114,7 +114,7 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("alert-analyzer version %s\n", version)
+			fmt.Fprintf(cmd.OutOrStdout(), "alert-analyzer version %s\n", version)
 		},
 	}
 }
