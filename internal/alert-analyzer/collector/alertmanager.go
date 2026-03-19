@@ -10,14 +10,18 @@ import (
 	"github.com/neogan/sre-toolkit/pkg/alertmanager"
 )
 
+type alertmanagerAPI interface {
+	ListAlerts(ctx context.Context, filter []string) ([]alertmanager.Alert, error)
+}
+
 // AlertmanagerCollector collects alert data from Alertmanager
 type AlertmanagerCollector struct {
-	client *alertmanager.Client
+	client alertmanagerAPI
 	logger *zerolog.Logger
 }
 
 // NewAlertmanagerCollector creates a new Alertmanager collector
-func NewAlertmanagerCollector(client *alertmanager.Client, logger *zerolog.Logger) *AlertmanagerCollector {
+func NewAlertmanagerCollector(client alertmanagerAPI, logger *zerolog.Logger) *AlertmanagerCollector {
 	return &AlertmanagerCollector{
 		client: client,
 		logger: logger,
