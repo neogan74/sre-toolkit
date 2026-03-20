@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -62,6 +63,18 @@ func (r *Reporter) ReportCorrelation(results []analyzer.CorrelationResult) error
 		return r.reportCorrelationTable(results)
 	case FormatJSON:
 		return r.reportCorrelationJSON(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// ReportRecommendations outputs generated recommendations.
+func (r *Reporter) ReportRecommendations(results []analyzer.Recommendation) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportRecommendationsTable(results)
+	case FormatJSON:
+		return r.reportRecommendationsJSON(results)
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -177,11 +190,12 @@ func getSeverityIcon(severity string) string {
 
 // AnalysisReport contains all analysis results for JSON export
 type AnalysisReport struct {
-	Timestamp   string                       `json:"timestamp"`
-	Summary     analyzer.SummaryStats        `json:"summary"`
-	Frequency   []analyzer.FrequencyResult   `json:"frequency_analysis"`
-	Flapping    []analyzer.FlappingResult    `json:"flapping_analysis,omitempty"`
-	Correlation []analyzer.CorrelationResult `json:"correlation_analysis,omitempty"`
+	Timestamp       string                       `json:"timestamp"`
+	Summary         analyzer.SummaryStats        `json:"summary"`
+	Frequency       []analyzer.FrequencyResult   `json:"frequency_analysis"`
+	Flapping        []analyzer.FlappingResult    `json:"flapping_analysis,omitempty"`
+	Correlation     []analyzer.CorrelationResult `json:"correlation_analysis,omitempty"`
+	Recommendations []analyzer.Recommendation    `json:"recommendations,omitempty"`
 }
 
 // ReportComplete outputs a complete analysis report
@@ -208,16 +222,16 @@ func (r *Reporter) ReportComplete(stats analyzer.SummaryStats, frequency []analy
 
 // ReportCompleteWithFlapping outputs a complete analysis report including flapping analysis
 func (r *Reporter) ReportCompleteWithFlapping(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult) error {
-	return r.ReportCompleteWithInsights(stats, frequency, flapping, nil)
+	return r.ReportCompleteWithInsights(stats, frequency, flapping, nil, nil)
 }
 
 // ReportCompleteWithCorrelation outputs a complete analysis report including correlation analysis.
 func (r *Reporter) ReportCompleteWithCorrelation(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, correlation []analyzer.CorrelationResult) error {
-	return r.ReportCompleteWithInsights(stats, frequency, nil, correlation)
+	return r.ReportCompleteWithInsights(stats, frequency, nil, correlation, nil)
 }
 
 // ReportCompleteWithInsights outputs a complete analysis report including optional flapping and correlation analysis.
-func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult) error {
+func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult, recommendations []analyzer.Recommendation) error {
 	switch r.format {
 	case FormatTable:
 		if err := r.ReportSummary(stats); err != nil {
@@ -236,14 +250,20 @@ func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequ
 				return err
 			}
 		}
+		if len(recommendations) > 0 {
+			if err := r.ReportRecommendations(recommendations); err != nil {
+				return err
+			}
+		}
 		return nil
 	case FormatJSON:
 		report := AnalysisReport{
-			Timestamp:   time.Now().Format(time.RFC3339),
-			Summary:     stats,
-			Frequency:   frequency,
-			Flapping:    flapping,
-			Correlation: correlation,
+			Timestamp:       time.Now().Format(time.RFC3339),
+			Summary:         stats,
+			Frequency:       frequency,
+			Flapping:        flapping,
+			Correlation:     correlation,
+			Recommendations: recommendations,
 		}
 		encoder := json.NewEncoder(r.writer)
 		encoder.SetIndent("", "  ")
@@ -345,5 +365,47 @@ func (r *Reporter) reportCorrelationJSON(results []analyzer.CorrelationResult) e
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(map[string]interface{}{
 		"correlation_analysis": results,
+	})
+}
+
+// reportRecommendationsTable outputs recommendations in table format.
+func (r *Reporter) reportRecommendationsTable(results []analyzer.Recommendation) error {
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "\nNo recommendations generated.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(r.writer, 0, 0, 3, ' ', 0)
+
+	fmt.Fprintln(w, "\n=== Recommendations ===")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "PRIORITY\tCATEGORY\tTARGET\tSIGNAL/NOISE\tACTION")
+	fmt.Fprintln(w, "--------\t--------\t------\t------------\t------")
+
+	for _, result := range results {
+		signalToNoise := result.SignalToNoise
+		if signalToNoise == "" {
+			signalToNoise = "-"
+		}
+
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			strings.ToUpper(result.Priority),
+			result.Category,
+			result.Target,
+			signalToNoise,
+			result.Action,
+		)
+		fmt.Fprintf(w, " \t \t \t \tReason: %s\n", result.Summary)
+	}
+
+	return w.Flush()
+}
+
+// reportRecommendationsJSON outputs recommendations in JSON format.
+func (r *Reporter) reportRecommendationsJSON(results []analyzer.Recommendation) error {
+	encoder := json.NewEncoder(r.writer)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(map[string]interface{}{
+		"recommendations": results,
 	})
 }
