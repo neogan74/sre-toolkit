@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/neogan/sre-toolkit/internal/alert-analyzer/collector"
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 	RecommendationCategoryStability     = "stability"
 	RecommendationCategoryDeduplication = "deduplication"
 	RecommendationCategoryReview        = "review"
+	RecommendationCategoryDeadRule      = "dead_rule"
 
 	SignalToNoiseLow    = "low"
 	SignalToNoiseMedium = "medium"
@@ -54,9 +57,14 @@ func NewRecommendationEngine() *RecommendationEngine {
 }
 
 // Generate builds recommendations from frequency, flapping, and correlation insights.
-func (e *RecommendationEngine) Generate(frequency []FrequencyResult, flapping []FlappingResult, correlation []CorrelationResult) []Recommendation {
+func (e *RecommendationEngine) Generate(frequency []FrequencyResult, flapping []FlappingResult, correlation []CorrelationResult, rules []collector.AlertRule) []Recommendation {
 	recommendations := make([]Recommendation, 0)
 	flappingByAlert := make(map[string]FlappingResult, len(flapping))
+	firedAlerts := make(map[string]struct{}, len(frequency))
+
+	for _, result := range frequency {
+		firedAlerts[result.AlertName] = struct{}{}
+	}
 
 	for _, result := range flapping {
 		flappingByAlert[result.AlertName] = result
@@ -110,6 +118,28 @@ func (e *RecommendationEngine) Generate(frequency []FrequencyResult, flapping []
 			RelatedAlerts: pair,
 			Summary:       fmt.Sprintf("%s and %s overlap %d times with a correlation score of %.2f.", result.AlertA, result.AlertB, result.CoOccurrenceCount, result.CorrelationScore),
 			Action:        "Review grouping, inhibition, or runbook linkage so operators do not triage the same incident twice.",
+		})
+	}
+
+	for _, rule := range rules {
+		if _, ok := firedAlerts[rule.GetGroupingKey()]; ok {
+			continue
+		}
+
+		summary := fmt.Sprintf("%s did not fire during the analyzed window.", rule.GetGroupingKey())
+		action := "Check thresholds, label selectors, and ownership. Remove or downgrade the rule if it no longer represents a useful signal."
+		if rule.LastError != "" {
+			summary = fmt.Sprintf("%s did not fire and reports rule errors: %s.", rule.GetGroupingKey(), rule.LastError)
+			action = "Fix the rule expression first, then verify whether the alert should still exist."
+		}
+
+		recommendations = append(recommendations, Recommendation{
+			Category:      RecommendationCategoryDeadRule,
+			Priority:      recommendationPriorityForSeverity(rule.GetSeverity(), RecommendationPriorityMedium),
+			Target:        rule.GetGroupingKey(),
+			SignalToNoise: SignalToNoiseLow,
+			Summary:       summary,
+			Action:        action,
 		})
 	}
 

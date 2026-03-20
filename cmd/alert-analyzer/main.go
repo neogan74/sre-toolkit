@@ -197,6 +197,7 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 		Msg("Collecting alert data")
 
 	var aggregatedHistory *collector.AlertHistory
+	allRules := make([]collector.AlertRule, 0)
 
 	for _, urlInput := range prometheusURLs {
 		clusterName, promURL := parsePrometheusURL(urlInput)
@@ -222,6 +223,16 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 			continue
 		}
 
+		if showRecommendations {
+			ruleCollector := collector.NewRuleCollector(promClient, &logger)
+			rules, rulesErr := ruleCollector.CollectAlertRules(ctx, clusterName)
+			if rulesErr != nil {
+				logger.Error().Err(rulesErr).Str("cluster", clusterName).Msg("Failed to collect alert rules")
+			} else {
+				allRules = append(allRules, rules...)
+			}
+		}
+
 		promCollector := collector.NewPrometheusCollector(promClient, &logger)
 
 		history, err := promCollector.Collect(ctx, clusterName, lookback, resolution)
@@ -238,7 +249,15 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 		}
 	}
 
-	if aggregatedHistory == nil || aggregatedHistory.CountAlerts() == 0 {
+	if aggregatedHistory == nil && showRecommendations && len(allRules) > 0 {
+		aggregatedHistory = &collector.AlertHistory{
+			StartTime: time.Now().Add(-lookback),
+			EndTime:   time.Now(),
+			Source:    "prometheus",
+		}
+	}
+
+	if aggregatedHistory == nil || (aggregatedHistory.CountAlerts() == 0 && !(showRecommendations && len(allRules) > 0)) {
 		return fmt.Errorf("failed to collect alert data from any of the provided Prometheus sources")
 	}
 
@@ -311,7 +330,7 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 	recommendations := []analyzer.Recommendation{}
 	if showRecommendations {
 		recommendationEngine := analyzer.NewRecommendationEngine()
-		recommendations = recommendationEngine.Generate(allFrequency, allFlapping, allCorrelations)
+		recommendations = recommendationEngine.Generate(allFrequency, allFlapping, allCorrelations, allRules)
 		logger.Info().
 			Int("recommendations", len(recommendations)).
 			Msg("Recommendation analysis complete")

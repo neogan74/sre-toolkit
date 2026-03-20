@@ -23,6 +23,22 @@ type AlertHistory struct {
 	Source    string    `json:"source"` // prometheus, alertmanager
 }
 
+// AlertRule represents a configured alerting rule discovered from Prometheus.
+type AlertRule struct {
+	Name           string            `json:"name"`
+	Cluster        string            `json:"cluster,omitempty"`
+	Group          string            `json:"group,omitempty"`
+	File           string            `json:"file,omitempty"`
+	Query          string            `json:"query,omitempty"`
+	Duration       time.Duration     `json:"duration,omitempty"`
+	Labels         map[string]string `json:"labels,omitempty"`
+	Annotations    map[string]string `json:"annotations,omitempty"`
+	Health         string            `json:"health,omitempty"`
+	LastError      string            `json:"last_error,omitempty"`
+	LastEvaluation time.Time         `json:"last_evaluation,omitempty"`
+	State          string            `json:"state,omitempty"`
+}
+
 // GetAlertName returns the alert name
 func (a *Alert) GetAlertName() string {
 	return a.Name
@@ -34,6 +50,22 @@ func (a *Alert) GetGroupingKey() string {
 		return a.Name + " [" + a.Cluster + "]"
 	}
 	return a.Name
+}
+
+// GetGroupingKey returns a unique key for grouping a rule by name + cluster.
+func (r *AlertRule) GetGroupingKey() string {
+	if r.Cluster != "" {
+		return r.Name + " [" + r.Cluster + "]"
+	}
+	return r.Name
+}
+
+// GetSeverity returns the severity label value, or "unknown" if not present.
+func (r *AlertRule) GetSeverity() string {
+	if severity, ok := r.Labels["severity"]; ok {
+		return severity
+	}
+	return "unknown"
 }
 
 // GetSeverity returns the severity label value, or "unknown" if not present

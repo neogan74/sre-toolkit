@@ -140,6 +140,7 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --
 
 Recommendations combine frequency, flapping, and correlation signals into concrete follow-up actions. The current engine focuses on:
 - tuning `for:` duration or thresholds for noisy short-lived alerts
+- identifying alerting rules that never fired in the analyzed window via the Prometheus Rules API
 - prioritizing high-impact rules for review
 - highlighting low signal-to-noise alerts
 - spotting correlated alert pairs that should be grouped or inhibited together
@@ -213,6 +214,8 @@ HIGH       stability       DatabaseConnectionFlap       low            Increase 
                                                          Reason: DatabaseConnectionFlap changes state 12 times (6.00 transitions/hour), which indicates flapping.
 MEDIUM     deduplication   DatabaseConnectionFlap + APILatencyHigh   -   Review grouping, inhibition, or runbook linkage so operators do not triage the same incident twice.
                                                          Reason: DatabaseConnectionFlap and APILatencyHigh overlap 6 times with a correlation score of 0.83.
+MEDIUM     dead_rule       TestAlertNeverFiring         low            Check thresholds, label selectors, and ownership. Remove or downgrade the rule if it no longer represents a useful signal.
+                                                         Reason: TestAlertNeverFiring did not fire during the analyzed window.
 ```
 
 ### JSON Format

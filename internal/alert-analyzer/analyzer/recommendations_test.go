@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/neogan/sre-toolkit/internal/alert-analyzer/collector"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,21 +52,41 @@ func TestRecommendationEngine_Generate(t *testing.T) {
 		},
 	}
 
-	recommendations := engine.Generate(frequency, flapping, correlation)
-	require.Len(t, recommendations, 4)
+	rules := []collector.AlertRule{
+		{
+			Name:   "NeverFiresAlert",
+			Labels: map[string]string{"severity": "warning"},
+		},
+		{
+			Name:      "BrokenRuleAlert",
+			Cluster:   "prod",
+			Labels:    map[string]string{"severity": "critical"},
+			LastError: "parse error: unexpected identifier",
+		},
+	}
+
+	recommendations := engine.Generate(frequency, flapping, correlation, rules)
+	require.Len(t, recommendations, 6)
 
 	assert.Equal(t, RecommendationPriorityCritical, recommendations[0].Priority)
-	assert.Equal(t, RecommendationCategoryReview, recommendations[0].Category)
-	assert.Equal(t, "CriticalNoisyAlert", recommendations[0].Target)
+	assert.Equal(t, RecommendationCategoryDeadRule, recommendations[0].Category)
+	assert.Equal(t, "BrokenRuleAlert [prod]", recommendations[0].Target)
 
-	assert.Equal(t, RecommendationCategoryStability, recommendations[1].Category)
+	assert.Equal(t, RecommendationPriorityCritical, recommendations[1].Priority)
+	assert.Equal(t, RecommendationCategoryReview, recommendations[1].Category)
 	assert.Equal(t, "CriticalNoisyAlert", recommendations[1].Target)
 
-	assert.Equal(t, RecommendationCategoryTuning, recommendations[2].Category)
-	assert.Equal(t, SignalToNoiseLow, recommendations[2].SignalToNoise)
+	assert.Equal(t, RecommendationCategoryStability, recommendations[2].Category)
+	assert.Equal(t, "CriticalNoisyAlert", recommendations[2].Target)
 
-	assert.Equal(t, RecommendationCategoryDeduplication, recommendations[3].Category)
-	assert.Equal(t, []string{"DatabaseConnectionFlap", "APILatencyHigh"}, recommendations[3].RelatedAlerts)
+	assert.Equal(t, RecommendationCategoryTuning, recommendations[3].Category)
+	assert.Equal(t, SignalToNoiseLow, recommendations[3].SignalToNoise)
+
+	assert.Equal(t, RecommendationCategoryDeadRule, recommendations[4].Category)
+	assert.Equal(t, "NeverFiresAlert", recommendations[4].Target)
+
+	assert.Equal(t, RecommendationCategoryDeduplication, recommendations[5].Category)
+	assert.Equal(t, []string{"DatabaseConnectionFlap", "APILatencyHigh"}, recommendations[5].RelatedAlerts)
 }
 
 func TestAssessSignalToNoise(t *testing.T) {

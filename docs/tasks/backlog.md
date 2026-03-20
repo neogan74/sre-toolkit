@@ -94,7 +94,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 - [x] **Recommendations** ✅ **PARTIAL**
   - [x] Suggestions for for/threshold tuning ✅ **NEW**
-  - [ ] "Dead" rule identification (never firing)
+  - [x] "Dead" rule identification (never firing) ✅ **NEW**
   - [x] Signal-to-noise ratio assessment ✅ **NEW**
   - [x] Rule prioritization for review ✅ **NEW**
 

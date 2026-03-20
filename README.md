@@ -53,7 +53,7 @@ Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
 - Alertmanager API integration for active alerts
 - Frequency analysis of firing alerts
 - Identification of noisy, flapping, and correlated alerts
-- Actionable recommendations for noisy, unstable, and duplicated alert paths
+- Actionable recommendations for noisy, unstable, dead, and duplicated alert paths
 - Support for custom lookback periods and resolutions
 - Multiple output formats (table, JSON)
 
