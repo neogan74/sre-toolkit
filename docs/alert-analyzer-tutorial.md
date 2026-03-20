@@ -55,6 +55,9 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20
 # Output as JSON for automation
 alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 
+# Output as Markdown report
+alert-analyzer analyze --prometheus-url http://prom:9090 --output markdown
+
 # Include alert correlation analysis
 alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
 
@@ -72,7 +75,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations
 | `--prometheus-url` | Prometheus server URL (required) | - |
 | `--lookback` | Time range to analyze (e.g., 7d, 24h, 30d) | `7d` |
 | `--resolution` | Query resolution (e.g., 1m, 5m, 15m) | `5m` |
-| `--output, -o` | Output format: table or json | `table` |
+| `--output, -o` | Output format: table, json, or markdown | `table` |
 | `--top-n` | Number of top alerts to show | `20` |
 | `--alertmanager-url` | Alertmanager server URL (optional) | - |
 | `--timeout` | Request timeout | `30s` |
@@ -312,6 +315,42 @@ $ alert-analyzer analyze --prometheus-url http://localhost:9090 \
     "total_overlap": 4860000000000
   }
 ]
+```
+
+### Markdown Format
+
+```bash
+$ alert-analyzer analyze \
+  --prometheus-url http://localhost:9090 \
+  --show-flapping \
+  --show-correlation \
+  --show-temporal-patterns \
+  --show-recommendations \
+  -o markdown
+```
+
+```markdown
+# Alert Analysis Report
+
+Generated: 2026-03-20T10:00:00Z
+
+## Summary
+
+- Total Alert Instances: 1523
+- Unique Alerts: 45
+- Total Firings: 1523
+
+## Frequency Analysis
+
+| Alert Name | Firings | Avg Duration | Total Time | Last Fired | Severity |
+| --- | ---: | --- | --- | --- | --- |
+| DatabaseConnectionFlap | 298 | 4m 0s | 19h 52m | 2026-03-20 09:58 | 🔴 critical |
+
+## Recommendations
+
+| Priority | Category | Target | Signal/Noise | Action |
+| --- | --- | --- | --- | --- |
+| HIGH | stability | DatabaseConnectionFlap | low | Increase `for:` duration or stabilize the underlying dependency before paging on this alert. |
 ```
 
 ## Advanced Usage

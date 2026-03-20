@@ -104,7 +104,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 	cmd.Flags().StringVar(&alertmanagerURL, "alertmanager-url", "", "Alertmanager server URL (optional)")
 	cmd.Flags().StringVar(&lookback, "lookback", "7d", "Time range to analyze (e.g., 7d, 24h, 30d)")
 	cmd.Flags().StringVar(&resolution, "resolution", "5m", "Query resolution (e.g., 1m, 5m, 15m)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format: table or json")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format: table, json, or markdown")
 	cmd.Flags().IntVar(&topN, "top-n", 20, "Number of top alerts to show")
 	cmd.Flags().StringVar(&timeout, "timeout", "30s", "Request timeout")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")

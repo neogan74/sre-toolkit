@@ -57,6 +57,15 @@ func TestReportSummary(t *testing.T) {
 		assert.Equal(t, stats.MostFrequent, output["summary"].MostFrequent)
 	})
 
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportSummary(stats)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Summary")
+		assert.Contains(t, buf.String(), "- Total Alert Instances: 100")
+	})
+
 	t.Run("Invalid Format", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter("yaml", &buf)
@@ -105,6 +114,15 @@ func TestReportFrequency(t *testing.T) {
 		assert.Equal(t, "Alert1", output["frequency_analysis"][0].AlertName)
 	})
 
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportFrequency(results)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Frequency Analysis")
+		assert.Contains(t, buf.String(), "| Alert1 | 10 |")
+	})
+
 	t.Run("Empty Results", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter(FormatTable, &buf)
@@ -150,6 +168,15 @@ func TestReportFlapping(t *testing.T) {
 
 		assert.Len(t, output["flapping_analysis"], 1)
 		assert.Equal(t, "FlappingAlert", output["flapping_analysis"][0].AlertName)
+	})
+
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportFlapping(results)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Flapping Analysis")
+		assert.Contains(t, buf.String(), "| FlappingAlert | 10 | 5.50/hr |")
 	})
 
 	t.Run("Table Format Empty", func(t *testing.T) {
@@ -207,6 +234,15 @@ func TestReportCorrelation(t *testing.T) {
 		assert.Equal(t, "AlertA", output["correlation_analysis"][0].AlertA)
 	})
 
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportCorrelation(results)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Correlation Analysis")
+		assert.Contains(t, buf.String(), "| AlertA | AlertB | 3 | 0.75 |")
+	})
+
 	t.Run("Empty Results", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter(FormatTable, &buf)
@@ -253,6 +289,16 @@ func TestReportRecommendations(t *testing.T) {
 		assert.Len(t, output["recommendations"], 1)
 		assert.Equal(t, "AlertA", output["recommendations"][0].Target)
 	})
+
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportRecommendations(results)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Recommendations")
+		assert.Contains(t, buf.String(), "| HIGH | tuning | AlertA | low |")
+		assert.Contains(t, buf.String(), "Reason: AlertA fired too often.")
+	})
 }
 
 func TestReportTemporalPatterns(t *testing.T) {
@@ -295,6 +341,15 @@ func TestReportTemporalPatterns(t *testing.T) {
 		assert.Len(t, output["temporal_patterns"], 1)
 		assert.Equal(t, "AlertA", output["temporal_patterns"][0].AlertName)
 	})
+
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportTemporalPatterns(results)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Temporal Patterns")
+		assert.Contains(t, buf.String(), "| AlertA | 10:00 | 4 | Monday |")
+	})
 }
 
 func TestReportCompleteWithFlapping(t *testing.T) {
@@ -327,6 +382,17 @@ func TestReportCompleteWithFlapping(t *testing.T) {
 		assert.Contains(t, output, "summary")
 		assert.Contains(t, output, "frequency_analysis")
 		assert.Contains(t, output, "flapping_analysis")
+	})
+
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportCompleteWithFlapping(stats, freq, flap)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "# Alert Analysis Report")
+		assert.Contains(t, buf.String(), "## Summary")
+		assert.Contains(t, buf.String(), "## Frequency Analysis")
+		assert.Contains(t, buf.String(), "## Flapping Analysis")
 	})
 
 	t.Run("Unsupported Format", func(t *testing.T) {
@@ -377,6 +443,22 @@ func TestReportCompleteWithInsights(t *testing.T) {
 		assert.Contains(t, output, "correlation_analysis")
 		assert.Contains(t, output, "temporal_patterns")
 		assert.Contains(t, output, "recommendations")
+	})
+
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, temporal, recs)
+		assert.NoError(t, err)
+
+		output := buf.String()
+		assert.Contains(t, output, "# Alert Analysis Report")
+		assert.Contains(t, output, "## Summary")
+		assert.Contains(t, output, "## Frequency Analysis")
+		assert.Contains(t, output, "## Flapping Analysis")
+		assert.Contains(t, output, "## Correlation Analysis")
+		assert.Contains(t, output, "## Temporal Patterns")
+		assert.Contains(t, output, "## Recommendations")
 	})
 }
 
