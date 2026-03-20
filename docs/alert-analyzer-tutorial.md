@@ -58,6 +58,9 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 # Include alert correlation analysis
 alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
 
+# Show temporal patterns
+alert-analyzer analyze --prometheus-url http://prom:9090 --show-temporal-patterns
+
 # Generate actionable recommendations
 alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations
 ```
@@ -76,6 +79,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations
 | `--insecure` | Skip TLS verification | `false` |
 | `--show-flapping` | Include flapping alerts analysis | `false` |
 | `--show-correlation` | Include alert correlation analysis | `false` |
+| `--show-temporal-patterns` | Include time-of-day and day-of-week patterns | `false` |
 | `--show-recommendations` | Include actionable recommendations | `false` |
 | `--flapping-threshold` | Flapping threshold (transitions/hour) | `3.0` |
 
@@ -156,6 +160,26 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 \
   --show-recommendations
 ```
 
+### 7. Temporal Patterns
+
+Temporal patterns show when alerts usually fire. This is useful for identifying batch windows, business-hours noise, or weekend-only regressions.
+
+```bash
+# Show temporal patterns only
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-temporal-patterns
+
+# Combine temporal patterns with recommendations
+alert-analyzer analyze --prometheus-url http://localhost:9090 \
+  --show-temporal-patterns \
+  --show-recommendations
+```
+
+**Temporal Metrics:**
+- **Peak Hour**: Hour of day with the most firings
+- **Peak Weekday**: Day of week with the most firings
+- **Business Hours Ratio**: Share of firings during weekdays 09:00-18:00
+- **Weekend Ratio**: Share of firings on Saturday/Sunday
+
 ## Example Output
 
 ### Table Format (Default)
@@ -216,6 +240,21 @@ MEDIUM     deduplication   DatabaseConnectionFlap + APILatencyHigh   -   Review 
                                                          Reason: DatabaseConnectionFlap and APILatencyHigh overlap 6 times with a correlation score of 0.83.
 MEDIUM     dead_rule       TestAlertNeverFiring         low            Check thresholds, label selectors, and ownership. Remove or downgrade the rule if it no longer represents a useful signal.
                                                          Reason: TestAlertNeverFiring did not fire during the analyzed window.
+```
+
+### Table Format with Temporal Patterns
+
+```bash
+$ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-temporal-patterns
+```
+
+```
+=== Temporal Patterns Analysis ===
+ALERT NAME                PEAK HOUR   HOUR COUNT   PEAK WEEKDAY   DAY COUNT   BUSINESS HOURS   WEEKEND   SEVERITY
+----------                ---------   ----------   ------------   ---------   --------------   -------   --------
+DatabaseConnectionFlap    10:00       14           Monday         22          78%              4%        🔴 critical
+BatchJobFailed            02:00       9            Sunday         11          0%               100%      ⚠️ warning
+CPUHighUsage              11:00       8            Wednesday      17          91%              0%        ⚠️ warning
 ```
 
 ### JSON Format
@@ -498,6 +537,21 @@ See `deployments/docker/alert-analyzer/README.md` for complete setup guide.
       "total_overlap": int64
     }
   ],
+  "temporal_patterns": [
+    {
+      "alert_name": string,
+      "severity": string,
+      "total_firings": int,
+      "peak_hour": int,
+      "peak_hour_count": int,
+      "peak_weekday": string,
+      "peak_weekday_count": int,
+      "business_hours_ratio": float,
+      "weekend_ratio": float,
+      "hourly_distribution": [int],
+      "weekday_distribution": [int]
+    }
+  ],
   "recommendations": [
     {
       "category": string,
@@ -753,19 +807,19 @@ After analyzing your alerts:
 4. **Advanced Analysis**
    - ✅ Flapping detection (now available with `--show-flapping`)
    - ✅ Alert correlation analysis (now available with `--show-correlation`)
+   - ✅ Temporal patterns (now available with `--show-temporal-patterns`)
    - ✅ Recommendations engine (now available with `--show-recommendations`)
-   - Temporal patterns (coming soon)
 
 ## Version Information
 
 Current version: 0.1.0
-Features: Frequency analysis, basic reporting, flapping detection, alert correlation, recommendations
+Features: Frequency analysis, basic reporting, flapping detection, alert correlation, temporal patterns, recommendations
 
 See project roadmap for upcoming features:
 - ✅ Flapping alert detection (available)
 - ✅ Alert correlation analysis (available)
+- ✅ Temporal patterns (available)
 - ✅ Automated recommendations (available)
-- Temporal pattern recognition
 - Grafana dashboard integration
 
 ## Additional Resources

@@ -80,6 +80,18 @@ func (r *Reporter) ReportRecommendations(results []analyzer.Recommendation) erro
 	}
 }
 
+// ReportTemporalPatterns outputs temporal pattern analysis.
+func (r *Reporter) ReportTemporalPatterns(results []analyzer.TemporalResult) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportTemporalPatternsTable(results)
+	case FormatJSON:
+		return r.reportTemporalPatternsJSON(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
 // reportSummaryTable outputs summary in table format
 func (r *Reporter) reportSummaryTable(stats analyzer.SummaryStats) error {
 	fmt.Fprintln(r.writer, "\n=== Alert Analysis Summary ===")
@@ -195,6 +207,7 @@ type AnalysisReport struct {
 	Frequency       []analyzer.FrequencyResult   `json:"frequency_analysis"`
 	Flapping        []analyzer.FlappingResult    `json:"flapping_analysis,omitempty"`
 	Correlation     []analyzer.CorrelationResult `json:"correlation_analysis,omitempty"`
+	Temporal        []analyzer.TemporalResult    `json:"temporal_patterns,omitempty"`
 	Recommendations []analyzer.Recommendation    `json:"recommendations,omitempty"`
 }
 
@@ -222,16 +235,16 @@ func (r *Reporter) ReportComplete(stats analyzer.SummaryStats, frequency []analy
 
 // ReportCompleteWithFlapping outputs a complete analysis report including flapping analysis
 func (r *Reporter) ReportCompleteWithFlapping(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult) error {
-	return r.ReportCompleteWithInsights(stats, frequency, flapping, nil, nil)
+	return r.ReportCompleteWithInsights(stats, frequency, flapping, nil, nil, nil)
 }
 
 // ReportCompleteWithCorrelation outputs a complete analysis report including correlation analysis.
 func (r *Reporter) ReportCompleteWithCorrelation(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, correlation []analyzer.CorrelationResult) error {
-	return r.ReportCompleteWithInsights(stats, frequency, nil, correlation, nil)
+	return r.ReportCompleteWithInsights(stats, frequency, nil, correlation, nil, nil)
 }
 
 // ReportCompleteWithInsights outputs a complete analysis report including optional flapping and correlation analysis.
-func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult, recommendations []analyzer.Recommendation) error {
+func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult, temporal []analyzer.TemporalResult, recommendations []analyzer.Recommendation) error {
 	switch r.format {
 	case FormatTable:
 		if err := r.ReportSummary(stats); err != nil {
@@ -250,6 +263,11 @@ func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequ
 				return err
 			}
 		}
+		if len(temporal) > 0 {
+			if err := r.ReportTemporalPatterns(temporal); err != nil {
+				return err
+			}
+		}
 		if len(recommendations) > 0 {
 			if err := r.ReportRecommendations(recommendations); err != nil {
 				return err
@@ -263,6 +281,7 @@ func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequ
 			Frequency:       frequency,
 			Flapping:        flapping,
 			Correlation:     correlation,
+			Temporal:        temporal,
 			Recommendations: recommendations,
 		}
 		encoder := json.NewEncoder(r.writer)
@@ -365,6 +384,47 @@ func (r *Reporter) reportCorrelationJSON(results []analyzer.CorrelationResult) e
 	encoder.SetIndent("", "  ")
 	return encoder.Encode(map[string]interface{}{
 		"correlation_analysis": results,
+	})
+}
+
+// reportTemporalPatternsTable outputs temporal patterns in table format.
+func (r *Reporter) reportTemporalPatternsTable(results []analyzer.TemporalResult) error {
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "\nNo temporal patterns detected.")
+		return nil
+	}
+
+	w := tabwriter.NewWriter(r.writer, 0, 0, 3, ' ', 0)
+
+	fmt.Fprintln(w, "\n=== Temporal Patterns Analysis ===")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "ALERT NAME\tPEAK HOUR\tHOUR COUNT\tPEAK WEEKDAY\tDAY COUNT\tBUSINESS HOURS\tWEEKEND\tSEVERITY")
+	fmt.Fprintln(w, "----------\t---------\t----------\t------------\t---------\t--------------\t-------\t--------")
+
+	for _, result := range results {
+		severityIcon := getSeverityIcon(result.Severity)
+		fmt.Fprintf(w, "%s\t%02d:00\t%d\t%s\t%d\t%.0f%%\t%.0f%%\t%s %s\n",
+			result.AlertName,
+			result.PeakHour,
+			result.PeakHourCount,
+			result.PeakWeekday,
+			result.PeakWeekdayCount,
+			result.BusinessHoursRatio*100,
+			result.WeekendRatio*100,
+			severityIcon,
+			result.Severity,
+		)
+	}
+
+	return w.Flush()
+}
+
+// reportTemporalPatternsJSON outputs temporal patterns in JSON format.
+func (r *Reporter) reportTemporalPatternsJSON(results []analyzer.TemporalResult) error {
+	encoder := json.NewEncoder(r.writer)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(map[string]interface{}{
+		"temporal_patterns": results,
 	})
 }
 
