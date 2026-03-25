@@ -52,18 +52,19 @@ to reduce alert fatigue and improve alerting effectiveness.`
 
 func newAnalyzeCmd() *cobra.Command {
 	var (
-		prometheusURLs      []string
-		alertmanagerURL     string
-		lookback            string
-		resolution          string
-		output              string
-		topN                int
-		timeout             string
-		insecure            bool
-		showFlapping        bool
-		showCorrelation     bool
-		showRecommendations bool
-		flappingThreshold   float64
+		prometheusURLs       []string
+		alertmanagerURL      string
+		lookback             string
+		resolution           string
+		output               string
+		topN                 int
+		timeout              string
+		insecure             bool
+		showFlapping         bool
+		showCorrelation      bool
+		showTemporalPatterns bool
+		showRecommendations  bool
+		flappingThreshold    float64
 	)
 
 	cmd := &cobra.Command{
@@ -88,10 +89,13 @@ time range, and performs frequency analysis to identify the most problematic ale
   # Include alert correlation analysis
   alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
 
+  # Show temporal alert patterns
+  alert-analyzer analyze --prometheus-url http://prom:9090 --show-temporal-patterns
+
   # Generate actionable recommendations
   alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAnalyze(prometheusURLs, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure, showFlapping, showCorrelation, showRecommendations, flappingThreshold)
+			return runAnalyze(prometheusURLs, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure, showFlapping, showCorrelation, showTemporalPatterns, showRecommendations, flappingThreshold)
 		},
 	}
 
@@ -106,6 +110,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")
 	cmd.Flags().BoolVar(&showFlapping, "show-flapping", false, "Include flapping alerts analysis")
 	cmd.Flags().BoolVar(&showCorrelation, "show-correlation", false, "Include alert correlation analysis")
+	cmd.Flags().BoolVar(&showTemporalPatterns, "show-temporal-patterns", false, "Include time-of-day and day-of-week alert patterns")
 	cmd.Flags().BoolVar(&showRecommendations, "show-recommendations", false, "Include actionable recommendations based on alert patterns")
 	cmd.Flags().Float64Var(&flappingThreshold, "flapping-threshold", 3.0, "Flapping threshold (transitions per hour)")
 
@@ -140,7 +145,7 @@ func parsePrometheusURL(input string) (clusterName, targetURL string) {
 	return "default", input
 }
 
-func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure, showFlapping, showCorrelation, showRecommendations bool, flappingThreshold float64) error {
+func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure, showFlapping, showCorrelation, showTemporalPatterns, showRecommendations bool, flappingThreshold float64) error {
 	// Initialize configuration
 	cfg := config.Default()
 
@@ -327,6 +332,15 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 		}
 	}
 
+	temporalPatterns := []analyzer.TemporalResult{}
+	if showTemporalPatterns {
+		temporalAnalyzer := analyzer.NewTemporalAnalyzer(aggregatedHistory)
+		temporalPatterns = temporalAnalyzer.AnalyzeTopN(topN)
+		logger.Info().
+			Int("temporal_patterns", len(temporalPatterns)).
+			Msg("Temporal pattern analysis complete")
+	}
+
 	recommendations := []analyzer.Recommendation{}
 	if showRecommendations {
 		recommendationEngine := analyzer.NewRecommendationEngine()
@@ -338,16 +352,20 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 
 	// Perform flapping analysis if requested
 	if showFlapping {
-		if err := rep.ReportCompleteWithInsights(stats, topAlerts, flappingAlerts, correlations, recommendations); err != nil {
+		if err := rep.ReportCompleteWithInsights(stats, topAlerts, flappingAlerts, correlations, temporalPatterns, recommendations); err != nil {
 			return fmt.Errorf("failed to generate report: %w", err)
 		}
 	} else {
 		if showCorrelation {
-			if err := rep.ReportCompleteWithInsights(stats, topAlerts, nil, correlations, recommendations); err != nil {
+			if err := rep.ReportCompleteWithInsights(stats, topAlerts, nil, correlations, temporalPatterns, recommendations); err != nil {
+				return fmt.Errorf("failed to generate report: %w", err)
+			}
+		} else if showTemporalPatterns {
+			if err := rep.ReportCompleteWithInsights(stats, topAlerts, nil, nil, temporalPatterns, recommendations); err != nil {
 				return fmt.Errorf("failed to generate report: %w", err)
 			}
 		} else if showRecommendations {
-			if err := rep.ReportCompleteWithInsights(stats, topAlerts, nil, nil, recommendations); err != nil {
+			if err := rep.ReportCompleteWithInsights(stats, topAlerts, nil, nil, nil, recommendations); err != nil {
 				return fmt.Errorf("failed to generate report: %w", err)
 			}
 		} else if err := rep.ReportComplete(stats, topAlerts); err != nil {

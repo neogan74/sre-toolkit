@@ -255,6 +255,48 @@ func TestReportRecommendations(t *testing.T) {
 	})
 }
 
+func TestReportTemporalPatterns(t *testing.T) {
+	results := []analyzer.TemporalResult{
+		{
+			AlertName:          "AlertA",
+			PeakHour:           10,
+			PeakHourCount:      4,
+			PeakWeekday:        "Monday",
+			PeakWeekdayCount:   6,
+			BusinessHoursRatio: 0.75,
+			WeekendRatio:       0.10,
+			Severity:           "warning",
+		},
+	}
+
+	t.Run("Table Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportTemporalPatterns(results)
+		assert.NoError(t, err)
+
+		output := buf.String()
+		assert.Contains(t, output, "=== Temporal Patterns Analysis ===")
+		assert.Contains(t, output, "AlertA")
+		assert.Contains(t, output, "10:00")
+		assert.Contains(t, output, "Monday")
+	})
+
+	t.Run("JSON Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatJSON, &buf)
+		err := r.ReportTemporalPatterns(results)
+		assert.NoError(t, err)
+
+		var output map[string][]analyzer.TemporalResult
+		err = json.Unmarshal(buf.Bytes(), &output)
+		require.NoError(t, err)
+
+		assert.Len(t, output["temporal_patterns"], 1)
+		assert.Equal(t, "AlertA", output["temporal_patterns"][0].AlertName)
+	})
+}
+
 func TestReportCompleteWithFlapping(t *testing.T) {
 	stats := analyzer.SummaryStats{TotalAlerts: 10}
 	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
@@ -301,12 +343,13 @@ func TestReportCompleteWithInsights(t *testing.T) {
 	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
 	flap := []analyzer.FlappingResult{{AlertName: "A1", IsFlapping: true}}
 	corr := []analyzer.CorrelationResult{{AlertA: "A1", AlertB: "A2", CorrelationScore: 0.8}}
+	temporal := []analyzer.TemporalResult{{AlertName: "A1", PeakHour: 10, PeakWeekday: "Monday"}}
 	recs := []analyzer.Recommendation{{Category: analyzer.RecommendationCategoryReview, Target: "A1", Action: "Review it.", Priority: analyzer.RecommendationPriorityHigh}}
 
 	t.Run("Table Format", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter(FormatTable, &buf)
-		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, recs)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, temporal, recs)
 		assert.NoError(t, err)
 
 		output := buf.String()
@@ -314,13 +357,14 @@ func TestReportCompleteWithInsights(t *testing.T) {
 		assert.Contains(t, output, "=== Alert Frequency Analysis ===")
 		assert.Contains(t, output, "=== Flapping Alerts Analysis ===")
 		assert.Contains(t, output, "=== Alert Correlation Analysis ===")
+		assert.Contains(t, output, "=== Temporal Patterns Analysis ===")
 		assert.Contains(t, output, "=== Recommendations ===")
 	})
 
 	t.Run("JSON Format", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter(FormatJSON, &buf)
-		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, recs)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, temporal, recs)
 		assert.NoError(t, err)
 
 		var output map[string]interface{}
@@ -331,6 +375,7 @@ func TestReportCompleteWithInsights(t *testing.T) {
 		assert.Contains(t, output, "frequency_analysis")
 		assert.Contains(t, output, "flapping_analysis")
 		assert.Contains(t, output, "correlation_analysis")
+		assert.Contains(t, output, "temporal_patterns")
 		assert.Contains(t, output, "recommendations")
 	})
 }

@@ -90,7 +90,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Alert history tracking (fired/resolved times)
   - [x] Flapping alerts detection (constantly switching) ✅ **NEW**
   - [x] Alert correlation (which alerts fire together) ✅ **NEW**
-  - [ ] Temporal patterns (day of week, time of day)
+  - [x] Temporal patterns (day of week, time of day) ✅ **NEW**
 
 - [x] **Recommendations** ✅ **PARTIAL**
   - [x] Suggestions for for/threshold tuning ✅ **NEW**

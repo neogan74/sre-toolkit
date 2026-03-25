@@ -53,6 +53,7 @@ Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
 - Alertmanager API integration for active alerts
 - Frequency analysis of firing alerts
 - Identification of noisy, flapping, and correlated alerts
+- Temporal pattern analysis by hour of day and weekday
 - Actionable recommendations for noisy, unstable, dead, and duplicated alert paths
 - Support for custom lookback periods and resolutions
 - Multiple output formats (table, JSON)
@@ -67,6 +68,9 @@ alert-analyzer analyze --prometheus-url http://prometheus:9090 --lookback 30d --
 
 # Include flapping and correlation insights
 alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-flapping --show-correlation
+
+# Inspect time-of-day and day-of-week patterns
+alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-temporal-patterns
 
 # Generate actionable recommendations
 alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-recommendations
