@@ -83,8 +83,7 @@ for improving your cluster's reliability and security.`
 	if err := rootCmd.Execute(); err != nil {
 		l := logging.GetLogger()
 		l.Error().Err(err).Msg("Command execution failed")
-		// Don't use os.Exit here to allow deferred cleanup
-		return
+		os.Exit(1)
 	}
 }
 
@@ -133,6 +132,8 @@ func newHealthCheckCmd() *cobra.Command {
 			format := reporter.FormatTable
 			if output == "json" {
 				format = reporter.FormatJSON
+			} else if output == "yaml" {
+				format = reporter.FormatYAML
 			}
 			rep := reporter.NewReporter(format, os.Stdout)
 
@@ -204,7 +205,7 @@ func newHealthCheckCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check (empty for all)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
@@ -263,6 +264,8 @@ func newDiagnosticsCmd() *cobra.Command {
 			format := reporter.FormatTable
 			if output == "json" {
 				format = reporter.FormatJSON
+			} else if output == "yaml" {
+				format = reporter.FormatYAML
 			}
 			rep := reporter.NewReporter(format, os.Stdout)
 
@@ -290,7 +293,7 @@ func newDiagnosticsCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check (empty for all)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
@@ -343,6 +346,8 @@ func newAuditCmd() *cobra.Command {
 			format := reporter.FormatTable
 			if output == "json" {
 				format = reporter.FormatJSON
+			} else if output == "yaml" {
+				format = reporter.FormatYAML
 			}
 			rep := reporter.NewReporter(format, os.Stdout)
 
@@ -372,7 +377,7 @@ func newAuditCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to audit (empty for all)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd

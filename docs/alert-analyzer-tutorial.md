@@ -17,15 +17,15 @@
 
 ```bash
 cd sre-toolkit
-make build
+make build-all
 # Binary will be in bin/alert-analyzer
 ```
 
 ### Install to PATH
 
 ```bash
-make install
-# Installs to $GOPATH/bin
+go install ./cmd/alert-analyzer
+# Or: go install github.com/neogan/sre-toolkit/cmd/alert-analyzer@latest
 ```
 
 ## Basic Usage
@@ -54,6 +54,9 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20
 
 # Output as JSON for automation
 alert-analyzer analyze --prometheus-url http://prom:9090 --output json
+
+# Include alert correlation analysis
+alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
 ```
 
 ### Command Flags
@@ -69,6 +72,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 | `--timeout` | Request timeout | `30s` |
 | `--insecure` | Skip TLS verification | `false` |
 | `--show-flapping` | Include flapping alerts analysis | `false` |
+| `--show-correlation` | Include alert correlation analysis | `false` |
 | `--flapping-threshold` | Flapping threshold (transitions/hour) | `3.0` |
 
 ## What Does Alert Analyzer Do?
@@ -110,6 +114,24 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --
 - **Avg State Duration**: Average time spent in each state
 - **Is Flapping**: Whether alert exceeds threshold
 
+### 5. Alert Correlation
+
+Correlation analysis shows which alerts fire in overlapping time windows. This is useful when you want to identify shared failure domains, cascading symptoms, or alert pairs that should be reviewed together.
+
+```bash
+# Include correlation analysis in output
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
+
+# Combine flapping and correlation insights
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --show-correlation
+```
+
+**Correlation Metrics:**
+- **Co-Occurrence Count**: Number of overlapping firing intervals between two alerts
+- **Coverage A / Coverage B**: Fraction of each alert's firings that overlapped the paired alert
+- **Correlation Score**: Average overlap coverage across both alerts
+- **Avg Overlap / Total Overlap**: How long the alerts tend to be active together
+
 ## Example Output
 
 ### Table Format (Default)
@@ -135,6 +157,21 @@ PodRestartingFrequently     123        warning     default         Pod restartin
 DiskSpaceRunningLow          89        info        production      Disk > 85%
 APILatencyHigh               67        warning     production      API p95 > 500ms
 ...
+```
+
+### Table Format with Correlation Insights
+
+```bash
+$ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
+```
+
+```
+=== Alert Correlation Analysis ===
+ALERT A                     ALERT B                     CO-OCCUR    SCORE    AVG OVERLAP    TOTAL OVERLAP
+-------                     -------                     --------    -----    -----------    -------------
+DatabaseConnectionFlap      APILatencyHigh             18          0.81     4m30s          1h21m0s
+HighSystemLoad              CPUHighUsage               12          0.74     6m0s           1h12m0s
+PodRestartingFrequently     ContainerOOMKilled         9           0.68     7m20s          1h6m0s
 ```
 
 ### JSON Format
@@ -168,6 +205,30 @@ $ alert-analyzer analyze --prometheus-url http://localhost:9090 -o json | jq '.'
     }
   ]
 }
+```
+
+### JSON Format with Correlation Insights
+
+```bash
+$ alert-analyzer analyze --prometheus-url http://localhost:9090 \
+  --show-flapping \
+  --show-correlation \
+  -o json | jq '.correlation_analysis'
+```
+
+```json
+[
+  {
+    "alert_a": "DatabaseConnectionFlap",
+    "alert_b": "APILatencyHigh",
+    "co_occurrence_count": 18,
+    "coverage_a": 0.82,
+    "coverage_b": 0.79,
+    "correlation_score": 0.81,
+    "avg_overlap": 270000000000,
+    "total_overlap": 4860000000000
+  }
+]
 ```
 
 ## Advanced Usage
@@ -248,13 +309,14 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d --top-n 
 alert-analyzer analyze \
   --prometheus-url http://prom:9090 \
   --lookback 2h \
+  --show-correlation \
   --resolution 1m
 ```
 
 **Actions:**
 - Identify alert storm patterns
+- See which alerts consistently fired together
 - Find alerts that should have fired but didn't
-- Improve alert correlation
 
 ### 4. CI/CD Integration
 
@@ -332,7 +394,10 @@ alert-analyzer analyze --prometheus-url http://localhost:9090
 # 4. Test JSON output
 alert-analyzer analyze --prometheus-url http://localhost:9090 -o json | jq '.summary'
 
-# 5. Stop environment
+# 5. Inspect correlated alert pairs
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
+
+# 6. Stop environment
 docker-compose down
 ```
 
@@ -367,6 +432,26 @@ See `deployments/docker/alert-analyzer/README.md` for complete setup guide.
       "severity": string,      // Label value
       "namespace": string,     // Label value
       "percentage": float      // % of total firings
+    }
+  ],
+  "flapping_analysis": [
+    {
+      "name": string,
+      "transition_count": int,
+      "flapping_score": float,
+      "is_flapping": bool
+    }
+  ],
+  "correlation_analysis": [
+    {
+      "alert_a": string,
+      "alert_b": string,
+      "co_occurrence_count": int,
+      "coverage_a": float,
+      "coverage_b": float,
+      "correlation_score": float,
+      "avg_overlap": int64,
+      "total_overlap": int64
     }
   ]
 }
@@ -496,6 +581,18 @@ alert-analyzer analyze --prometheus-url http://prom:9090 -o json | \
   jq -r '.top_alerts[] | [.name, .firing_count, .severity] | @csv'
 ```
 
+### 6. Review Correlated Alert Pairs
+
+Use correlation output to identify shared failure domains and duplicate paging paths:
+
+```bash
+alert-analyzer analyze \
+  --prometheus-url http://prom:9090 \
+  --lookback 14d \
+  --show-correlation \
+  -o json | jq '.correlation_analysis[] | select(.correlation_score > 0.7)'
+```
+
 ## Integration Examples
 
 ### Slack Notifications
@@ -600,18 +697,18 @@ After analyzing your alerts:
 
 4. **Advanced Analysis**
    - ✅ Flapping detection (now available with `--show-flapping`)
-   - Alert correlation (coming soon)
+   - ✅ Alert correlation analysis (now available with `--show-correlation`)
    - Temporal patterns (coming soon)
    - Recommendations engine (coming soon)
 
 ## Version Information
 
 Current version: 0.1.0
-Features: Frequency analysis, basic reporting, flapping detection
+Features: Frequency analysis, basic reporting, flapping detection, alert correlation
 
 See project roadmap for upcoming features:
 - ✅ Flapping alert detection (available)
-- Alert correlation analysis
+- ✅ Alert correlation analysis (available)
 - Temporal pattern recognition
 - Automated recommendations
 - Grafana dashboard integration

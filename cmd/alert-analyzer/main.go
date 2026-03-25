@@ -61,6 +61,7 @@ func newAnalyzeCmd() *cobra.Command {
 		timeout           string
 		insecure          bool
 		showFlapping      bool
+		showCorrelation   bool
 		flappingThreshold float64
 	)
 
@@ -81,9 +82,12 @@ time range, and performs frequency analysis to identify the most problematic ale
   alert-analyzer analyze --prometheus-url http://prom:9090 --top-n 20 --output json
 
   # Include flapping analysis with custom threshold
-  alert-analyzer analyze --prometheus-url http://prom:9090 --show-flapping --flapping-threshold 5.0`,
+  alert-analyzer analyze --prometheus-url http://prom:9090 --show-flapping --flapping-threshold 5.0
+
+  # Include alert correlation analysis
+  alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAnalyze(prometheusURLs, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure, showFlapping, flappingThreshold)
+			return runAnalyze(prometheusURLs, alertmanagerURL, lookback, resolution, output, topN, timeout, insecure, showFlapping, showCorrelation, flappingThreshold)
 		},
 	}
 
@@ -97,6 +101,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 	cmd.Flags().StringVar(&timeout, "timeout", "30s", "Request timeout")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")
 	cmd.Flags().BoolVar(&showFlapping, "show-flapping", false, "Include flapping alerts analysis")
+	cmd.Flags().BoolVar(&showCorrelation, "show-correlation", false, "Include alert correlation analysis")
 	cmd.Flags().Float64Var(&flappingThreshold, "flapping-threshold", 3.0, "Flapping threshold (transitions per hour)")
 
 	cmd.MarkFlagRequired("prometheus-url")
@@ -109,7 +114,7 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("alert-analyzer version %s\n", version)
+			fmt.Fprintf(cmd.OutOrStdout(), "alert-analyzer version %s\n", version)
 		},
 	}
 }
@@ -120,17 +125,17 @@ func parsePrometheusURL(input string) (clusterName, targetURL string) {
 	if len(parts) == 2 {
 		return parts[0], parts[1]
 	}
-	
+
 	// If no cluster name provided, derive from hostname
 	u, err := url.Parse(input)
 	if err == nil && u.Host != "" {
 		return u.Host, input
 	}
-	
+
 	return "default", input
 }
 
-func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure, showFlapping bool, flappingThreshold float64) error {
+func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutionStr, outputFormat string, topN int, timeoutStr string, insecure, showFlapping, showCorrelation bool, flappingThreshold float64) error {
 	// Initialize configuration
 	cfg := config.Default()
 
@@ -213,7 +218,7 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 		}
 
 		promCollector := collector.NewPrometheusCollector(promClient, &logger)
-		
+
 		history, err := promCollector.Collect(ctx, clusterName, lookback, resolution)
 		cancel()
 		if err != nil {
@@ -258,6 +263,14 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 
 	// Report results
 	rep := reporter.NewReporter(outputFormat, os.Stdout)
+	correlations := []analyzer.CorrelationResult{}
+	if showCorrelation {
+		correlationAnalyzer := analyzer.NewCorrelationAnalyzer(aggregatedHistory)
+		correlations = correlationAnalyzer.AnalyzeTopN(topN)
+		logger.Info().
+			Int("correlated_pairs", len(correlations)).
+			Msg("Correlation analysis complete")
+	}
 
 	// Perform flapping analysis if requested
 	if showFlapping {
@@ -270,11 +283,15 @@ func runAnalyze(prometheusURLs []string, alertmanagerURL, lookbackStr, resolutio
 			Float64("threshold", flappingThreshold).
 			Msg("Flapping analysis complete")
 
-		if err := rep.ReportCompleteWithFlapping(stats, topAlerts, flappingAlerts); err != nil {
+		if err := rep.ReportCompleteWithInsights(stats, topAlerts, flappingAlerts, correlations); err != nil {
 			return fmt.Errorf("failed to generate report: %w", err)
 		}
 	} else {
-		if err := rep.ReportComplete(stats, topAlerts); err != nil {
+		if showCorrelation {
+			if err := rep.ReportCompleteWithCorrelation(stats, topAlerts, correlations); err != nil {
+				return fmt.Errorf("failed to generate report: %w", err)
+			}
+		} else if err := rep.ReportComplete(stats, topAlerts); err != nil {
 			return fmt.Errorf("failed to generate report: %w", err)
 		}
 	}

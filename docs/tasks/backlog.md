@@ -35,15 +35,15 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Check for liveness/readiness probes
   - [х] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
   - [x] NetworkPolicies check
-  - [ ] RBAC permissions audit (excessive permissions)
-  - [ ] Resource quotas check in namespace
+- [x] RBAC permissions audit (excessive permissions)
+  - [x] Resource quotas check in namespace
 
 - [x] **Reports and Export** ✅ **PARTIAL**
   - [x] JSON/Table output formats (tabwriter with alignment)
   - [x] CI/CD integration (exit codes on critical issues)
   - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
   - [x] Summary statistics
-  - [ ] YAML output format
+  - [x] YAML output format ✅ **COMPLETE**
   - [ ] HTML report with charts
   - [ ] Prometheus metrics export
 
@@ -60,8 +60,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `internal/k8s-doctor/diagnostics/diagnostics_test.go` ✅ **NEW**
 
 **Next Steps:**
-- [ ] Integration tests with kind (Phase 2.5)
-- [ ] Implement audit command
+- [x] Integration tests with kind (Phase 2.5) ✅ **COMPLETE**
+- [x] Implement audit command ✅ **COMPLETE**
 - [ ] Add event analysis
 - [ ] Resource limits checking
 - [ ] Benchmark tests for performance
@@ -89,7 +89,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Total/unique alert counting
   - [x] Alert history tracking (fired/resolved times)
   - [x] Flapping alerts detection (constantly switching) ✅ **NEW**
-  - [ ] Alert correlation (which alerts fire together)
+  - [x] Alert correlation (which alerts fire together) ✅ **NEW**
   - [ ] Temporal patterns (day of week, time of day)
 
 - [ ] **Recommendations** ⏳ **PLANNED (Phase 2)**
@@ -121,9 +121,9 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `deployments/docker/alert-analyzer/README.md` - Setup guide
 
 **Next Steps:**
-- [ ] Unit tests (80%+ coverage target) 🔴 **HIGH PRIORITY**
+- [x] Unit tests (80%+ coverage target) ✅ **DONE** (`82.4%` total coverpkg for `alert-analyzer`)
 - [ ] Flapping detection algorithm
-- [ ] Alert correlation analysis
+- [x] Alert correlation analysis ✅ **NEW**
 - [ ] Recommendations engine
 - [ ] Grafana dashboard
 - [ ] Victoria Metrics compatibility testing
@@ -448,7 +448,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 5. [ ] k8s-doctor integration tests (kind)
 6. [ ] alert-analyzer unit tests
 7. [ ] chaos-load unit tests
-8. [ ] k8s-doctor audit command
+8. [x] k8s-doctor audit command ✅ **COMPLETE**
 
 **Status:** 65% COMPLETE
 **Current Focus:** Testing & Production Readiness

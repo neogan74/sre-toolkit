@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SRE Toolkit | Tool Pages</title>
+  <meta
+    name="description"
+    content="Static landing pages for SRE Toolkit: k8s-doctor, alert-analyzer, chaos-load, and config-linter."
+  >
+  <link rel="stylesheet" href="./assets/site.css">
+</head>
+<body style="--accent:#b85c34; --accent-2:#1f6f8b; --bg-top:#f4eee3; --bg-bottom:#e4dac6;">
+  <div class="grain"></div>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="wrap nav">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark">ST</span>
+          <span>SRE Toolkit</span>
+        </a>
+        <nav class="nav-links">
+          <a href="./k8s-doctor.html">k8s-doctor</a>
+          <a href="./alert-analyzer.html">alert-analyzer</a>
+          <a href="./chaos-load.html">chaos-load</a>
+          <a href="./config-linter.html">config-linter</a>
+          <a class="nav-cta" href="../../README.md">Repository</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap hero-grid">
+          <div class="panel hero-copy reveal is-visible">
+            <div class="eyebrow">Static Product Pages • No Build Chain</div>
+            <h1>One toolkit. Four stories. One front door.</h1>
+            <p class="lead">
+              This landing area turns the repo from “a collection of CLI binaries” into something
+              presentable: a shared hub for the suite and dedicated product pages for each major tool.
+              It is built as plain HTML, CSS, and a tiny reveal script, so you can use it as a mock,
+              docs home, or GitHub Pages seed.
+            </p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="./k8s-doctor.html">Open k8s-doctor</a>
+              <a class="button button-secondary" href="./alert-analyzer.html">Open alert-analyzer</a>
+            </div>
+          </div>
+
+          <aside class="panel reveal is-visible">
+            <div class="terminal">
+              <div class="terminal-top">
+                <span class="lights"><span></span><span></span><span></span></span>
+                <span>toolkit surface</span>
+              </div>
+              <pre>SRE Toolkit
+
+Available product pages:
+  ./k8s-doctor.html
+  ./alert-analyzer.html
+  ./chaos-load.html
+  ./config-linter.html
+
+What this site is good for:
+  - repo demos
+  - internal platform reviews
+  - GitHub Pages publishing
+  - sharing one tool at a time
+
+What it avoids:
+  - frontend build chains
+  - framework lock-in
+  - runtime dependencies</pre>
+            </div>
+          </aside>
+        </div>
+
+        <div class="wrap metric-strip reveal">
+          <div class="metric">
+            <strong>4 pages</strong>
+            <span>Dedicated messaging and demos for the current tools.</span>
+          </div>
+          <div class="metric">
+            <strong>1 hub</strong>
+            <span>A shared entry page to route people by problem area.</span>
+          </div>
+          <div class="metric">
+            <strong>0 build steps</strong>
+            <span>Everything is static and can be hosted almost anywhere.</span>
+          </div>
+          <div class="metric">
+            <strong>Repo-native</strong>
+            <span>Links point back into tutorials and README content that already exists.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Pages</div>
+              <h2>Choose the story you want to tell.</h2>
+              <p class="section-copy">
+                The hub is intentionally broad. Each tool page goes narrower and speaks in the language
+                of the user problem: Kubernetes triage, alert noise, load testing, or config validation.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <article class="tool-card">
+              <h3>k8s-doctor</h3>
+              <p>Kubernetes healthcheck, diagnostics, and audit with RBAC, network policy, and resource quota coverage.</p>
+              <span class="label">Most complete</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./k8s-doctor.html">Open Page</a>
+              </div>
+            </article>
+            <article class="tool-card">
+              <h3>alert-analyzer</h3>
+              <p>Prometheus and Alertmanager analysis for noisy alerts, flapping rules, and signal-to-noise improvement.</p>
+              <span class="label">Operational analytics</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./alert-analyzer.html">Open Page</a>
+              </div>
+            </article>
+            <article class="tool-card">
+              <h3>chaos-load</h3>
+              <p>HTTP load generation and chaos-oriented experiments for resilience validation and performance smoke tests.</p>
+              <span class="label">Resilience testing</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./chaos-load.html">Open Page</a>
+              </div>
+            </article>
+            <article class="tool-card">
+              <h3>config-linter</h3>
+              <p>Configuration validation for Kubernetes YAML, Dockerfiles, and emerging Helm coverage.</p>
+              <span class="label">Build-time safety</span>
+              <div class="hero-actions">
+                <a class="button button-primary" href="./config-linter.html">Open Page</a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="section-card reveal">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Packaging</div>
+              <h2>Ready for sharing, not just local browsing.</h2>
+              <p class="section-copy">
+                Because everything lives under <code>docs/landing/</code>, this can later become a GitHub Pages site
+                with minimal friction. The hub gives you a neutral starting point for demos and the tool pages let you
+                send product-specific links without dragging the whole repo context along.
+              </p>
+            </div>
+          </div>
+
+          <div class="steps">
+            <article class="step">
+              <h3>For internal reviews</h3>
+              <p>Share one page per tool depending on the audience: platform, monitoring, or developer experience.</p>
+            </article>
+            <article class="step">
+              <h3>For public repo polish</h3>
+              <p>Use the hub as a higher-level “what is this?” layer on top of README and tutorials.</p>
+            </article>
+            <article class="step">
+              <h3>For future expansion</h3>
+              <p>Add `cert-monitor`, `log-parser`, or `db-toolkit` pages later without redesigning the structure.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        Toolkit landing hub at <code>docs/landing/index.html</code>.
+        <div class="footer-links">
+          <a href="./k8s-doctor.html">k8s-doctor</a>
+          <a href="./alert-analyzer.html">alert-analyzer</a>
+          <a href="./chaos-load.html">chaos-load</a>
+          <a href="./config-linter.html">config-linter</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <script src="./assets/site.js"></script>
+</body>
+</html>

@@ -62,9 +62,18 @@ test-coverage: test ## Run tests with coverage report
 	@echo "$(CYAN)Generating coverage report...$(NC)"
 	$(GO) tool cover -html=$(COVERAGE_FILE)
 
-test-e2e: ## Run end-to-end integration tests
+test-e2e: ## Run end-to-end integration tests (deprecated, use test-integration)
 	@echo "$(CYAN)Running e2e tests...$(NC)"
-	$(GO) test -v -timeout 10m ./tests/e2e/...
+	$(GO) test -v -timeout 10m ./tests/integration/...
+
+test-integration: build-all ## Run integration tests with kind
+	@echo "$(CYAN)Running integration tests...$(NC)"
+	@if command -v kind > /dev/null; then \
+		$(GO) test -v -timeout 15m ./tests/integration/...; \
+	else \
+		echo "$(RED)kind not installed. Skipping integration tests.$(NC)"; \
+		exit 1; \
+	fi
 
 
 lint: ## Run golangci-lint
