@@ -14,8 +14,9 @@ import (
 
 // Output format constants
 const (
-	FormatTable = "table"
-	FormatJSON  = "json"
+	FormatTable    = "table"
+	FormatJSON     = "json"
+	FormatMarkdown = "markdown"
 )
 
 // Reporter handles output formatting for analysis results
@@ -39,6 +40,8 @@ func (r *Reporter) ReportSummary(stats analyzer.SummaryStats) error {
 		return r.reportSummaryTable(stats)
 	case FormatJSON:
 		return r.reportSummaryJSON(stats)
+	case FormatMarkdown:
+		return r.reportSummaryMarkdown(stats)
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -51,6 +54,50 @@ func (r *Reporter) ReportFrequency(results []analyzer.FrequencyResult) error {
 		return r.reportFrequencyTable(results)
 	case FormatJSON:
 		return r.reportFrequencyJSON(results)
+	case FormatMarkdown:
+		return r.reportFrequencyMarkdown(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// ReportCorrelation outputs correlation analysis results.
+func (r *Reporter) ReportCorrelation(results []analyzer.CorrelationResult) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportCorrelationTable(results)
+	case FormatJSON:
+		return r.reportCorrelationJSON(results)
+	case FormatMarkdown:
+		return r.reportCorrelationMarkdown(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// ReportRecommendations outputs generated recommendations.
+func (r *Reporter) ReportRecommendations(results []analyzer.Recommendation) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportRecommendationsTable(results)
+	case FormatJSON:
+		return r.reportRecommendationsJSON(results)
+	case FormatMarkdown:
+		return r.reportRecommendationsMarkdown(results)
+	default:
+		return fmt.Errorf("unsupported format: %s", r.format)
+	}
+}
+
+// ReportTemporalPatterns outputs temporal pattern analysis.
+func (r *Reporter) ReportTemporalPatterns(results []analyzer.TemporalResult) error {
+	switch r.format {
+	case FormatTable:
+		return r.reportTemporalPatternsTable(results)
+	case FormatJSON:
+		return r.reportTemporalPatternsJSON(results)
+	case FormatMarkdown:
+		return r.reportTemporalPatternsMarkdown(results)
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -116,6 +163,20 @@ func (r *Reporter) reportSummaryJSON(stats analyzer.SummaryStats) error {
 	})
 }
 
+func (r *Reporter) reportSummaryMarkdown(stats analyzer.SummaryStats) error {
+	fmt.Fprintln(r.writer, "## Summary")
+	fmt.Fprintln(r.writer)
+	fmt.Fprintf(r.writer, "- Total Alert Instances: %d\n", stats.TotalAlerts)
+	fmt.Fprintf(r.writer, "- Unique Alerts: %d\n", stats.UniqueAlerts)
+	fmt.Fprintf(r.writer, "- Total Firings: %d\n", stats.TotalFirings)
+	fmt.Fprintf(r.writer, "- Total Time Firing: %s\n", formatDuration(stats.TotalFiringTime))
+	fmt.Fprintf(r.writer, "- Average Duration: %s\n", formatDuration(stats.AvgDuration))
+	fmt.Fprintf(r.writer, "- Most Frequent Alert: %s\n", escapeMarkdown(stats.MostFrequent))
+	fmt.Fprintf(r.writer, "- Longest Avg Duration: %s\n", escapeMarkdown(stats.LongestAvgDuration))
+	fmt.Fprintln(r.writer)
+	return nil
+}
+
 // reportFrequencyTable outputs frequency analysis in table format
 func (r *Reporter) reportFrequencyTable(results []analyzer.FrequencyResult) error {
 	if len(results) == 0 {
@@ -157,6 +218,32 @@ func (r *Reporter) reportFrequencyJSON(results []analyzer.FrequencyResult) error
 	return encoder.Encode(map[string]interface{}{
 		"frequency_analysis": results,
 	})
+}
+
+func (r *Reporter) reportFrequencyMarkdown(results []analyzer.FrequencyResult) error {
+	fmt.Fprintln(r.writer, "## Frequency Analysis")
+	fmt.Fprintln(r.writer)
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "No alerts found in the analysis period.")
+		fmt.Fprintln(r.writer)
+		return nil
+	}
+
+	fmt.Fprintln(r.writer, "| Alert Name | Firings | Avg Duration | Total Time | Last Fired | Severity |")
+	fmt.Fprintln(r.writer, "| --- | ---: | --- | --- | --- | --- |")
+	for _, result := range results {
+		fmt.Fprintf(r.writer, "| %s | %d | %s | %s | %s | %s %s |\n",
+			escapeMarkdown(result.AlertName),
+			result.FiringCount,
+			formatDuration(result.AvgDuration),
+			formatDuration(result.TotalTime),
+			result.LastFired.Format("2006-01-02 15:04"),
+			getSeverityIcon(result.Severity),
+			escapeMarkdown(result.Severity),
+		)
+	}
+	fmt.Fprintln(r.writer)
+	return nil
 }
 
 // formatDuration formats a duration in a human-readable way
@@ -228,6 +315,12 @@ func (r *Reporter) ReportComplete(stats analyzer.SummaryStats, frequency []analy
 		encoder := json.NewEncoder(r.writer)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(report)
+	case FormatMarkdown:
+		r.writeMarkdownHeader()
+		if err := r.ReportSummary(stats); err != nil {
+			return err
+		}
+		return r.ReportFrequency(frequency)
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -287,6 +380,35 @@ func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequ
 		encoder := json.NewEncoder(r.writer)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(report)
+	case FormatMarkdown:
+		r.writeMarkdownHeader()
+		if err := r.ReportSummary(stats); err != nil {
+			return err
+		}
+		if err := r.ReportFrequency(frequency); err != nil {
+			return err
+		}
+		if len(flapping) > 0 {
+			if err := r.ReportFlapping(flapping); err != nil {
+				return err
+			}
+		}
+		if len(correlation) > 0 {
+			if err := r.ReportCorrelation(correlation); err != nil {
+				return err
+			}
+		}
+		if len(temporal) > 0 {
+			if err := r.ReportTemporalPatterns(temporal); err != nil {
+				return err
+			}
+		}
+		if len(recommendations) > 0 {
+			if err := r.ReportRecommendations(recommendations); err != nil {
+				return err
+			}
+		}
+		return nil
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -299,6 +421,8 @@ func (r *Reporter) ReportFlapping(results []analyzer.FlappingResult) error {
 		return r.reportFlappingTable(results)
 	case FormatJSON:
 		return r.reportFlappingJSON(results)
+	case FormatMarkdown:
+		return r.reportFlappingMarkdown(results)
 	default:
 		return fmt.Errorf("unsupported format: %s", r.format)
 	}
@@ -350,6 +474,37 @@ func (r *Reporter) reportFlappingJSON(results []analyzer.FlappingResult) error {
 	})
 }
 
+func (r *Reporter) reportFlappingMarkdown(results []analyzer.FlappingResult) error {
+	fmt.Fprintln(r.writer, "## Flapping Analysis")
+	fmt.Fprintln(r.writer)
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "No flapping alerts detected.")
+		fmt.Fprintln(r.writer)
+		return nil
+	}
+
+	fmt.Fprintln(r.writer, "| Alert Name | Transitions | Flap Score | Avg State Duration | Shortest | Flapping | Severity |")
+	fmt.Fprintln(r.writer, "| --- | ---: | ---: | --- | --- | --- | --- |")
+	for _, result := range results {
+		status := "No"
+		if result.IsFlapping {
+			status = "Yes"
+		}
+		fmt.Fprintf(r.writer, "| %s | %d | %.2f/hr | %s | %s | %s | %s %s |\n",
+			escapeMarkdown(result.AlertName),
+			result.TransitionCount,
+			result.FlappingScore,
+			formatDuration(result.AvgStateDuration),
+			formatDuration(result.ShortestDuration),
+			status,
+			getSeverityIcon(result.Severity),
+			escapeMarkdown(result.Severity),
+		)
+	}
+	fmt.Fprintln(r.writer)
+	return nil
+}
+
 // reportCorrelationTable outputs correlation analysis in table format.
 func (r *Reporter) reportCorrelationTable(results []analyzer.CorrelationResult) error {
 	if len(results) == 0 {
@@ -385,6 +540,31 @@ func (r *Reporter) reportCorrelationJSON(results []analyzer.CorrelationResult) e
 	return encoder.Encode(map[string]interface{}{
 		"correlation_analysis": results,
 	})
+}
+
+func (r *Reporter) reportCorrelationMarkdown(results []analyzer.CorrelationResult) error {
+	fmt.Fprintln(r.writer, "## Correlation Analysis")
+	fmt.Fprintln(r.writer)
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "No correlated alert pairs detected.")
+		fmt.Fprintln(r.writer)
+		return nil
+	}
+
+	fmt.Fprintln(r.writer, "| Alert A | Alert B | Co-Occur | Score | Avg Overlap | Total Overlap |")
+	fmt.Fprintln(r.writer, "| --- | --- | ---: | ---: | --- | --- |")
+	for _, result := range results {
+		fmt.Fprintf(r.writer, "| %s | %s | %d | %.2f | %s | %s |\n",
+			escapeMarkdown(result.AlertA),
+			escapeMarkdown(result.AlertB),
+			result.CoOccurrenceCount,
+			result.CorrelationScore,
+			formatDuration(result.AvgOverlap),
+			formatDuration(result.TotalOverlap),
+		)
+	}
+	fmt.Fprintln(r.writer)
+	return nil
 }
 
 // reportTemporalPatternsTable outputs temporal patterns in table format.
@@ -428,6 +608,34 @@ func (r *Reporter) reportTemporalPatternsJSON(results []analyzer.TemporalResult)
 	})
 }
 
+func (r *Reporter) reportTemporalPatternsMarkdown(results []analyzer.TemporalResult) error {
+	fmt.Fprintln(r.writer, "## Temporal Patterns")
+	fmt.Fprintln(r.writer)
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "No temporal patterns detected.")
+		fmt.Fprintln(r.writer)
+		return nil
+	}
+
+	fmt.Fprintln(r.writer, "| Alert Name | Peak Hour | Hour Count | Peak Weekday | Day Count | Business Hours | Weekend | Severity |")
+	fmt.Fprintln(r.writer, "| --- | --- | ---: | --- | ---: | ---: | ---: | --- |")
+	for _, result := range results {
+		fmt.Fprintf(r.writer, "| %s | %02d:00 | %d | %s | %d | %.0f%% | %.0f%% | %s %s |\n",
+			escapeMarkdown(result.AlertName),
+			result.PeakHour,
+			result.PeakHourCount,
+			escapeMarkdown(result.PeakWeekday),
+			result.PeakWeekdayCount,
+			result.BusinessHoursRatio*100,
+			result.WeekendRatio*100,
+			getSeverityIcon(result.Severity),
+			escapeMarkdown(result.Severity),
+		)
+	}
+	fmt.Fprintln(r.writer)
+	return nil
+}
+
 // reportRecommendationsTable outputs recommendations in table format.
 func (r *Reporter) reportRecommendationsTable(results []analyzer.Recommendation) error {
 	if len(results) == 0 {
@@ -468,4 +676,43 @@ func (r *Reporter) reportRecommendationsJSON(results []analyzer.Recommendation) 
 	return encoder.Encode(map[string]interface{}{
 		"recommendations": results,
 	})
+}
+
+func (r *Reporter) reportRecommendationsMarkdown(results []analyzer.Recommendation) error {
+	fmt.Fprintln(r.writer, "## Recommendations")
+	fmt.Fprintln(r.writer)
+	if len(results) == 0 {
+		fmt.Fprintln(r.writer, "No recommendations generated.")
+		fmt.Fprintln(r.writer)
+		return nil
+	}
+
+	fmt.Fprintln(r.writer, "| Priority | Category | Target | Signal/Noise | Action |")
+	fmt.Fprintln(r.writer, "| --- | --- | --- | --- | --- |")
+	for _, result := range results {
+		signalToNoise := result.SignalToNoise
+		if signalToNoise == "" {
+			signalToNoise = "-"
+		}
+		fmt.Fprintf(r.writer, "| %s | %s | %s | %s | %s |\n",
+			strings.ToUpper(escapeMarkdown(result.Priority)),
+			escapeMarkdown(result.Category),
+			escapeMarkdown(result.Target),
+			escapeMarkdown(signalToNoise),
+			escapeMarkdown(result.Action),
+		)
+		fmt.Fprintf(r.writer, "\nReason: %s\n\n", escapeMarkdown(result.Summary))
+	}
+	return nil
+}
+
+func (r *Reporter) writeMarkdownHeader() {
+	fmt.Fprintln(r.writer, "# Alert Analysis Report")
+	fmt.Fprintln(r.writer)
+	fmt.Fprintf(r.writer, "Generated: %s\n\n", time.Now().Format(time.RFC3339))
+}
+
+func escapeMarkdown(value string) string {
+	replacer := strings.NewReplacer("|", "\\|", "\n", " ", "\r", " ")
+	return replacer.Replace(value)
 }

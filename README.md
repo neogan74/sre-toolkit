@@ -56,7 +56,7 @@ Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
 - Temporal pattern analysis by hour of day and weekday
 - Actionable recommendations for noisy, unstable, dead, and duplicated alert paths
 - Support for custom lookback periods and resolutions
-- Multiple output formats (table, JSON)
+- Multiple output formats (table, JSON, Markdown)
 
 **Quick Start:**
 ```bash
@@ -74,6 +74,9 @@ alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-temporal-p
 
 # Generate actionable recommendations
 alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-recommendations
+
+# Export a Markdown report
+alert-analyzer analyze --prometheus-url http://prometheus:9090 --output markdown
 ```
 
 ### 💥 chaos-load - Load & Chaos Testing (✅ Available)
