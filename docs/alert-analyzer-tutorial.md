@@ -357,10 +357,17 @@ Generated: 2026-03-20T10:00:00Z
 
 ### Using with Victoria Metrics
 
-alert-analyzer is compatible with Victoria Metrics (requires vmalert component):
+alert-analyzer is compatible with Victoria Metrics when `vmalert` is present and exposing alert rules:
 
 ```bash
 alert-analyzer analyze --prometheus-url http://victoriametrics:8428
+```
+
+For a tested local stack, use:
+
+```bash
+cd deployments/docker/alert-analyzer-victoriametrics
+docker compose up -d
 ```
 
 ### Custom TLS Configuration
@@ -677,8 +684,17 @@ alert-analyzer analyze --lookback 7d  # Week 2
 # Ensure vmalert is running and configured
 curl http://victoriametrics:8428/api/v1/query?query=ALERTS{}
 
+# Ensure rules endpoint is available (proxied or direct)
+curl http://victoriametrics:8428/api/v1/rules
+
 # Point to correct VictoriaMetrics URL
 alert-analyzer analyze --prometheus-url http://victoriametrics:8428
+```
+
+For the repository's tested compatibility stack, see:
+
+```bash
+deployments/docker/alert-analyzer-victoriametrics/
 ```
 
 ## Best Practices
