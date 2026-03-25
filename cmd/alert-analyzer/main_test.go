@@ -120,7 +120,21 @@ func TestRunAnalyzeValidationErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := runAnalyze(tt.prometheusURLs, "", tt.lookback, tt.resolution, "table", 20, tt.timeout, false, false, false, false, false, 3.0)
+			err := runAnalyze(analysisOptions{
+				prometheusURLs:       tt.prometheusURLs,
+				alertmanagerURL:      "",
+				lookbackStr:          tt.lookback,
+				resolutionStr:        tt.resolution,
+				outputFormat:         "table",
+				topN:                 20,
+				timeoutStr:           tt.timeout,
+				insecure:             false,
+				showFlapping:         false,
+				showCorrelation:      false,
+				showTemporalPatterns: false,
+				showRecommendations:  false,
+				flappingThreshold:    3.0,
+			})
 			require.Error(t, err)
 			assert.ErrorContains(t, err, tt.wantErr)
 		})

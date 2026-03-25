@@ -16,3 +16,11 @@ scrape_configs:
         labels:
           service: 'sample-app'
           environment: 'dev'
+
+  - job_name: 'alert-analyzer-monitor'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['alert-analyzer-monitor:8080']
+        labels:
+          service: 'alert-analyzer'
+          environment: 'dev'

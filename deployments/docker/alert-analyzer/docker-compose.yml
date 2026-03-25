@@ -19,6 +19,35 @@ services:
     networks:
       - alert-analyzer
 
+  alert-analyzer-monitor:
+    image: golang:1.26
+    container_name: alert-analyzer-monitor
+    working_dir: /workspace
+    command:
+      - sh
+      - -c
+      - |
+        go run ./cmd/alert-analyzer monitor \
+          --prometheus-url http://prometheus:9090 \
+          --lookback 24h \
+          --resolution 1m \
+          --top-n 10 \
+          --show-flapping \
+          --show-correlation \
+          --show-temporal-patterns \
+          --show-recommendations \
+          --interval 1m \
+          --metrics-address :8080
+    volumes:
+      - ../../..:/workspace
+      - alert_analyzer_gocache:/tmp/gocache
+    environment:
+      - GOCACHE=/tmp/gocache
+    depends_on:
+      - prometheus
+    networks:
+      - alert-analyzer
+
   # Sample application that generates metrics
   sample-app:
     image: prom/node-exporter:latest
@@ -39,10 +68,13 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - alert-analyzer
 
 volumes:
+  alert_analyzer_gocache:
   prometheus_data:
   grafana_data:
 

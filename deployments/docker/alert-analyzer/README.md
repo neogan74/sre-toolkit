@@ -6,7 +6,8 @@ This Docker Compose stack provides a local Prometheus environment for testing th
 
 - **Prometheus**: Metrics collection and alerting (port 9090)
 - **Node Exporter**: Sample application generating metrics (port 9100)
-- **Grafana**: Dashboard visualization (port 3000, future use)
+- **Alert Analyzer Monitor**: Periodic analysis exporter (port 8080 inside the compose network)
+- **Grafana**: Dashboard visualization with provisioned alert-analyzer dashboard (port 3000)
 
 ## Sample Alerts
 
@@ -41,7 +42,15 @@ Navigate to Alerts to see the configured alert rules.
 
 Wait 5-10 minutes for alerts to start firing and generate some history.
 
-### 4. Run Alert-Analyzer
+### 4. Open the Dashboard
+
+Open http://localhost:3000 and sign in with `admin/admin`.
+
+Grafana is provisioned with:
+- Prometheus datasource
+- `Alert Analyzer Overview` dashboard
+
+### 5. Run Alert-Analyzer Manually
 
 From the project root:
 
@@ -63,7 +72,25 @@ make build
 
 - **Prometheus UI**: http://localhost:9090
 - **Grafana**: http://localhost:3000 (admin/admin)
+- **Alert Analyzer Metrics**: http://localhost:8080/metrics inside compose via `alert-analyzer-monitor:8080`
 - **Node Exporter Metrics**: http://localhost:9100/metrics
+
+## Monitor Mode
+
+The stack now includes an `alert-analyzer-monitor` service that runs:
+
+```bash
+go run ./cmd/alert-analyzer monitor \
+  --prometheus-url http://prometheus:9090 \
+  --show-flapping \
+  --show-correlation \
+  --show-temporal-patterns \
+  --show-recommendations \
+  --interval 1m \
+  --metrics-address :8080
+```
+
+Prometheus scrapes this exporter and Grafana reads the resulting metrics.
 
 ## Useful Prometheus Queries
 
@@ -122,6 +149,7 @@ docker-compose ps
 Check logs:
 ```bash
 docker-compose logs prometheus
+docker-compose logs alert-analyzer-monitor
 ```
 
 ### Alerts resolve too quickly
