@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -254,21 +255,51 @@ roleRef:
 
 	// Case 3: Missing resource quota in a new namespace
 	t.Log("Checking missing resource quota...")
+	// Delete first to ensure a clean state
+	exec.Command("kubectl", "delete", "namespace", "empty-ns", "--kubeconfig", kubeconfigPath, "--ignore-not-found").Run()
+
 	nsCmd := exec.Command("kubectl", "create", "namespace", "empty-ns", "--kubeconfig", kubeconfigPath)
 	if out, err := nsCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to create namespace: %v\nOutput: %s", err, out)
 	}
 
-	t.Logf("Running Case 3: %s audit -n empty-ns -o json --kubeconfig %s", doctorPath, kubeconfigPath)
+	// Run audit ONLY for empty-ns with JSON output
 	cmd = exec.Command(doctorPath, "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
 	output, err = cmd.CombinedOutput()
-	t.Logf("Case 3 Output length: %d", len(output))
 	if err == nil {
 		t.Fatalf("Expected audit to fail in empty-ns due to missing quota, but it succeeded. Output:\n%s", output)
 	}
 
-	if !strings.Contains(string(output), "ResourceQuotaIssues") {
-		t.Errorf("Expected output to contain 'ResourceQuotaIssues', but got:\n%s", output)
+	// Verify JSON structure and that empty-ns is caught
+	var res struct {
+		ResourceQuotaIssues []struct {
+			Namespace string
+			Severity  string
+			Message   string
+		}
+	}
+
+	// Output contains log lines before and after JSON
+	start := strings.Index(string(output), "{")
+	end := strings.LastIndex(string(output), "}")
+	if start == -1 || end == -1 || end < start {
+		t.Fatalf("Failed to find JSON in output:\n%s", output)
+	}
+
+	if err := json.Unmarshal(output[start:end+1], &res); err != nil {
+		t.Fatalf("Failed to unmarshal JSON: %v\nOutput:\n%s", err, output)
+	}
+
+	found := false
+	for _, issue := range res.ResourceQuotaIssues {
+		if issue.Namespace == "empty-ns" && strings.Contains(issue.Message, "ResourceQuota") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Errorf("Expected to find ResourceQuota issue for empty-ns in JSON, but got: %+v", res)
 	}
 }
 

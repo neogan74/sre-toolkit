@@ -11,6 +11,7 @@ import (
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/audit"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/diagnostics"
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
+	"gopkg.in/yaml.v3"
 )
 
 // OutputFormat represents the output format
@@ -45,6 +46,8 @@ func (r *Reporter) ReportNodeHealth(nodes []healthcheck.NodeStatus) error {
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(nodes)
+	case FormatYAML:
+		return r.reportYAML(nodes)
 	case FormatTable:
 		return r.reportNodeTable(nodes)
 	default:
@@ -57,6 +60,8 @@ func (r *Reporter) ReportPodHealth(status *healthcheck.PodStatus) error {
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(status)
+	case FormatYAML:
+		return r.reportYAML(status)
 	case FormatTable:
 		return r.reportPodTable(status)
 	default:
@@ -69,6 +74,8 @@ func (r *Reporter) ReportComponentHealth(components []healthcheck.ComponentStatu
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(components)
+	case FormatYAML:
+		return r.reportYAML(components)
 	case FormatTable:
 		return r.reportComponentTable(components)
 	default:
@@ -81,6 +88,8 @@ func (r *Reporter) ReportNetworkPolicies(status *healthcheck.NetworkPoliciesStat
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(status)
+	case FormatYAML:
+		return r.reportYAML(status)
 	case FormatTable:
 		return r.reportNetworkPoliciesTable(status)
 	default:
@@ -93,6 +102,8 @@ func (r *Reporter) ReportDiagnostics(result *diagnostics.Result) error {
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(result)
+	case FormatYAML:
+		return r.reportYAML(result)
 	case FormatTable:
 		return r.reportDiagnosticsTable(result)
 	default:
@@ -105,6 +116,8 @@ func (r *Reporter) ReportAudit(result *audit.Result) error {
 	switch r.format {
 	case FormatJSON:
 		return r.reportJSON(result)
+	case FormatYAML:
+		return r.reportYAML(result)
 	case FormatTable:
 		return r.reportAuditTable(result)
 	default:
@@ -116,6 +129,13 @@ func (r *Reporter) ReportAudit(result *audit.Result) error {
 func (r *Reporter) reportJSON(data interface{}) error {
 	encoder := json.NewEncoder(r.writer)
 	encoder.SetIndent("", "  ")
+	return encoder.Encode(data)
+}
+
+// reportYAML outputs data as YAML
+func (r *Reporter) reportYAML(data interface{}) error {
+	encoder := yaml.NewEncoder(r.writer)
+	defer encoder.Close()
 	return encoder.Encode(data)
 }
 

@@ -36,7 +36,7 @@
             <h1>Reduce alert fatigue with evidence, not vibes.</h1>
             <p class="lead">
               <strong>alert-analyzer</strong> turns raw alert history into something operationally useful:
-              noisiest alerts, flapping candidates, and machine-readable summaries for rule reviews.
+              noisiest alerts, flapping candidates, correlated alert pairs, and machine-readable summaries for rule reviews.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="../alert-analyzer-tutorial.md">Read Tutorial</a>
@@ -50,7 +50,7 @@
                 <span class="lights"><span></span><span></span><span></span></span>
                 <span>analyze last 30 days</span>
               </div>
-              <pre>$ alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d --show-flapping
+              <pre>$ alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 30d --show-flapping --show-correlation
 
 === Alert Analysis Summary ===
 Time Range:     30 days
@@ -64,7 +64,11 @@ PodRestartingFrequently    403
 
 === Flapping Alerts ===
 DatabaseConnectionFlap   score=5.8 transitions/hour
-APILatencyHigh           score=3.4 transitions/hour</pre>
+APILatencyHigh           score=3.4 transitions/hour
+
+=== Correlated Alert Pairs ===
+DatabaseConnectionFlap   APILatencyHigh      score=0.82
+PodRestartingFrequently  HighMemoryUsage     score=0.67</pre>
             </div>
           </aside>
         </div>
@@ -77,6 +81,10 @@ APILatencyHigh           score=3.4 transitions/hour</pre>
           <div class="metric">
             <strong>Flapping analysis</strong>
             <span>Highlight rules that oscillate instead of informing.</span>
+          </div>
+          <div class="metric">
+            <strong>Correlation view</strong>
+            <span>See which alert pairs repeatedly fire together in overlapping windows.</span>
           </div>
           <div class="metric">
             <strong>Multi-source ready</strong>
@@ -115,6 +123,11 @@ APILatencyHigh           score=3.4 transitions/hour</pre>
               <span class="label">Stability</span>
             </article>
             <article class="card">
+              <h3>Correlation analysis</h3>
+              <p>Find alert pairs that repeatedly overlap so teams can investigate common causes instead of isolated symptoms.</p>
+              <span class="label">Failure domains</span>
+            </article>
+            <article class="card">
               <h3>Exportable summaries</h3>
               <p>Use JSON output to feed audits, dashboards, or change-review notes.</p>
               <span class="label">Automation</span>
@@ -142,16 +155,16 @@ APILatencyHigh           score=3.4 transitions/hour</pre>
             <div class="terminal">
               <div class="terminal-top">
                 <span class="lights"><span></span><span></span><span></span></span>
-                <span>deep flapping pass</span>
+                <span>flapping + correlation</span>
               </div>
-              <pre>alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 14d --show-flapping</pre>
+              <pre>alert-analyzer analyze --prometheus-url http://prom:9090 --lookback 14d --show-flapping --show-correlation</pre>
             </div>
             <div class="terminal">
               <div class="terminal-top">
                 <span class="lights"><span></span><span></span><span></span></span>
                 <span>automation</span>
               </div>
-              <pre>alert-analyzer analyze --prometheus-url http://prom:9090 --output json</pre>
+              <pre>alert-analyzer analyze --prometheus-url http://prom:9090 --output json --show-correlation</pre>
             </div>
             <article class="card">
               <h3>Where it fits</h3>
@@ -186,7 +199,7 @@ make build-all
             <div>
               <div class="eyebrow">Next Step</div>
               <h2>Need flags and longer examples?</h2>
-              <p>The tutorial covers lookback, resolution, Alertmanager integration, and flapping thresholds.</p>
+              <p>The tutorial covers lookback, resolution, Alertmanager integration, flapping thresholds, and correlation output.</p>
             </div>
             <div class="hero-actions">
               <a class="button button-primary" href="../alert-analyzer-tutorial.md">Open Tutorial</a>
