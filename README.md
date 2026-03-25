@@ -55,6 +55,7 @@ Analyze Prometheus/Alertmanager alerts to reduce noise and improve signal.
 - Identification of noisy, flapping, and correlated alerts
 - Temporal pattern analysis by hour of day and weekday
 - Actionable recommendations for noisy, unstable, dead, and duplicated alert paths
+- Continuous `monitor` mode for Prometheus/Grafana dashboards
 - Support for custom lookback periods and resolutions
 - Multiple output formats (table, JSON, Markdown)
 
@@ -77,6 +78,16 @@ alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-recommenda
 
 # Export a Markdown report
 alert-analyzer analyze --prometheus-url http://prometheus:9090 --output markdown
+
+# Expose continuous analysis metrics for Grafana
+alert-analyzer monitor \
+  --prometheus-url http://prometheus:9090 \
+  --show-flapping \
+  --show-correlation \
+  --show-temporal-patterns \
+  --show-recommendations \
+  --interval 1m \
+  --metrics-address :8080
 ```
 
 ### 💥 chaos-load - Load & Chaos Testing (✅ Available)

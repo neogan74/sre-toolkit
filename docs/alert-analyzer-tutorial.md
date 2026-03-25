@@ -493,7 +493,8 @@ docker-compose up -d
 **Services:**
 - **Prometheus** (port 9090) - Metrics and alerting
 - **Node Exporter** (port 9100) - Sample metrics
-- **Grafana** (port 3000) - Visualization
+- **Alert Analyzer Monitor** - Periodic exporter for analysis metrics
+- **Grafana** (port 3000) - Visualization with provisioned dashboard
 
 **Sample Alerts Included:**
 - HighMemoryUsage (noisy)
@@ -519,7 +520,10 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 -o json | jq '.sum
 # 5. Inspect correlated alert pairs
 alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
 
-# 6. Stop environment
+# 6. Open Grafana dashboard
+# http://localhost:3000 -> Alert Analyzer / Alert Analyzer Overview
+
+# 7. Stop environment
 docker-compose down
 ```
 
@@ -859,7 +863,7 @@ See project roadmap for upcoming features:
 - ✅ Alert correlation analysis (available)
 - ✅ Temporal patterns (available)
 - ✅ Automated recommendations (available)
-- Grafana dashboard integration
+- ✅ Grafana dashboard integration (available in Docker stack)
 
 ## Additional Resources
 

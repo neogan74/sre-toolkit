@@ -103,42 +103,6 @@ func (r *Reporter) ReportTemporalPatterns(results []analyzer.TemporalResult) err
 	}
 }
 
-// ReportCorrelation outputs correlation analysis results.
-func (r *Reporter) ReportCorrelation(results []analyzer.CorrelationResult) error {
-	switch r.format {
-	case FormatTable:
-		return r.reportCorrelationTable(results)
-	case FormatJSON:
-		return r.reportCorrelationJSON(results)
-	default:
-		return fmt.Errorf("unsupported format: %s", r.format)
-	}
-}
-
-// ReportRecommendations outputs generated recommendations.
-func (r *Reporter) ReportRecommendations(results []analyzer.Recommendation) error {
-	switch r.format {
-	case FormatTable:
-		return r.reportRecommendationsTable(results)
-	case FormatJSON:
-		return r.reportRecommendationsJSON(results)
-	default:
-		return fmt.Errorf("unsupported format: %s", r.format)
-	}
-}
-
-// ReportTemporalPatterns outputs temporal pattern analysis.
-func (r *Reporter) ReportTemporalPatterns(results []analyzer.TemporalResult) error {
-	switch r.format {
-	case FormatTable:
-		return r.reportTemporalPatternsTable(results)
-	case FormatJSON:
-		return r.reportTemporalPatternsJSON(results)
-	default:
-		return fmt.Errorf("unsupported format: %s", r.format)
-	}
-}
-
 // reportSummaryTable outputs summary in table format
 func (r *Reporter) reportSummaryTable(stats analyzer.SummaryStats) error {
 	fmt.Fprintln(r.writer, "\n=== Alert Analysis Summary ===")
