@@ -116,21 +116,21 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --
 
 ### 5. Alert Correlation
 
-Correlation analysis shows which alerts fire in overlapping time windows. This is useful when you want to identify shared failure domains, cascading symptoms, or alert pairs that should be reviewed together.
+Alert correlation shows which alerts tend to fire in overlapping time windows. This helps identify cascades, shared failure domains, or symptoms that repeatedly appear together.
 
 ```bash
 # Include correlation analysis in output
 alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
 
-# Combine flapping and correlation insights
+# Combine flapping and correlation analysis
 alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --show-correlation
 ```
 
 **Correlation Metrics:**
-- **Co-Occurrence Count**: Number of overlapping firing intervals between two alerts
-- **Coverage A / Coverage B**: Fraction of each alert's firings that overlapped the paired alert
+- **Co-Occurrence Count**: How many alert firing intervals overlapped
+- **Coverage A / B**: Fraction of each alert's firings that overlapped the paired alert
 - **Correlation Score**: Average overlap coverage across both alerts
-- **Avg Overlap / Total Overlap**: How long the alerts tend to be active together
+- **Avg / Total Overlap**: How long the pair tends to be active together
 
 ## Example Output
 
@@ -697,7 +697,7 @@ After analyzing your alerts:
 
 4. **Advanced Analysis**
    - ✅ Flapping detection (now available with `--show-flapping`)
-   - ✅ Alert correlation analysis (now available with `--show-correlation`)
+   - ✅ Alert correlation analysis (available with `--show-correlation`)
    - Temporal patterns (coming soon)
    - Recommendations engine (coming soon)
 
