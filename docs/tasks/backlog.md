@@ -43,7 +43,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] CI/CD integration (exit codes on critical issues)
   - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
   - [x] Summary statistics
-  - [ ] YAML output format
+  - [x] YAML output format ✅ **COMPLETE**
   - [ ] HTML report with charts
   - [ ] Prometheus metrics export
 
@@ -89,7 +89,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Total/unique alert counting
   - [x] Alert history tracking (fired/resolved times)
   - [x] Flapping alerts detection (constantly switching) ✅ **NEW**
-  - [ ] Alert correlation (which alerts fire together)
+  - [x] Alert correlation (which alerts fire together) ✅ **NEW**
   - [ ] Temporal patterns (day of week, time of day)
 
 - [ ] **Recommendations** ⏳ **PLANNED (Phase 2)**
@@ -121,9 +121,9 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `deployments/docker/alert-analyzer/README.md` - Setup guide
 
 **Next Steps:**
-- [ ] Unit tests (80%+ coverage target) 🔴 **HIGH PRIORITY**
+- [x] Unit tests (80%+ coverage target) ✅ **DONE** (`82.4%` total coverpkg for `alert-analyzer`)
 - [ ] Flapping detection algorithm
-- [ ] Alert correlation analysis
+- [x] Alert correlation analysis ✅ **NEW**
 - [ ] Recommendations engine
 - [ ] Grafana dashboard
 - [ ] Victoria Metrics compatibility testing
