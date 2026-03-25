@@ -161,6 +161,18 @@ func (c *Client) BuildInfo(ctx context.Context) (v1.BuildinfoResult, error) {
 	return c.api.Buildinfo(ctx)
 }
 
+// Rules returns configured Prometheus rules.
+func (c *Client) Rules(ctx context.Context) (v1.RulesResult, error) {
+	c.logger.Debug().Msg("Fetching Prometheus rules")
+
+	result, err := c.api.Rules(ctx)
+	if err != nil {
+		return v1.RulesResult{}, fmt.Errorf("failed to get rules: %w", err)
+	}
+
+	return result, nil
+}
+
 // basicAuthRoundTripper adds basic authentication to HTTP requests
 type basicAuthRoundTripper struct {
 	username string

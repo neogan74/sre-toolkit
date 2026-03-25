@@ -57,6 +57,9 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --output json
 
 # Include alert correlation analysis
 alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
+
+# Generate actionable recommendations
+alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations
 ```
 
 ### Command Flags
@@ -73,6 +76,7 @@ alert-analyzer analyze --prometheus-url http://prom:9090 --show-correlation
 | `--insecure` | Skip TLS verification | `false` |
 | `--show-flapping` | Include flapping alerts analysis | `false` |
 | `--show-correlation` | Include alert correlation analysis | `false` |
+| `--show-recommendations` | Include actionable recommendations | `false` |
 | `--flapping-threshold` | Flapping threshold (transitions/hour) | `3.0` |
 
 ## What Does Alert Analyzer Do?
@@ -116,21 +120,41 @@ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --
 
 ### 5. Alert Correlation
 
-Alert correlation shows which alerts tend to fire in overlapping time windows. This helps identify cascades, shared failure domains, or symptoms that repeatedly appear together.
+Correlation analysis shows which alerts fire in overlapping time windows. This is useful when you want to identify shared failure domains, cascading symptoms, or alert pairs that should be reviewed together.
 
 ```bash
 # Include correlation analysis in output
 alert-analyzer analyze --prometheus-url http://localhost:9090 --show-correlation
 
-# Combine flapping and correlation analysis
+# Combine flapping and correlation insights
 alert-analyzer analyze --prometheus-url http://localhost:9090 --show-flapping --show-correlation
 ```
 
 **Correlation Metrics:**
-- **Co-Occurrence Count**: How many alert firing intervals overlapped
-- **Coverage A / B**: Fraction of each alert's firings that overlapped the paired alert
+- **Co-Occurrence Count**: Number of overlapping firing intervals between two alerts
+- **Coverage A / Coverage B**: Fraction of each alert's firings that overlapped the paired alert
 - **Correlation Score**: Average overlap coverage across both alerts
-- **Avg / Total Overlap**: How long the pair tends to be active together
+- **Avg Overlap / Total Overlap**: How long the alerts tend to be active together
+
+### 6. Recommendations Engine
+
+Recommendations combine frequency, flapping, and correlation signals into concrete follow-up actions. The current engine focuses on:
+- tuning `for:` duration or thresholds for noisy short-lived alerts
+- identifying alerting rules that never fired in the analyzed window via the Prometheus Rules API
+- prioritizing high-impact rules for review
+- highlighting low signal-to-noise alerts
+- spotting correlated alert pairs that should be grouped or inhibited together
+
+```bash
+# Generate recommendations only
+alert-analyzer analyze --prometheus-url http://localhost:9090 --show-recommendations
+
+# Combine all insight modes
+alert-analyzer analyze --prometheus-url http://localhost:9090 \
+  --show-flapping \
+  --show-correlation \
+  --show-recommendations
+```
 
 ## Example Output
 
@@ -172,6 +196,26 @@ ALERT A                     ALERT B                     CO-OCCUR    SCORE    AVG
 DatabaseConnectionFlap      APILatencyHigh             18          0.81     4m30s          1h21m0s
 HighSystemLoad              CPUHighUsage               12          0.74     6m0s           1h12m0s
 PodRestartingFrequently     ContainerOOMKilled         9           0.68     7m20s          1h6m0s
+```
+
+### Table Format with Recommendations
+
+```bash
+$ alert-analyzer analyze --prometheus-url http://localhost:9090 --show-recommendations
+```
+
+```
+=== Recommendations ===
+PRIORITY   CATEGORY        TARGET                       SIGNAL/NOISE   ACTION
+--------   --------        ------                       ------------   ------
+CRITICAL   review          DatabaseConnectionFlap       low            Review routing, owner, runbook quality, and whether the alert still deserves its current severity.
+                                                         Reason: DatabaseConnectionFlap should be prioritized for rule review due to severity=critical and 42 firings.
+HIGH       stability       DatabaseConnectionFlap       low            Increase `for:` duration or stabilize the underlying dependency before paging on this alert.
+                                                         Reason: DatabaseConnectionFlap changes state 12 times (6.00 transitions/hour), which indicates flapping.
+MEDIUM     deduplication   DatabaseConnectionFlap + APILatencyHigh   -   Review grouping, inhibition, or runbook linkage so operators do not triage the same incident twice.
+                                                         Reason: DatabaseConnectionFlap and APILatencyHigh overlap 6 times with a correlation score of 0.83.
+MEDIUM     dead_rule       TestAlertNeverFiring         low            Check thresholds, label selectors, and ownership. Remove or downgrade the rule if it no longer represents a useful signal.
+                                                         Reason: TestAlertNeverFiring did not fire during the analyzed window.
 ```
 
 ### JSON Format
@@ -453,6 +497,17 @@ See `deployments/docker/alert-analyzer/README.md` for complete setup guide.
       "avg_overlap": int64,
       "total_overlap": int64
     }
+  ],
+  "recommendations": [
+    {
+      "category": string,
+      "priority": string,
+      "target": string,
+      "related_alerts": [string],
+      "signal_to_noise": string,
+      "summary": string,
+      "action": string
+    }
   ]
 }
 ```
@@ -697,20 +752,20 @@ After analyzing your alerts:
 
 4. **Advanced Analysis**
    - ✅ Flapping detection (now available with `--show-flapping`)
-   - ✅ Alert correlation analysis (available with `--show-correlation`)
+   - ✅ Alert correlation analysis (now available with `--show-correlation`)
+   - ✅ Recommendations engine (now available with `--show-recommendations`)
    - Temporal patterns (coming soon)
-   - Recommendations engine (coming soon)
 
 ## Version Information
 
 Current version: 0.1.0
-Features: Frequency analysis, basic reporting, flapping detection, alert correlation
+Features: Frequency analysis, basic reporting, flapping detection, alert correlation, recommendations
 
 See project roadmap for upcoming features:
 - ✅ Flapping alert detection (available)
 - ✅ Alert correlation analysis (available)
+- ✅ Automated recommendations (available)
 - Temporal pattern recognition
-- Automated recommendations
 - Grafana dashboard integration
 
 ## Additional Resources

@@ -216,6 +216,45 @@ func TestReportCorrelation(t *testing.T) {
 	})
 }
 
+func TestReportRecommendations(t *testing.T) {
+	results := []analyzer.Recommendation{
+		{
+			Category:      analyzer.RecommendationCategoryTuning,
+			Priority:      analyzer.RecommendationPriorityHigh,
+			Target:        "AlertA",
+			SignalToNoise: analyzer.SignalToNoiseLow,
+			Summary:       "AlertA fired too often.",
+			Action:        "Increase `for:`.",
+		},
+	}
+
+	t.Run("Table Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportRecommendations(results)
+		assert.NoError(t, err)
+
+		output := buf.String()
+		assert.Contains(t, output, "=== Recommendations ===")
+		assert.Contains(t, output, "AlertA")
+		assert.Contains(t, output, "Increase `for:`")
+	})
+
+	t.Run("JSON Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatJSON, &buf)
+		err := r.ReportRecommendations(results)
+		assert.NoError(t, err)
+
+		var output map[string][]analyzer.Recommendation
+		err = json.Unmarshal(buf.Bytes(), &output)
+		require.NoError(t, err)
+
+		assert.Len(t, output["recommendations"], 1)
+		assert.Equal(t, "AlertA", output["recommendations"][0].Target)
+	})
+}
+
 func TestReportCompleteWithFlapping(t *testing.T) {
 	stats := analyzer.SummaryStats{TotalAlerts: 10}
 	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
@@ -262,11 +301,12 @@ func TestReportCompleteWithInsights(t *testing.T) {
 	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
 	flap := []analyzer.FlappingResult{{AlertName: "A1", IsFlapping: true}}
 	corr := []analyzer.CorrelationResult{{AlertA: "A1", AlertB: "A2", CorrelationScore: 0.8}}
+	recs := []analyzer.Recommendation{{Category: analyzer.RecommendationCategoryReview, Target: "A1", Action: "Review it.", Priority: analyzer.RecommendationPriorityHigh}}
 
 	t.Run("Table Format", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter(FormatTable, &buf)
-		err := r.ReportCompleteWithInsights(stats, freq, flap, corr)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, recs)
 		assert.NoError(t, err)
 
 		output := buf.String()
@@ -274,12 +314,13 @@ func TestReportCompleteWithInsights(t *testing.T) {
 		assert.Contains(t, output, "=== Alert Frequency Analysis ===")
 		assert.Contains(t, output, "=== Flapping Alerts Analysis ===")
 		assert.Contains(t, output, "=== Alert Correlation Analysis ===")
+		assert.Contains(t, output, "=== Recommendations ===")
 	})
 
 	t.Run("JSON Format", func(t *testing.T) {
 		var buf bytes.Buffer
 		r := NewReporter(FormatJSON, &buf)
-		err := r.ReportCompleteWithInsights(stats, freq, flap, corr)
+		err := r.ReportCompleteWithInsights(stats, freq, flap, corr, recs)
 		assert.NoError(t, err)
 
 		var output map[string]interface{}
@@ -290,6 +331,7 @@ func TestReportCompleteWithInsights(t *testing.T) {
 		assert.Contains(t, output, "frequency_analysis")
 		assert.Contains(t, output, "flapping_analysis")
 		assert.Contains(t, output, "correlation_analysis")
+		assert.Contains(t, output, "recommendations")
 	})
 }
 

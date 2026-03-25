@@ -267,6 +267,37 @@ func TestBuildInfo(t *testing.T) {
 	})
 }
 
+func TestRules(t *testing.T) {
+	logger := zerolog.Nop()
+	mockAPI := new(MockAPI)
+	client := &Client{
+		api:    mockAPI,
+		logger: &logger,
+	}
+
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		expected := v1.RulesResult{
+			Groups: []v1.RuleGroup{{Name: "alerts"}},
+		}
+		mockAPI.On("Rules", ctx).Return(expected, nil).Once()
+
+		result, err := client.Rules(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		mockAPI.On("Rules", ctx).Return(v1.RulesResult{}, errors.New("api error")).Once()
+
+		result, err := client.Rules(ctx)
+		assert.Error(t, err)
+		assert.Empty(t, result.Groups)
+		assert.Contains(t, err.Error(), "failed to get rules")
+	})
+}
+
 func TestClient_Auth(t *testing.T) {
 	// Custom RoundTripper to capture the request
 	type captureRoundTripper struct {
