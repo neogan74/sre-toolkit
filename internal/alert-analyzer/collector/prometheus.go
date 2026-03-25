@@ -9,18 +9,21 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/rs/zerolog"
-
-	"github.com/neogan/sre-toolkit/pkg/prometheus"
 )
+
+type prometheusAPI interface {
+	Query(ctx context.Context, query string, ts time.Time) (model.Value, error)
+	QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, error)
+}
 
 // PrometheusCollector collects alert data from Prometheus
 type PrometheusCollector struct {
-	client *prometheus.Client
+	client prometheusAPI
 	logger *zerolog.Logger
 }
 
 // NewPrometheusCollector creates a new Prometheus collector
-func NewPrometheusCollector(client *prometheus.Client, logger *zerolog.Logger) *PrometheusCollector {
+func NewPrometheusCollector(client prometheusAPI, logger *zerolog.Logger) *PrometheusCollector {
 	return &PrometheusCollector{
 		client: client,
 		logger: logger,

@@ -2,153 +2,226 @@ package collector
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
-	"strings"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/neogan/sre-toolkit/pkg/prometheus"
+	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type fakePrometheusClient struct {
+	queryFn      func(ctx context.Context, query string, ts time.Time) (model.Value, error)
+	queryRangeFn func(ctx context.Context, query string, r v1.Range) (model.Value, error)
+}
+
+func (f *fakePrometheusClient) Query(ctx context.Context, query string, ts time.Time) (model.Value, error) {
+	if f.queryFn == nil {
+		return nil, errors.New("unexpected Query call")
+	}
+	return f.queryFn(ctx, query, ts)
+}
+
+func (f *fakePrometheusClient) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, error) {
+	if f.queryRangeFn == nil {
+		return nil, errors.New("unexpected QueryRange call")
+	}
+	return f.queryRangeFn(ctx, query, r)
+}
+
 func TestPrometheusCollector_Collect(t *testing.T) {
 	logger := zerolog.Nop()
+	start := model.TimeFromUnix(1735689600)
 
 	t.Run("Success", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Contains(t, r.URL.Path, "/api/v1/query_range")
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			// Mock response with one alert stream
-			response := `{
-				"status": "success",
-				"data": {
-					"resultType": "matrix",
-					"result": [
-						{
-							"metric": {
-								"__name__": "ALERTS",
-								"alertname": "HighCPU",
-								"alertstate": "firing",
-								"severity": "critical"
-							},
-							"values": [
-								[1735689600, "1"],
-								[1735689660, "1"],
-								[1735689720, "0"]
-							]
-						}
-					]
-				}
-			}`
-			w.Write([]byte(response))
-		}))
-		defer server.Close()
+		client := &fakePrometheusClient{
+			queryRangeFn: func(_ context.Context, query string, r v1.Range) (model.Value, error) {
+				assert.Equal(t, "ALERTS{}", query)
+				assert.Equal(t, time.Minute, r.Step)
 
-		client, err := prometheus.NewClient(&prometheus.Config{URL: server.URL}, &logger)
-		require.NoError(t, err)
+				return model.Matrix{
+					{
+						Metric: model.Metric{
+							"__name__":   "ALERTS",
+							"alertname":  "HighCPU",
+							"alertstate": "firing",
+							"severity":   "critical",
+							"namespace":  "prod",
+						},
+						Values: []model.SamplePair{
+							{Timestamp: start, Value: 1},
+							{Timestamp: start.Add(60 * time.Second), Value: 1},
+							{Timestamp: start.Add(120 * time.Second), Value: 0},
+						},
+					},
+				}, nil
+			},
+		}
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		history, err := collector.Collect(context.Background(), "test-cluster", 1*time.Hour, 1*time.Minute)
-		assert.NoError(t, err)
-		assert.NotNil(t, history)
-		assert.Equal(t, 1, history.CountUniqueAlerts())
+		history, err := collector.Collect(context.Background(), "test-cluster", time.Hour, time.Minute)
+		require.NoError(t, err)
+		require.NotNil(t, history)
+		require.Len(t, history.Alerts, 1)
 
-		alerts := history.Alerts
-		require.NotEmpty(t, alerts)
-		assert.Equal(t, "HighCPU", alerts[0].Name)
-		assert.Equal(t, "critical", alerts[0].Labels["severity"])
-
-		// The alert became 0 at the last sample, so it should be resolved
-		assert.Equal(t, "inactive", alerts[0].State)
-		assert.True(t, alerts[0].IsResolved())
+		alert := history.Alerts[0]
+		assert.Equal(t, "HighCPU", alert.Name)
+		assert.Equal(t, "test-cluster", alert.Cluster)
+		assert.Equal(t, "critical", alert.Labels["severity"])
+		assert.Equal(t, "prod", alert.Labels["namespace"])
+		assert.Equal(t, "inactive", alert.State)
+		require.NotNil(t, alert.ResolvedAt)
+		assert.True(t, alert.IsResolved())
+		assert.Equal(t, alert.ActiveAt, alert.FiredAt)
 	})
 
 	t.Run("Empty Result", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"success","data":{"resultType":"matrix","result":[]}}`))
-		}))
-		defer server.Close()
-
-		client, err := prometheus.NewClient(&prometheus.Config{URL: server.URL}, &logger)
-		require.NoError(t, err)
+		client := &fakePrometheusClient{
+			queryRangeFn: func(_ context.Context, _ string, _ v1.Range) (model.Value, error) {
+				return model.Matrix{}, nil
+			},
+		}
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		history, err := collector.Collect(context.Background(), "test-cluster", 1*time.Hour, 1*time.Minute)
-		assert.NoError(t, err)
+		history, err := collector.Collect(context.Background(), "test-cluster", time.Hour, time.Minute)
+		require.NoError(t, err)
 		assert.Equal(t, 0, history.CountAlerts())
 	})
 
 	t.Run("API Error", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-		}))
-		defer server.Close()
-
-		client, err := prometheus.NewClient(&prometheus.Config{URL: server.URL}, &logger)
-		require.NoError(t, err)
+		client := &fakePrometheusClient{
+			queryRangeFn: func(_ context.Context, _ string, _ v1.Range) (model.Value, error) {
+				return nil, errors.New("boom")
+			},
+		}
 
 		collector := NewPrometheusCollector(client, &logger)
 
-		_, err = collector.Collect(context.Background(), "test-cluster", 1*time.Hour, 1*time.Minute)
-		assert.Error(t, err)
+		_, err := collector.Collect(context.Background(), "test-cluster", time.Hour, time.Minute)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to query alerts")
 	})
+
+	t.Run("Parse Error", func(t *testing.T) {
+		client := &fakePrometheusClient{
+			queryRangeFn: func(_ context.Context, _ string, _ v1.Range) (model.Value, error) {
+				return model.Vector{}, nil
+			},
+		}
+
+		collector := NewPrometheusCollector(client, &logger)
+
+		_, err := collector.Collect(context.Background(), "test-cluster", time.Hour, time.Minute)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "failed to parse alerts")
+	})
+}
+
+func TestPrometheusCollector_ParseAlerts(t *testing.T) {
+	logger := zerolog.Nop()
+	collector := NewPrometheusCollector(&fakePrometheusClient{}, &logger)
+	start := model.TimeFromUnix(1735689600)
+
+	matrix := model.Matrix{
+		{
+			Metric: model.Metric{
+				"__name__":   "ALERTS",
+				"alertstate": "firing",
+				"severity":   "warning",
+			},
+			Values: []model.SamplePair{
+				{Timestamp: start, Value: 1},
+			},
+		},
+		{
+			Metric: model.Metric{
+				"__name__":   "ALERTS",
+				"alertname":  "DiskFull",
+				"alertstate": "firing",
+				"instance":   "node-1",
+				"severity":   "critical",
+			},
+			Values: []model.SamplePair{
+				{Timestamp: start, Value: 1},
+				{Timestamp: start.Add(60 * time.Second), Value: 0},
+			},
+		},
+	}
+
+	alerts, err := collector.parseAlerts(matrix, "prod", time.Time{}, time.Time{})
+	require.NoError(t, err)
+	require.Len(t, alerts, 1)
+
+	alert := alerts[0]
+	assert.Equal(t, "DiskFull", alert.Name)
+	assert.Equal(t, "prod", alert.Cluster)
+	assert.Equal(t, "node-1", alert.Labels["instance"])
+	assert.Equal(t, "critical", alert.Labels["severity"])
+	assert.Equal(t, "inactive", alert.State)
+	require.NotNil(t, alert.ResolvedAt)
 }
 
 func TestPrometheusCollector_CollectCurrentAlerts(t *testing.T) {
 	logger := zerolog.Nop()
+	now := model.TimeFromUnix(1735689600)
 
 	t.Run("Success", func(t *testing.T) {
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Contains(t, r.URL.Path, "/api/v1/query")
+		client := &fakePrometheusClient{
+			queryFn: func(_ context.Context, query string, ts time.Time) (model.Value, error) {
+				assert.Equal(t, "ALERTS{alertstate=\"firing\"}", query)
+				assert.False(t, ts.IsZero())
 
-			// Check query parameter from URL (GET) or Body (POST)
-			q := r.URL.Query().Get("query")
-			if q == "" {
-				r.ParseForm()
-				q = r.Form.Get("query")
-			}
-			assert.True(t, strings.Contains(q, "ALERTS"))
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			response := `{
-				"status": "success",
-				"data": {
-					"resultType": "vector",
-					"result": [
-						{
-							"metric": {
-								"__name__": "ALERTS",
-								"alertname": "DiskFull",
-								"alertstate": "firing",
-								"instance": "node-1"
-							},
-							"value": [1735689600, "1"]
-						}
-					]
-				}
-			}`
-			w.Write([]byte(response))
-		}))
-		defer server.Close()
-
-		client, err := prometheus.NewClient(&prometheus.Config{URL: server.URL}, &logger)
-		require.NoError(t, err)
+				return model.Vector{
+					&model.Sample{
+						Metric: model.Metric{
+							"__name__":   "ALERTS",
+							"alertname":  "DiskFull",
+							"alertstate": "firing",
+							"instance":   "node-1",
+						},
+						Value:     1,
+						Timestamp: now,
+					},
+				}, nil
+			},
+		}
 
 		collector := NewPrometheusCollector(client, &logger)
 
 		alerts, err := collector.CollectCurrentAlerts(context.Background(), "test-cluster")
-		assert.NoError(t, err)
-		assert.Len(t, alerts, 1)
+		require.NoError(t, err)
+		require.Len(t, alerts, 1)
 		assert.Equal(t, "DiskFull", alerts[0].Name)
+		assert.Equal(t, "test-cluster", alerts[0].Cluster)
 		assert.Equal(t, "node-1", alerts[0].Labels["instance"])
+		assert.Equal(t, "firing", alerts[0].State)
 	})
+
+	t.Run("Invalid Result Type", func(t *testing.T) {
+		client := &fakePrometheusClient{
+			queryFn: func(_ context.Context, _ string, _ time.Time) (model.Value, error) {
+				return model.Matrix{}, nil
+			},
+		}
+
+		collector := NewPrometheusCollector(client, &logger)
+
+		_, err := collector.CollectCurrentAlerts(context.Background(), "test-cluster")
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "unexpected result type")
+	})
+}
+
+func TestCreateAlertKey(t *testing.T) {
+	key := createAlertKey("HighCPU", map[string]string{
+		"namespace": "prod",
+		"instance":  "node-1",
+	})
+
+	assert.Equal(t, "HighCPU_instance=node-1_namespace=prod", key)
 }
