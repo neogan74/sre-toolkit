@@ -96,6 +96,7 @@ Combined load testing and chaos engineering toolkit.
 
 **Features:**
 - HTTP load generator with keep-alive support
+- Bearer and Basic authentication for protected endpoints
 - Configurable concurrency and duration
 - Real-time statistics (RPS, Latency percentiles)
 - Detailed reporting
@@ -104,6 +105,9 @@ Combined load testing and chaos engineering toolkit.
 ```bash
 # Run HTTP load test
 chaos-load http --url https://example.com --duration 30s --concurrency 20
+
+# Run authenticated load test
+chaos-load http --url https://api.example.com --bearer-token "$API_TOKEN" --duration 30s --concurrency 20
 ```
 
 ### ✅ config-linter - Configuration Validator (🚧 Coming Soon)

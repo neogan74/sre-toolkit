@@ -142,7 +142,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Duration-based runs
   - [x] Request limit support
   - [x] Various HTTP methods and payloads
-  - [ ] Authentication support (Bearer, Basic)
+  - [x] Authentication support (Bearer, Basic)
 
 - [ ] **Chaos Scenarios**
   - [x] Random HTTP 5xx errors
