@@ -49,9 +49,16 @@ The `http` command is the primary way to generate load:
 ### Key Parameters
 
 - `--url`: The target URL to test (Required)
+- `--method`: HTTP method for each request (Default: `GET`)
+- `--body`: Request payload for `POST`, `PUT`, and similar methods
+- `--bearer-token`: Adds `Authorization: Bearer <token>` to every request
+- `--basic-username`: Username for HTTP Basic authentication
+- `--basic-password`: Password for HTTP Basic authentication
 - `--concurrency`: Number of concurrent workers (Default: 10)
 - `--duration`: Total duration of the test (e.g., 30s, 1m, 5m) (Default: 30s)
 - `--requests`: Limit the total number of requests (Optional, 0 for unlimited within duration)
+
+`Bearer` and `Basic` modes are mutually exclusive. For Basic authentication, `--basic-username` is required and `--basic-password` is optional.
 
 ## Understanding Results
 
@@ -109,12 +116,36 @@ Run exactly 10,000 requests as fast as possible:
     --duration 10m # Set duration high enough to allow all requests to finish
 ```
 
+### Bearer Token Authentication
+
+Send authenticated requests to APIs protected by bearer tokens:
+
+```bash
+./bin/chaos-load http --url https://api.myservice.com/v1/health \
+    --bearer-token "$API_TOKEN" \
+    --concurrency 20 \
+    --duration 1m
+```
+
+### Basic Authentication
+
+Load test endpoints behind HTTP Basic authentication:
+
+```bash
+./bin/chaos-load http --url https://staging.example.com/internal/status \
+    --basic-username sre \
+    --basic-password changeme \
+    --concurrency 5 \
+    --requests 200
+```
+
 ## Best Practices
 
 1.  **Start Small**: Begin with low concurrency (e.g., 2-5 workers) to verify connectivity before scaling up.
 2.  **Monitor Your Target**: Always monitor server-side metrics (CPU, Memory, DB load) while running tests.
-3.  **Check for Rate Limits**: Many public APIs have rate limiting. Testing against them might result in your IP being blocked.
-4.  **Use in Non-Production**: Unless you are performing "Chaos Engineering" in a controlled manner, always run load tests in staging or sandbox environments.
+3.  **Use Scoped Credentials**: Prefer short-lived or low-privilege bearer tokens and dedicated Basic credentials for test traffic.
+4.  **Check for Rate Limits**: Many public APIs have rate limiting. Testing against them might result in your IP being blocked.
+5.  **Use in Non-Production**: Unless you are performing "Chaos Engineering" in a controlled manner, always run load tests in staging or sandbox environments.
 
 ## Troubleshooting
 
