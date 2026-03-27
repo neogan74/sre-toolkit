@@ -1,0 +1,62 @@
+services:
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    container_name: alert-analyzer-victoriametrics
+    ports:
+      - "8428:8428"
+    command:
+      - '--httpListenAddr=:8428'
+      - '--storageDataPath=/storage'
+      - '--vmalert.proxyURL=http://vmalert:8880'
+    volumes:
+      - victoriametrics_data:/storage
+    networks:
+      - alert-analyzer-vm
+
+  vmagent:
+    image: victoriametrics/vmagent:latest
+    container_name: alert-analyzer-vmagent
+    command:
+      - '--promscrape.config=/etc/vmagent/promscrape.yml'
+      - '--remoteWrite.url=http://victoriametrics:8428/api/v1/write'
+    volumes:
+      - ./vmagent.yml:/etc/vmagent/promscrape.yml
+    depends_on:
+      - victoriametrics
+      - sample-app
+    networks:
+      - alert-analyzer-vm
+
+  vmalert:
+    image: victoriametrics/vmalert:latest
+    container_name: alert-analyzer-vmalert
+    ports:
+      - "8880:8880"
+    command:
+      - '--httpListenAddr=:8880'
+      - '--datasource.url=http://victoriametrics:8428'
+      - '--remoteWrite.url=http://victoriametrics:8428/api/v1/write'
+      - '--rule=/etc/vmalert/alert_rules.yml'
+      - '--evaluationInterval=15s'
+    volumes:
+      - ../alert-analyzer/alert_rules.yml:/etc/vmalert/alert_rules.yml
+    depends_on:
+      - victoriametrics
+      - vmagent
+    networks:
+      - alert-analyzer-vm
+
+  sample-app:
+    image: prom/node-exporter:latest
+    container_name: alert-analyzer-vm-sample-app
+    ports:
+      - "9101:9100"
+    networks:
+      - alert-analyzer-vm
+
+volumes:
+  victoriametrics_data:
+
+networks:
+  alert-analyzer-vm:
+    driver: bridge

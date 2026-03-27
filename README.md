@@ -90,6 +90,9 @@ alert-analyzer monitor \
   --metrics-address :8080
 ```
 
+VictoriaMetrics compatibility stack:
+`deployments/docker/alert-analyzer-victoriametrics`
+
 ### 💥 chaos-load - Load & Chaos Testing (✅ Available)
 
 Combined load testing and chaos engineering toolkit.
