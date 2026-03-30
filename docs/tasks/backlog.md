@@ -147,7 +147,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - [ ] **Chaos Scenarios**
   - [x] Random HTTP 5xx errors
   - [x] Network latency injection
-  - [ ] Connection failures
+  - [x] Connection failures
   - [ ] Timeout simulation
   - [ ] Resource exhaustion (memory/CPU)
 

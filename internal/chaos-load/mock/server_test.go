@@ -1,6 +1,9 @@
 package mock
 
 import (
+	"bufio"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,49 +12,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type responseWriterAdapter struct {
+	http.ResponseWriter
+	hijack func() (net.Conn, *bufio.ReadWriter, error)
+}
+
+func (r *responseWriterAdapter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return r.hijack()
+}
+
 func TestServer_LatencyWithJitter(t *testing.T) {
 	latency := 100 * time.Millisecond
 	jitter := 50 * time.Millisecond
 
 	cfg := ServerConfig{
-		Port:    0, // not used in httptest
 		Latency: latency,
 		Jitter:  jitter,
 	}
 
 	s := NewServer(cfg)
 
-	// Create a test handler that uses the server logic
-	// We can't easily test s.Run() as it blocks, so we test handleRequest directly
-	handler := http.HandlerFunc(s.handleRequest)
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
-
-	client := ts.Client()
-
 	for i := 0; i < 20; i++ {
+		recorder := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+
 		start := time.Now()
-		resp, err := client.Get(ts.URL)
-		assert.NoError(t, err)
+		s.handleRequest(recorder, req)
 		duration := time.Since(start)
-		resp.Body.Close()
 
-		// Allow some overhead for test execution (e.g. +20ms buffer)
-		// Min duration should be close to latency - jitter
-		// Max duration should be close to latency + jitter (+ buffer)
-
-		// Allow significant overhead for test execution in CI/loaded envs
-		// Min duration should be close to latency - jitter
 		minDuration := latency - jitter
-		maxDuration := latency + jitter + (500 * time.Millisecond) // substantial buffer
+		maxDuration := latency + jitter + (500 * time.Millisecond)
 
-		// Note: time.Sleep is not guaranteed to be precise.
-		// Testing this strictly is flaky. We check if it's "around" the expected values.
 		assert.GreaterOrEqual(t, duration, minDuration, "Duration too short")
 		assert.LessOrEqual(t, duration, maxDuration, "Duration too long")
-
-		// If system is slow, this might fail, but it's a good sanity check
-		t.Logf("Request took %v (expected %v +/- %v)", duration, latency, jitter)
+		assert.Equal(t, http.StatusOK, recorder.Code)
 	}
 }
 
@@ -61,12 +55,55 @@ func TestServer_ErrorRate(t *testing.T) {
 	}
 
 	s := NewServer(cfg)
-	handler := http.HandlerFunc(s.handleRequest)
-	ts := httptest.NewServer(handler)
-	defer ts.Close()
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
 
-	resp, err := ts.Client().Get(ts.URL)
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	resp.Body.Close()
+	s.handleRequest(recorder, req)
+
+	assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "Internal Server Error")
+}
+
+func TestServer_ConnectionFailureRate(t *testing.T) {
+	cfg := ServerConfig{
+		ConnectionFailureRate: 100,
+	}
+
+	s := NewServer(cfg)
+	serverConn, clientConn := net.Pipe()
+	defer clientConn.Close()
+
+	writer := &responseWriterAdapter{
+		ResponseWriter: httptest.NewRecorder(),
+		hijack: func() (net.Conn, *bufio.ReadWriter, error) {
+			return serverConn, bufio.NewReadWriter(bufio.NewReader(serverConn), bufio.NewWriter(serverConn)), nil
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+		s.handleRequest(writer, req)
+	}()
+
+	buf := make([]byte, 1)
+	_, err := clientConn.Read(buf)
+	assert.ErrorIs(t, err, io.EOF)
+	<-done
+}
+
+func TestServer_ConnectionFailureRequiresHijackSupport(t *testing.T) {
+	cfg := ServerConfig{
+		ConnectionFailureRate: 100,
+	}
+
+	s := NewServer(cfg)
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+
+	s.handleRequest(recorder, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "Connection failure simulation requires hijack support")
 }

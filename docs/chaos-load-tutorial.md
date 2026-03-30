@@ -139,6 +139,32 @@ Load test endpoints behind HTTP Basic authentication:
     --requests 200
 ```
 
+### Chaos Mock Server
+
+`chaos-load` also includes a local mock server for resilience testing. It can inject latency, HTTP 5xx responses, and abrupt connection drops without extra tooling.
+
+```bash
+./bin/chaos-load mock --port 8080 \
+    --error-rate 20 \
+    --latency 150ms \
+    --jitter 50ms \
+    --connection-failure-rate 10
+```
+
+Use it together with the HTTP generator:
+
+```bash
+./bin/chaos-load mock --port 8080 --connection-failure-rate 25
+./bin/chaos-load http --url http://localhost:8080 --duration 30s --concurrency 10
+```
+
+Key mock flags:
+
+- `--error-rate`: Percentage of requests that return HTTP 500
+- `--latency`: Base latency to inject before responding
+- `--jitter`: Random latency variation in the range `+/- jitter`
+- `--connection-failure-rate`: Percentage of requests where the server closes the client connection
+
 ## Best Practices
 
 1.  **Start Small**: Begin with low concurrency (e.g., 2-5 workers) to verify connectivity before scaling up.
