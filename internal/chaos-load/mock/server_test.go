@@ -1,6 +1,9 @@
 package mock
 
 import (
+	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -69,4 +72,74 @@ func TestServer_ErrorRate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	resp.Body.Close()
+}
+
+func TestServer_ZeroErrorRate(t *testing.T) {
+	s := NewServer(ServerConfig{ErrorRate: 0})
+	handler := http.HandlerFunc(s.handleRequest)
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	resp, err := ts.Client().Get(ts.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	resp.Body.Close()
+}
+
+func TestServer_LatencyNoJitter(t *testing.T) {
+	latency := 50 * time.Millisecond
+	s := NewServer(ServerConfig{Latency: latency})
+	handler := http.HandlerFunc(s.handleRequest)
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	start := time.Now()
+	resp, err := ts.Client().Get(ts.URL)
+	elapsed := time.Since(start)
+	assert.NoError(t, err)
+	resp.Body.Close()
+
+	assert.GreaterOrEqual(t, elapsed, latency, "should take at least the configured latency")
+	assert.Less(t, elapsed, latency+500*time.Millisecond, "should not take excessively long")
+}
+
+func TestServer_Run_StartsAndShutdown(t *testing.T) {
+	// Find a free port
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	assert.NoError(t, err)
+	port := ln.Addr().(*net.TCPAddr).Port
+	ln.Close()
+
+	s := NewServer(ServerConfig{Port: port})
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- s.Run()
+	}()
+
+	// Wait for the server to start
+	addr := fmt.Sprintf("http://127.0.0.1:%d/", port)
+	var resp *http.Response
+	for i := 0; i < 20; i++ {
+		resp, err = http.Get(addr) //nolint:noctx
+		if err == nil {
+			resp.Body.Close()
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	assert.NoError(t, err, "server should be reachable")
+
+	// Shutdown gracefully
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	assert.NoError(t, s.server.Shutdown(ctx))
+
+	// Run() should return http.ErrServerClosed (treated as normal exit)
+	select {
+	case runErr := <-errCh:
+		assert.ErrorIs(t, runErr, http.ErrServerClosed)
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not stop within timeout")
+	}
 }

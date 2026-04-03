@@ -231,3 +231,40 @@ func TestPoolConfigValidateRequiresBasicUsername(t *testing.T) {
 		t.Fatal("expected validation error when basic password is set without username")
 	}
 }
+
+func TestPoolConfigValidate_Valid(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  PoolConfig
+	}{
+		{"no auth", PoolConfig{TargetURL: "https://example.com"}},
+		{"bearer only", PoolConfig{TargetURL: "https://example.com", BearerToken: "tok"}},
+		{"basic only", PoolConfig{TargetURL: "https://example.com", BasicUsername: "u", BasicPassword: "p"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := tc.cfg.Validate(); err != nil {
+				t.Fatalf("Validate() unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestPoolNewRequest_DefaultMethodIsGET(t *testing.T) {
+	pool := NewPool(PoolConfig{TargetURL: "https://example.com"})
+	req, err := pool.newRequest(context.Background())
+	if err != nil {
+		t.Fatalf("newRequest() failed: %v", err)
+	}
+	if req.Method != http.MethodGet {
+		t.Fatalf("expected default method GET, got %s", req.Method)
+	}
+}
+
+func TestPoolNewRequest_InvalidURLReturnsError(t *testing.T) {
+	pool := NewPool(PoolConfig{TargetURL: "://bad url"})
+	_, err := pool.newRequest(context.Background())
+	if err == nil {
+		t.Fatal("expected error for invalid URL")
+	}
+}
