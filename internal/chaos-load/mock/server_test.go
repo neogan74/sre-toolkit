@@ -107,3 +107,38 @@ func TestServer_ConnectionFailureRequiresHijackSupport(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, recorder.Code)
 	assert.Contains(t, recorder.Body.String(), "Connection failure simulation requires hijack support")
 }
+
+func TestServer_TimeoutSimulation(t *testing.T) {
+	cfg := ServerConfig{
+		TimeoutRate:     100,
+		TimeoutDuration: 40 * time.Millisecond,
+	}
+
+	s := NewServer(cfg)
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
+
+	start := time.Now()
+	s.handleRequest(recorder, req)
+	duration := time.Since(start)
+
+	assert.GreaterOrEqual(t, duration, cfg.TimeoutDuration)
+	assert.Equal(t, http.StatusGatewayTimeout, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "Gateway Timeout")
+}
+
+func TestServerConfigValidateRequiresTimeoutDuration(t *testing.T) {
+	err := (ServerConfig{
+		TimeoutRate: 10,
+	}).Validate()
+
+	assert.EqualError(t, err, "timeout simulation requires --timeout-duration > 0")
+}
+
+func TestServerConfigValidateRejectsInvalidRates(t *testing.T) {
+	err := (ServerConfig{
+		TimeoutRate: 101,
+	}).Validate()
+
+	assert.EqualError(t, err, "timeout-rate must be between 0 and 100")
+}

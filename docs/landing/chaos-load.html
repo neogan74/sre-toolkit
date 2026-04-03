@@ -37,7 +37,7 @@
             <p class="lead">
               <strong>chaos-load</strong> is the toolkit’s practical stress utility: lightweight HTTP load generation,
               auth-aware endpoint checks, latency-focused reporting, and a clean base for future chaos scenarios like 5xx,
-              jitter, and dropped connections.
+              jitter, explicit 504 timeouts, and dropped connections.
             </p>
             <div class="hero-actions">
               <a class="button button-primary" href="../chaos-load-tutorial.md">Read Tutorial</a>
@@ -93,7 +93,7 @@ Status Codes:
           </div>
           <div class="metric">
             <strong>Chaos path</strong>
-            <span>Inject latency, HTTP failures, and connection drops from the built-in mock server.</span>
+            <span>Inject latency, HTTP failures, timeout responses, and connection drops from the built-in mock server.</span>
           </div>
         </div>
       </section>
@@ -129,7 +129,7 @@ Status Codes:
             </article>
             <article class="card">
               <h3>Chaos runway</h3>
-              <p>Acts as the base layer for deliberate failure injection, including abrupt client disconnect scenarios.</p>
+              <p>Acts as the base layer for deliberate failure injection, including timeout and abrupt disconnect scenarios.</p>
               <span class="label">Evolution path</span>
             </article>
           </div>
@@ -171,7 +171,7 @@ Status Codes:
                 <span class="lights"><span></span><span></span><span></span></span>
                 <span>chaos mock</span>
               </div>
-              <pre>chaos-load mock --port 8080 --error-rate 20 --latency 150ms --connection-failure-rate 10</pre>
+              <pre>chaos-load mock --port 8080 --error-rate 20 --latency 150ms --timeout-rate 5 --timeout-duration 12s --connection-failure-rate 10</pre>
             </div>
             <article class="card">
               <h3>Natural pairing</h3>

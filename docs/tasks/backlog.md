@@ -148,7 +148,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Random HTTP 5xx errors
   - [x] Network latency injection
   - [x] Connection failures
-  - [ ] Timeout simulation
+  - [x] Timeout simulation
   - [ ] Resource exhaustion (memory/CPU)
 
 - [ ] **Kubernetes Integration**

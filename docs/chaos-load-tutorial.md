@@ -148,7 +148,9 @@ Load test endpoints behind HTTP Basic authentication:
     --error-rate 20 \
     --latency 150ms \
     --jitter 50ms \
-    --connection-failure-rate 10
+    --connection-failure-rate 10 \
+    --timeout-rate 5 \
+    --timeout-duration 12s
 ```
 
 Use it together with the HTTP generator:
@@ -164,6 +166,8 @@ Key mock flags:
 - `--latency`: Base latency to inject before responding
 - `--jitter`: Random latency variation in the range `+/- jitter`
 - `--connection-failure-rate`: Percentage of requests where the server closes the client connection
+- `--timeout-rate`: Percentage of requests delayed and returned as HTTP `504 Gateway Timeout`
+- `--timeout-duration`: How long timed-out requests wait before returning `504`
 
 ## Best Practices
 
