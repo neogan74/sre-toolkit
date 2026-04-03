@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -45,6 +46,40 @@ func TestCollector_Empty(t *testing.T) {
 
 	if !strings.Contains(output, "No requests made") {
 		t.Errorf("expected output to contain %q for empty collector", "No requests made")
+	}
+}
+
+func TestCollector_Report_Smoke(t *testing.T) {
+	// Report() is a thin wrapper around FprintReport(os.Stdout); just verify it doesn't panic.
+	c := NewCollector()
+	c.Add(Result{StatusCode: 200, Duration: 5 * time.Millisecond})
+	c.Report() // should not panic
+}
+
+func TestCollector_ConcurrentAdd(t *testing.T) {
+	c := NewCollector()
+	const goroutines = 50
+	const perGoroutine = 100
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			for j := 0; j < perGoroutine; j++ {
+				c.Add(Result{StatusCode: 200, Duration: time.Millisecond})
+			}
+		}()
+	}
+	wg.Wait()
+
+	var buf bytes.Buffer
+	c.FprintReport(&buf)
+	output := buf.String()
+
+	expected := "Total Requests: 5000"
+	if !strings.Contains(output, expected) {
+		t.Errorf("expected %q in output, got:\n%s", expected, output)
 	}
 }
 
