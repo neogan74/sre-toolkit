@@ -11,10 +11,11 @@ import (
 
 // ServerConfig holds configuration for the mock server
 type ServerConfig struct {
-	Port      int
-	ErrorRate int           // Percentage 0-100
-	Latency   time.Duration // Sleep duration
-	Jitter    time.Duration // Latency variation (+/-)
+	Port                  int
+	ErrorRate             int           // Percentage 0-100
+	ConnectionFailureRate int           // Percentage 0-100
+	Latency               time.Duration // Sleep duration
+	Jitter                time.Duration // Latency variation (+/-)
 }
 
 // Server represents a chaos mock server
@@ -46,6 +47,7 @@ func (s *Server) Run() error {
 	logger.Info().
 		Int("port", s.config.Port).
 		Int("error_rate", s.config.ErrorRate).
+		Int("connection_failure_rate", s.config.ConnectionFailureRate).
 		Dur("latency", s.config.Latency).
 		Dur("jitter", s.config.Jitter).
 		Msg("Starting chaos mock server")
@@ -72,6 +74,22 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(delay)
 	}
 
+	// Simulate connection failure
+	if s.shouldFailConnection() {
+		if err := closeConnection(w); err != nil {
+			logger.Warn().Err(err).Msg("Failed to drop client connection")
+			http.Error(w, "Connection failure simulation requires hijack support", http.StatusServiceUnavailable)
+			return
+		}
+
+		logger.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Dur("duration", time.Since(start)).
+			Msg("Connection dropped")
+		return
+	}
+
 	// Simulate error
 	statusCode := http.StatusOK
 	if s.config.ErrorRate > 0 {
@@ -95,4 +113,22 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 		Int("status", statusCode).
 		Dur("duration", time.Since(start)).
 		Msg("Request processed")
+}
+
+func (s *Server) shouldFailConnection() bool {
+	return s.config.ConnectionFailureRate > 0 && rand.Intn(100) < s.config.ConnectionFailureRate
+}
+
+func closeConnection(w http.ResponseWriter) error {
+	hijacker, ok := w.(http.Hijacker)
+	if !ok {
+		return fmt.Errorf("response writer does not support hijacking")
+	}
+
+	conn, _, err := hijacker.Hijack()
+	if err != nil {
+		return err
+	}
+
+	return conn.Close()
 }
