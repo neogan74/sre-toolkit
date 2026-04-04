@@ -147,7 +147,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - [ ] **Chaos Scenarios**
   - [x] Random HTTP 5xx errors
   - [x] Network latency injection
-  - [ ] Connection failures
+  - [x] Connection failures
   - [ ] Timeout simulation
   - [ ] Resource exhaustion (memory/CPU)
 
@@ -173,7 +173,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `docs/chaos-load-tutorial.md`
 
 **Next Steps:**
-- [ ] Unit tests for worker and collector
+- [x] Unit tests for worker and collector ✅ **COMPLETE**
 - [ ] Support for POST/PUT methods with payloads
 - [ ] Real-time Progress indicator
 - [ ] Pod killing chaos scenario

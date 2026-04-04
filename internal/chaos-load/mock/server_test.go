@@ -1,8 +1,10 @@
 package mock
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +13,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+// responseWriterAdapter wraps httptest.ResponseRecorder and adds Hijack support for testing connection drops.
+type responseWriterAdapter struct {
+	http.ResponseWriter
+	hijack func() (net.Conn, *bufio.ReadWriter, error)
+}
+
+func (r *responseWriterAdapter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return r.hijack()
+}
 
 func TestServer_LatencyWithJitter(t *testing.T) {
 	latency := 100 * time.Millisecond
@@ -72,6 +84,52 @@ func TestServer_ErrorRate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	resp.Body.Close()
+}
+
+func TestServer_ConnectionFailure_DropsConnection(t *testing.T) {
+	s := NewServer(ServerConfig{ConnectionFailureRate: 100})
+
+	serverConn, clientConn := net.Pipe()
+	defer clientConn.Close()
+
+	writer := &responseWriterAdapter{
+		ResponseWriter: httptest.NewRecorder(),
+		hijack: func() (net.Conn, *bufio.ReadWriter, error) {
+			return serverConn, bufio.NewReadWriter(bufio.NewReader(serverConn), bufio.NewWriter(serverConn)), nil
+		},
+	}
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		s.handleRequest(writer, req)
+	}()
+
+	// The server closes the connection — client should get EOF
+	buf := make([]byte, 1)
+	_, err := clientConn.Read(buf)
+	assert.ErrorIs(t, err, io.EOF)
+	<-done
+}
+
+func TestServer_ConnectionFailure_FallsBackWhenHijackNotSupported(t *testing.T) {
+	s := NewServer(ServerConfig{ConnectionFailureRate: 100})
+
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	s.handleRequest(recorder, req)
+
+	assert.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "Connection failure simulation requires hijack support")
+}
+
+func TestServer_ConnectionFailure_ZeroRateDoesNotDrop(t *testing.T) {
+	s := NewServer(ServerConfig{ConnectionFailureRate: 0})
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	s.handleRequest(recorder, req)
+	assert.Equal(t, http.StatusOK, recorder.Code)
 }
 
 func TestServer_ZeroErrorRate(t *testing.T) {

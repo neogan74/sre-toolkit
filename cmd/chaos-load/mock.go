@@ -10,6 +10,7 @@ import (
 func newMockCmd() *cobra.Command {
 	var port int
 	var errorRate int
+	var connectionFailureRate int
 	var latency time.Duration
 	var jitter time.Duration
 
@@ -20,10 +21,11 @@ func newMockCmd() *cobra.Command {
 Useful for testing observability tools and verify client resilience.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := mock.ServerConfig{
-				Port:      port,
-				ErrorRate: errorRate,
-				Latency:   latency,
-				Jitter:    jitter,
+				Port:                  port,
+				ErrorRate:             errorRate,
+				ConnectionFailureRate: connectionFailureRate,
+				Latency:               latency,
+				Jitter:                jitter,
 			}
 			server := mock.NewServer(cfg)
 			return server.Run()
@@ -32,6 +34,7 @@ Useful for testing observability tools and verify client resilience.`,
 
 	cmd.Flags().IntVar(&port, "port", 8080, "Port to listen on")
 	cmd.Flags().IntVar(&errorRate, "error-rate", 0, "Percentage of requests to fail with 500 (0-100)")
+	cmd.Flags().IntVar(&connectionFailureRate, "connection-failure-rate", 0, "Percentage of requests to drop by closing the client connection (0-100)")
 	cmd.Flags().DurationVar(&latency, "latency", 0, "Artificial latency to inject (e.g. 100ms)")
 	cmd.Flags().DurationVar(&jitter, "jitter", 0, "Random latency variation (+/- duration)")
 
