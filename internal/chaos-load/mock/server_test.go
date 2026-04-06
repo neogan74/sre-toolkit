@@ -161,6 +161,57 @@ func TestServer_LatencyNoJitter(t *testing.T) {
 	assert.Less(t, elapsed, latency+500*time.Millisecond, "should not take excessively long")
 }
 
+func TestServer_TimeoutSimulation(t *testing.T) {
+	cfg := ServerConfig{
+		TimeoutRate:     100,
+		TimeoutDuration: 40 * time.Millisecond,
+	}
+
+	s := NewServer(cfg)
+	recorder := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	start := time.Now()
+	s.handleRequest(recorder, req)
+	duration := time.Since(start)
+
+	assert.GreaterOrEqual(t, duration, cfg.TimeoutDuration)
+	assert.Equal(t, http.StatusGatewayTimeout, recorder.Code)
+	assert.Contains(t, recorder.Body.String(), "Gateway Timeout")
+}
+
+func TestServerConfigValidate_RequiresTimeoutDuration(t *testing.T) {
+	err := (ServerConfig{TimeoutRate: 10}).Validate()
+	assert.EqualError(t, err, "timeout simulation requires --timeout-duration > 0")
+}
+
+func TestServerConfigValidate_RejectsInvalidRates(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  ServerConfig
+		msg  string
+	}{
+		{"error-rate > 100", ServerConfig{ErrorRate: 101}, "error-rate must be between 0 and 100"},
+		{"connection-failure-rate < 0", ServerConfig{ConnectionFailureRate: -1}, "connection-failure-rate must be between 0 and 100"},
+		{"timeout-rate > 100", ServerConfig{TimeoutRate: 101}, "timeout-rate must be between 0 and 100"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.EqualError(t, tc.cfg.Validate(), tc.msg)
+		})
+	}
+}
+
+func TestServerConfigValidate_Valid(t *testing.T) {
+	cfg := ServerConfig{
+		ErrorRate:             10,
+		ConnectionFailureRate: 5,
+		TimeoutRate:           20,
+		TimeoutDuration:       100 * time.Millisecond,
+	}
+	assert.NoError(t, cfg.Validate())
+}
+
 func TestServer_Run_StartsAndShutdown(t *testing.T) {
 	// Find a free port
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
