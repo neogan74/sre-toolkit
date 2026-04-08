@@ -83,6 +83,48 @@ func TestCorrelationAnalyzer_AnalyzeTopN(t *testing.T) {
 	assert.Equal(t, "AlertB", results[0].AlertB)
 }
 
+func TestCorrelationAnalyzer_Analyze_NilHistory(t *testing.T) {
+	a := NewCorrelationAnalyzer(nil)
+	assert.Empty(t, a.Analyze())
+}
+
+func TestCorrelationAnalyzer_Analyze_EmptyAlerts(t *testing.T) {
+	a := NewCorrelationAnalyzer(&collector.AlertHistory{})
+	assert.Empty(t, a.Analyze())
+}
+
+func TestCorrelationAnalyzer_AnalyzeTopN_ZeroN(t *testing.T) {
+	now := time.Now()
+	history := &collector.AlertHistory{
+		Alerts: []collector.Alert{
+			{Name: "AlertA", FiredAt: now.Add(-50 * time.Minute), ResolvedAt: TimePtr(now.Add(-20 * time.Minute))},
+			{Name: "AlertB", FiredAt: now.Add(-45 * time.Minute), ResolvedAt: TimePtr(now.Add(-15 * time.Minute))},
+		},
+	}
+	a := NewCorrelationAnalyzer(history)
+	assert.Empty(t, a.AnalyzeTopN(0))
+}
+
+func TestAlertEnd_FallbackBranches(t *testing.T) {
+	now := time.Now()
+
+	t.Run("uses history EndTime when alert not resolved", func(t *testing.T) {
+		endTime := now.Add(-5 * time.Minute)
+		history := &collector.AlertHistory{EndTime: endTime}
+		a := NewCorrelationAnalyzer(history)
+		alert := collector.Alert{FiredAt: now.Add(-30 * time.Minute)} // no ResolvedAt
+		assert.Equal(t, endTime, a.alertEnd(alert))
+	})
+
+	t.Run("falls back to FiredAt when EndTime is zero", func(t *testing.T) {
+		history := &collector.AlertHistory{} // zero EndTime
+		a := NewCorrelationAnalyzer(history)
+		firedAt := now.Add(-10 * time.Minute)
+		alert := collector.Alert{FiredAt: firedAt}
+		assert.Equal(t, firedAt, a.alertEnd(alert))
+	})
+}
+
 func TestOverlapDuration(t *testing.T) {
 	now := time.Now()
 
