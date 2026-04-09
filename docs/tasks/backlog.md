@@ -152,8 +152,9 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [ ] Resource exhaustion (memory/CPU)
 
 - [ ] **Kubernetes Integration**
-  - [ ] Pod killing (graceful/force)
-  - [ ] Node draining
+  - [x] Pod killing (graceful/force) ✅ **COMPLETE**
+  - [x] Node draining ✅ **COMPLETE**
+  - [ ] Network partition between services
   - [ ] Network partition between services
   - [ ] Storage issues (disk full)
 
