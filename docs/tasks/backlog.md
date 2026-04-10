@@ -130,10 +130,10 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 ---
 
-### 3. chaos-load - Load Generator and Chaos Testing ⏳ **PHASE 1 COMPLETE**
+### 3. chaos-load - Load Generator and Chaos Testing ⏳ **PHASE 2 COMPLETE**
 **Priority:** MEDIUM
 **Complexity:** High
-**Status:** Phase 1 Complete (HTTP Load MVP)
+**Status:** Phase 2 Complete (Kubernetes Integration)
 
 #### Features:
 - [x] **HTTP Load Generation** ✅ **COMPLETE**
@@ -165,19 +165,26 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [ ] JMeter/Locust-compatible reports
   - [ ] Comparison reports (before/after)
 
-**Technologies:** Go, net/http, stats/collector, cobra
+**Technologies:** Go, net/http, stats/collector, cobra, k8s.io/client-go
 
 **Completed Files:**
 - `internal/chaos-load/http/worker.go`
 - `internal/chaos-load/stats/collector.go`
+- `internal/chaos-load/mock/server.go`
+- `internal/chaos-load/k8s/killer.go`
+- `internal/chaos-load/k8s/drainer.go`
 - `cmd/chaos-load/main.go`
+- `cmd/chaos-load/k8s.go`
 - `docs/chaos-load-tutorial.md`
 
 **Next Steps:**
 - [x] Unit tests for worker and collector ✅ **COMPLETE**
+- [x] Pod killing chaos scenario ✅ **COMPLETE**
+- [x] Node draining chaos scenario ✅ **COMPLETE**
 - [ ] Support for POST/PUT methods with payloads
 - [ ] Real-time Progress indicator
-- [ ] Pod killing chaos scenario
+- [ ] Network partition between services
+- [ ] Storage issues (disk full)
 
 ---
 
@@ -441,7 +448,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Status:** COMPLETE (Dec 2024)
 **Deliverables:** Working skeleton, CI pipeline, metrics framework, logging
 
-### Phase 2 - Core Tools ⏳ **IN PROGRESS**
+### Phase 2 - Core Tools ✅ **COMPLETE**
 1. [x] k8s-doctor MVP (healthcheck, diagnostics commands)
 2. [x] alert-analyzer Phase 1 (frequency analysis)
 3. [x] k8s-doctor unit tests (84% coverage) ✅ **COMPLETE**
@@ -451,7 +458,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 7. [x] chaos-load unit tests ✅ **COMPLETE**
 8. [x] k8s-doctor audit command ✅ **COMPLETE**
 
-**Status:** 100% COMPLETE ✅
+**Status:** 100% COMPLETE ✅ ✅
 **Current Focus:** Testing & Production Readiness
 
 ### Phase 3 - Advanced (Month 4-6)
