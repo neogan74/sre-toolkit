@@ -44,3 +44,4 @@ tmp/
 dist/
 release/
 AGENTS.md
+/config-linter
