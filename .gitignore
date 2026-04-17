@@ -45,3 +45,5 @@ dist/
 release/
 AGENTS.md
 /config-linter
+/cert-monitor
+/log-parser
