@@ -39,6 +39,18 @@ chaos-load: ## Build the chaos-load binary
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/chaos-load ./cmd/chaos-load
 	@echo "$(GREEN)Build complete: $(BUILD_DIR)/chaos-load$(NC)"
 
+log-parser: ## Build the log-parser binary
+	@echo "$(CYAN)Building log-parser...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/log-parser ./cmd/log-parser
+	@echo "$(GREEN)Build complete: $(BUILD_DIR)/log-parser$(NC)"
+
+cert-monitor: ## Build the cert-monitor binary
+	@echo "$(CYAN)Building cert-monitor...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/cert-monitor ./cmd/cert-monitor
+	@echo "$(GREEN)Build complete: $(BUILD_DIR)/cert-monitor$(NC)"
+
 build-all: ## Build all tools
 	@echo "$(CYAN)Building all tools...$(NC)"
 	@mkdir -p $(BUILD_DIR)
@@ -46,6 +58,8 @@ build-all: ## Build all tools
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/alert-analyzer ./cmd/alert-analyzer
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/chaos-load ./cmd/chaos-load
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/config-linter ./cmd/config-linter
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/cert-monitor ./cmd/cert-monitor
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/log-parser ./cmd/log-parser
 	@echo "$(GREEN)All builds complete$(NC)"
 
 install: build ## Install the binary to GOPATH/bin
