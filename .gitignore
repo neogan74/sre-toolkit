@@ -48,3 +48,4 @@ AGENTS.md
 /cert-monitor
 /log-parser
 /db-toolkit
+/k8s-doctor
