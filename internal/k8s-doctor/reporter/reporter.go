@@ -22,6 +22,7 @@ const (
 	FormatTable OutputFormat = "table"
 	FormatJSON  OutputFormat = "json"
 	FormatYAML  OutputFormat = "yaml"
+	FormatHTML  OutputFormat = "html"
 )
 
 // Reporter handles result reporting
@@ -39,6 +40,30 @@ func NewReporter(format OutputFormat, writer io.Writer) *Reporter {
 		format: format,
 		writer: writer,
 	}
+}
+
+// ReportHealthCheck generates a combined health report (all sections in one pass).
+// For HTML format this produces a single self-contained HTML page.
+// For other formats it falls back to calling each individual Report method in order.
+func (r *Reporter) ReportHealthCheck(
+	nodes []healthcheck.NodeStatus,
+	pods *healthcheck.PodStatus,
+	components []healthcheck.ComponentStatus,
+	netPols *healthcheck.NetworkPoliciesStatus,
+) error {
+	if r.format == FormatHTML {
+		return renderHealthCheckHTML(r.writer, nodes, pods, components, netPols)
+	}
+	if err := r.ReportNodeHealth(nodes); err != nil {
+		return err
+	}
+	if err := r.ReportPodHealth(pods); err != nil {
+		return err
+	}
+	if err := r.ReportComponentHealth(components); err != nil {
+		return err
+	}
+	return r.ReportNetworkPolicies(netPols)
 }
 
 // ReportNodeHealth reports node health status
@@ -104,6 +129,8 @@ func (r *Reporter) ReportDiagnostics(result *diagnostics.Result) error {
 		return r.reportJSON(result)
 	case FormatYAML:
 		return r.reportYAML(result)
+	case FormatHTML:
+		return renderDiagnosticsHTML(r.writer, result)
 	case FormatTable:
 		return r.reportDiagnosticsTable(result)
 	default:
@@ -118,6 +145,8 @@ func (r *Reporter) ReportAudit(result *audit.Result) error {
 		return r.reportJSON(result)
 	case FormatYAML:
 		return r.reportYAML(result)
+	case FormatHTML:
+		return renderAuditHTML(r.writer, result)
 	case FormatTable:
 		return r.reportAuditTable(result)
 	default:

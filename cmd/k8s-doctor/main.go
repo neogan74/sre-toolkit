@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -92,6 +93,7 @@ func newHealthCheckCmd() *cobra.Command {
 		kubeconfig string
 		namespace  string
 		output     string
+		outputFile string
 		timeout    time.Duration
 	)
 
@@ -128,16 +130,7 @@ func newHealthCheckCmd() *cobra.Command {
 			}
 			logger.Info().Str("version", version).Msg("Connected to cluster")
 
-			// Create reporter
-			format := reporter.FormatTable
-			if output == "json" {
-				format = reporter.FormatJSON
-			} else if output == "yaml" {
-				format = reporter.FormatYAML
-			}
-			rep := reporter.NewReporter(format, os.Stdout)
-
-			// Check nodes
+			// Collect all data before reporting
 			logger.Info().Msg("Checking nodes...")
 			nodes, err := healthcheck.CheckNodes(ctx, client.Clientset())
 			if err != nil {
@@ -146,14 +139,6 @@ func newHealthCheckCmd() *cobra.Command {
 			}
 			logger.Info().Int("count", len(nodes)).Msg("Nodes checked")
 
-			if output == "table" {
-				logger.Info().Msg("\n=== Node Health ===")
-			}
-			if err := rep.ReportNodeHealth(nodes); err != nil {
-				return err
-			}
-
-			// Check pods
 			logger.Info().Msg("Checking pods...")
 			pods, err := healthcheck.CheckPods(ctx, client.Clientset(), namespace)
 			if err != nil {
@@ -162,11 +147,6 @@ func newHealthCheckCmd() *cobra.Command {
 			}
 			logger.Info().Int("total", pods.Total).Int("problems", len(pods.ProblemPods)).Msg("Pods checked")
 
-			if err := rep.ReportPodHealth(pods); err != nil {
-				return err
-			}
-
-			// Check components
 			logger.Info().Msg("Checking components...")
 			components, err := healthcheck.CheckComponents(ctx, client.Clientset())
 			if err != nil {
@@ -175,14 +155,6 @@ func newHealthCheckCmd() *cobra.Command {
 			}
 			logger.Info().Int("count", len(components)).Msg("Components checked")
 
-			if output == "table" {
-				logger.Info().Msg("\n=== Component Health ===")
-			}
-			if err := rep.ReportComponentHealth(components); err != nil {
-				return err
-			}
-
-			// Check Network Policies
 			logger.Info().Msg("Checking network policies...")
 			networkPolicies, err := healthcheck.CheckNetworkPolicies(ctx, client.Clientset(), namespace)
 			if err != nil {
@@ -191,10 +163,18 @@ func newHealthCheckCmd() *cobra.Command {
 			}
 			logger.Info().Int("namespaces_checked", networkPolicies.TotalNamespaces).Msg("Network policies checked")
 
-			if output == "table" {
-				logger.Info().Msg("\n=== Network Policies ===")
+			// Resolve output format and writer
+			format := parseFormat(output)
+			outWriter, closeWriter, err := resolveWriter(output, outputFile)
+			if err != nil {
+				return err
 			}
-			if err := rep.ReportNetworkPolicies(networkPolicies); err != nil {
+			if closeWriter != nil {
+				defer closeWriter()
+			}
+			rep := reporter.NewReporter(format, outWriter)
+
+			if err := rep.ReportHealthCheck(nodes, pods, components, networkPolicies); err != nil {
 				return err
 			}
 
@@ -205,7 +185,8 @@ func newHealthCheckCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check (empty for all)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml, html)")
+	cmd.Flags().StringVar(&outputFile, "output-file", "", "Write output to file (default: stdout; auto-set for html)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
@@ -216,6 +197,7 @@ func newDiagnosticsCmd() *cobra.Command {
 		kubeconfig string
 		namespace  string
 		output     string
+		outputFile string
 		timeout    time.Duration
 	)
 
@@ -261,13 +243,15 @@ func newDiagnosticsCmd() *cobra.Command {
 			}
 
 			// Create reporter
-			format := reporter.FormatTable
-			if output == "json" {
-				format = reporter.FormatJSON
-			} else if output == "yaml" {
-				format = reporter.FormatYAML
+			format := parseFormat(output)
+			outWriter, closeWriter, err := resolveWriter(output, outputFile)
+			if err != nil {
+				return err
 			}
-			rep := reporter.NewReporter(format, os.Stdout)
+			if closeWriter != nil {
+				defer closeWriter()
+			}
+			rep := reporter.NewReporter(format, outWriter)
 
 			// Report results
 			if err := rep.ReportDiagnostics(result); err != nil {
@@ -293,7 +277,8 @@ func newDiagnosticsCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to check (empty for all)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml, html)")
+	cmd.Flags().StringVar(&outputFile, "output-file", "", "Write output to file (default: stdout; auto-set for html)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
@@ -304,6 +289,7 @@ func newAuditCmd() *cobra.Command {
 		kubeconfig string
 		namespace  string
 		output     string
+		outputFile string
 		timeout    time.Duration
 	)
 
@@ -343,13 +329,15 @@ func newAuditCmd() *cobra.Command {
 				return err
 			}
 
-			format := reporter.FormatTable
-			if output == "json" {
-				format = reporter.FormatJSON
-			} else if output == "yaml" {
-				format = reporter.FormatYAML
+			format := parseFormat(output)
+			outWriter, closeWriter, err := resolveWriter(output, outputFile)
+			if err != nil {
+				return err
 			}
-			rep := reporter.NewReporter(format, os.Stdout)
+			if closeWriter != nil {
+				defer closeWriter()
+			}
+			rep := reporter.NewReporter(format, outWriter)
 
 			if err := rep.ReportAudit(result); err != nil {
 				return err
@@ -377,7 +365,8 @@ func newAuditCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to audit (empty for all)")
-	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml)")
+	cmd.Flags().StringVarP(&output, "output", "o", "table", "Output format (table, json, yaml, html)")
+	cmd.Flags().StringVar(&outputFile, "output-file", "", "Write output to file (default: stdout; auto-set for html)")
 	cmd.Flags().DurationVar(&timeout, "timeout", 30*time.Second, "Request timeout")
 
 	return cmd
@@ -394,4 +383,34 @@ func newVersionCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// parseFormat converts the output flag string to a reporter.OutputFormat.
+func parseFormat(output string) reporter.OutputFormat {
+	switch output {
+	case "json":
+		return reporter.FormatJSON
+	case "yaml":
+		return reporter.FormatYAML
+	case "html":
+		return reporter.FormatHTML
+	default:
+		return reporter.FormatTable
+	}
+}
+
+// resolveWriter returns the io.Writer and an optional closer for the given output format and file path.
+// For HTML output with no explicit file, it auto-generates "k8s-report.html".
+func resolveWriter(output, outputFile string) (io.Writer, func(), error) {
+	if outputFile == "" && output == "html" {
+		outputFile = "k8s-report.html"
+	}
+	if outputFile == "" {
+		return os.Stdout, nil, nil
+	}
+	f, err := os.Create(outputFile)
+	if err != nil {
+		return nil, nil, fmt.Errorf("open output file: %w", err)
+	}
+	return f, func() { f.Close() }, nil
 }
