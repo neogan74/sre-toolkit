@@ -43,7 +43,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] CI/CD integration (exit codes on critical issues)
   - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
   - [x] Summary statistics
-  - [x] YAML output format ✅ **COMPLETE*.
+  - [x] YAML output format ✅ **COMPLETE* .
   - [ ] Prometheus metrics export
 
 **Technologies:** Go, client-go, cobra, tabwriter, zerolog
@@ -415,7 +415,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Codecov coverage reporting
   - [x] Trivy security scanning
   - [x] Artifact upload
-  - [ ] Release automation (goreleaser)
+  - [x] Release automation (goreleaser) ✅ **COMPLETE** — cross-compile all 7 tools for linux/darwin/windows amd64+arm64, auto-changelog from conventional commits
   - [ ] Container image builds
 
 - [x] **Documentation** ✅ **PARTIAL**
