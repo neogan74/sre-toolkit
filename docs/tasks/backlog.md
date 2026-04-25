@@ -43,7 +43,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] CI/CD integration (exit codes on critical issues)
   - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
   - [x] Summary statistics
-  - [x] YAML output format ✅ **COMPLETE*
+  - [x] YAML output format ✅ **COMPLETE*.
   - [ ] Prometheus metrics export
 
 **Technologies:** Go, client-go, cobra, tabwriter, zerolog
@@ -245,8 +245,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 - [ ] **Alerting**
   - Email/Slack notifications
-  - Prometheus metrics (days_until_expiry)
-  - Webhook integration
+  - [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`) ✅ **COMPLETE**
+  - [x] Webhook integration ✅ **COMPLETE**
   - Escalation policy
 
 - [ ] **Reporting**
