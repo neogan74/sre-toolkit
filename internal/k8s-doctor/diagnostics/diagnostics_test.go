@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck"
+	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -654,5 +655,42 @@ func makeHighRestartPod(name, namespace string, restarts int32) corev1.Pod {
 				},
 			},
 		},
+	}
+}
+
+// TestMapEventSeverity tests the mapEventSeverity function
+func TestMapEventSeverity(t *testing.T) {
+	tests := []struct {
+		name       string
+		eventType  string
+		wantResult string
+	}{
+		{
+			name:       "Warning event",
+			eventType:  "Warning",
+			wantResult: "Warning",
+		},
+		{
+			name:       "Error event",
+			eventType:  "Error",
+			wantResult: "Critical",
+		},
+		{
+			name:       "Normal event",
+			eventType:  "Normal",
+			wantResult: "Info",
+		},
+		{
+			name:       "Unknown event type",
+			eventType:  "Unknown",
+			wantResult: "Info",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mapEventSeverity(tt.eventType)
+			assert.Equal(t, tt.wantResult, got)
+		})
 	}
 }
