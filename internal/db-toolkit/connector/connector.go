@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
+	"github.com/neogan/sre-toolkit/pkg/logging"
 )
 
 // DBType represents the type of database.
@@ -62,7 +63,10 @@ func Connect(cfg *Config) (*sql.DB, error) {
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			// Log but don't override the original error
+			logging.GetLogger().Warn().Err(closeErr).Msg("Failed to close database connection")
+		}
 		return nil, fmt.Errorf("ping %s at %s:%d: %w", driver, cfg.Host, cfg.Port, err)
 	}
 

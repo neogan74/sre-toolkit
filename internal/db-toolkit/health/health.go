@@ -123,9 +123,11 @@ func postgresChecks(ctx context.Context, db *sql.DB) []Check {
 
 	// Replication lag (if replica)
 	var isReplica bool
+	//nolint:errcheck
 	_ = db.QueryRowContext(ctx, "SELECT pg_is_in_recovery()").Scan(&isReplica)
 	if isReplica {
 		var lagSeconds sql.NullFloat64
+		//nolint:errcheck
 		_ = db.QueryRowContext(ctx,
 			"SELECT EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))").Scan(&lagSeconds)
 		if lagSeconds.Valid {
@@ -142,6 +144,7 @@ func postgresChecks(ctx context.Context, db *sql.DB) []Check {
 
 	// Long-running queries (> 5 min)
 	var longQueries int
+	//nolint:errcheck
 	_ = db.QueryRowContext(ctx,
 		"SELECT count(*) FROM pg_stat_activity WHERE state='active' AND now()-query_start > interval '5 minutes'",
 	).Scan(&longQueries)

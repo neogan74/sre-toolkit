@@ -11,6 +11,7 @@ import (
 	"github.com/neogan/sre-toolkit/internal/db-toolkit/analyzer"
 	"github.com/neogan/sre-toolkit/internal/db-toolkit/backup"
 	"github.com/neogan/sre-toolkit/internal/db-toolkit/health"
+	"github.com/neogan/sre-toolkit/pkg/logging"
 )
 
 // Format is the output format.
@@ -26,7 +27,9 @@ func PrintHealthReport(w io.Writer, r *health.Report, format Format) {
 	if format == FormatJSON {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		_ = enc.Encode(r)
+		if err := enc.Encode(r); err != nil {
+			logging.GetLogger().Error().Err(err).Msg("Failed to encode health report")
+		}
 		return
 	}
 

@@ -37,8 +37,14 @@ type LintReport struct {
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
-	path, _ := cmd.Flags().GetString("path")
-	outputFormat, _ := cmd.Flags().GetString("output")
+	path, err := cmd.Flags().GetString("path")
+	if err != nil {
+		return fmt.Errorf("failed to get path flag: %w", err)
+	}
+	outputFormat, err := cmd.Flags().GetString("output")
+	if err != nil {
+		return fmt.Errorf("failed to get output flag: %w", err)
+	}
 	logger := logging.GetLogger()
 
 	logger.Info().Str("path", path).Msg("Starting linting scan")
