@@ -46,48 +46,48 @@ func TestCheckNetworkPolicies(t *testing.T) {
 	ctx := context.TODO()
 
 	tests := []struct {
-		name              string
-		namespace         string
-		expectedLen       int
-		expectedPolicies  int
-		expectedNSCount   int
-		expectedIssueNs   string
+		name             string
+		namespace        string
+		expectedLen      int
+		expectedPolicies int
+		expectedNSCount  int
+		expectedIssueNs  string
 	}{
 		{
-			name:              "All namespaces",
-			namespace:         "",
-			expectedLen:       2, // default and app-without-policies (kube-system is excluded)
-			expectedPolicies:  1,
-			expectedNSCount:   3, // default, app-with-policies, app-without-policies
-			expectedIssueNs:   "default",
+			name:             "All namespaces",
+			namespace:        "",
+			expectedLen:      2, // default and app-without-policies (kube-system is excluded)
+			expectedPolicies: 1,
+			expectedNSCount:  3, // default, app-with-policies, app-without-policies
+			expectedIssueNs:  "default",
 		},
 		{
-			name:              "Specific namespace without policies",
-			namespace:         "app-without-policies",
-			expectedLen:       1,
-			expectedPolicies:  0,
-			expectedNSCount:   1,
-			expectedIssueNs:   "app-without-policies",
+			name:             "Specific namespace without policies",
+			namespace:        "app-without-policies",
+			expectedLen:      1,
+			expectedPolicies: 0,
+			expectedNSCount:  1,
+			expectedIssueNs:  "app-without-policies",
 		},
 		{
-			name:              "Specific namespace with policies",
-			namespace:         "app-with-policies",
-			expectedLen:       0,
-			expectedPolicies:  1,
-			expectedNSCount:   1,
-			expectedIssueNs:   "",
+			name:             "Specific namespace with policies",
+			namespace:        "app-with-policies",
+			expectedLen:      0,
+			expectedPolicies: 1,
+			expectedNSCount:  1,
+			expectedIssueNs:  "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			status, err := CheckNetworkPolicies(ctx, clientset, tt.namespace)
-			
+
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedNSCount, status.TotalNamespaces, "TotalNamespaces mismatch")
 			assert.Equal(t, tt.expectedPolicies, status.TotalPolicies, "TotalPolicies mismatch")
 			assert.Equal(t, tt.expectedLen, len(status.Issues), "Issues length mismatch")
-			
+
 			if tt.expectedIssueNs != "" && len(status.Issues) > 0 {
 				found := false
 				for _, issue := range status.Issues {
