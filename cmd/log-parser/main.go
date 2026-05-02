@@ -296,7 +296,8 @@ func openInput(files []string) (io.Reader, func(), error) {
 		}
 		return f, func() {
 			if err := f.Close(); err != nil {
-				logging.GetLogger().Warn().Err(err).Msg("Failed to close file")
+				logger := logging.GetLogger()
+				logger.Warn().Err(err).Msg("Failed to close file")
 			}
 		}, nil
 	}

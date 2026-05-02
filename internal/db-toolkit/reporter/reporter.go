@@ -28,7 +28,8 @@ func PrintHealthReport(w io.Writer, r *health.Report, format Format) {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(r); err != nil {
-			logging.GetLogger().Error().Err(err).Msg("Failed to encode health report")
+			logger := logging.GetLogger()
+			logger.Error().Err(err).Msg("Failed to encode health report")
 		}
 		return
 	}

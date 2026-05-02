@@ -65,7 +65,8 @@ func Connect(cfg *Config) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		if closeErr := db.Close(); closeErr != nil {
 			// Log but don't override the original error
-			logging.GetLogger().Warn().Err(closeErr).Msg("Failed to close database connection")
+			logger := logging.GetLogger()
+			logger.Warn().Err(closeErr).Msg("Failed to close database connection")
 		}
 		return nil, fmt.Errorf("ping %s at %s:%d: %w", driver, cfg.Host, cfg.Port, err)
 	}
