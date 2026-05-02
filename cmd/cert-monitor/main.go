@@ -14,6 +14,7 @@ import (
 	"github.com/neogan/sre-toolkit/pkg/k8s"
 	"github.com/neogan/sre-toolkit/pkg/logging"
 	"github.com/neogan/sre-toolkit/pkg/metrics"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -52,6 +53,21 @@ tracks expiry dates, and sends alerts via webhooks.`,
 	}
 }
 
+// startMetricsServer starts the metrics server if configured
+func startMetricsServer(logger zerolog.Logger) *metrics.Server {
+	if addr := viper.GetString("metrics_addr"); addr != "" {
+		ms := metrics.NewServer(&metrics.Config{Enabled: true, Address: addr, Path: "/metrics"})
+		go func() {
+			if err := ms.Start(); err != nil {
+				logger.Error().Err(err).Msg("Failed to start metrics server")
+			}
+		}()
+		logger.Info().Str("addr", addr).Msg("Prometheus metrics available at /metrics")
+		return ms
+	}
+	return nil
+}
+
 // newScanCmd creates the `scan` subcommand for scanning URLs.
 func newScanCmd() *cobra.Command {
 	var (
@@ -88,11 +104,13 @@ Examples:
 			}
 
 			// Start metrics server if address is configured.
-			if addr := viper.GetString("metrics_addr"); addr != "" {
-				ms := metrics.NewServer(&metrics.Config{Enabled: true, Address: addr, Path: "/metrics"})
-				go func() { _ = ms.Start() }()
-				defer func() { _ = ms.Stop() }()
-				logger.Info().Str("addr", addr).Msg("Prometheus metrics available at /metrics")
+			ms := startMetricsServer(logger)
+			if ms != nil {
+				defer func() {
+					if err := ms.Stop(); err != nil {
+						logger.Error().Err(err).Msg("Failed to stop metrics server")
+					}
+				}()
 			}
 
 			ctx := cmd.Context()
@@ -289,8 +307,16 @@ Examples:
 			// Start metrics server — essential for watch mode so Prometheus can scrape.
 			if addr := viper.GetString("metrics_addr"); addr != "" {
 				ms := metrics.NewServer(&metrics.Config{Enabled: true, Address: addr, Path: "/metrics"})
-				go func() { _ = ms.Start() }()
-				defer func() { _ = ms.Stop() }()
+				go func() {
+					if err := ms.Start(); err != nil {
+						logger.Error().Err(err).Msg("Failed to start metrics server")
+					}
+				}()
+				defer func() {
+					if err := ms.Stop(); err != nil {
+						logger.Error().Err(err).Msg("Failed to stop metrics server")
+					}
+				}()
 				logger.Info().Str("addr", addr).Msg("Prometheus metrics available at /metrics")
 			}
 
@@ -305,7 +331,9 @@ Examples:
 				start := time.Now()
 				results := scanner.ScanURLs(ctx, args, cfg)
 				metrics.SetCertMonitorMetrics(results, time.Since(start))
-				_ = rep.ReportURLScan(results)
+				if err := rep.ReportURLScan(results); err != nil {
+					logger.Error().Err(err).Msg("Failed to report URL scan results")
+				}
 				ok, warn, crit, expired, errs := countStatuses(results)
 				rep.PrintSummary(len(results), ok, warn, crit, expired, errs)
 

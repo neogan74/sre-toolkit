@@ -294,7 +294,12 @@ func openInput(files []string) (io.Reader, func(), error) {
 		if err != nil {
 			return nil, func() {}, err
 		}
-		return f, func() { f.Close() }, nil
+		return f, func() {
+			if err := f.Close(); err != nil {
+				logger := logging.GetLogger()
+				logger.Warn().Err(err).Msg("Failed to close file")
+			}
+		}, nil
 	}
 	readers := make([]io.Reader, 0, len(files))
 	closers := make([]io.Closer, 0, len(files))
