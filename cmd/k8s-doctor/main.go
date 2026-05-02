@@ -412,5 +412,10 @@ func resolveWriter(output, outputFile string) (io.Writer, func(), error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("open output file: %w", err)
 	}
-	return f, func() { f.Close() }, nil
+	return f, func() {
+		if err := f.Close(); err != nil {
+			logger := logging.GetLogger()
+			logger.Warn().Err(err).Str("file", outputFile).Msg("Failed to close output file")
+		}
+	}, nil
 }
