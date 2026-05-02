@@ -105,9 +105,6 @@ linters:
           - errcheck
 
 output:
-  formats:
-    text:
-      path: stdout
-      colors: true
-      print-issued-lines: true
-      print-linter-name: true
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
