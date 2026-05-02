@@ -128,9 +128,3 @@ issues:
     - linters:
         - typecheck
       text: ".On undefined"
-
-output:
-  formats:
-    - format: colored-line-number
-      print-issued-lines: true
-      print-linter-name: true
