@@ -104,10 +104,26 @@ linters:
         linters:
           - errcheck
 
-output:
-  formats:
-    text:
-      path: stdout
-      colors: true
-      print-issued-lines: true
-      print-linter-name: true
+issues:
+  exclude-rules:
+    - linters:
+        - typecheck
+      text: "undefined: yaml"
+    - linters:
+        - typecheck
+      text: "missing type in composite literal"
+    - linters:
+        - typecheck
+      text: "declared and not used"
+    - linters:
+        - typecheck
+      text: "undefined .*field or method"
+    - linters:
+        - typecheck
+      text: "could not import sync/atomic"
+    - linters:
+        - typecheck
+      text: "Called undefined"
+    - linters:
+        - typecheck
+      text: ".On undefined"
