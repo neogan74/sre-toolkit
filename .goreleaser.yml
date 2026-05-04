@@ -1,0 +1,199 @@
+version: 2
+
+project_name: sre-toolkit
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+# Build all 7 tools for the main platforms
+builds:
+  - id: k8s-doctor
+    binary: k8s-doctor
+    main: ./cmd/k8s-doctor
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: alert-analyzer
+    binary: alert-analyzer
+    main: ./cmd/alert-analyzer
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: chaos-load
+    binary: chaos-load
+    main: ./cmd/chaos-load
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: config-linter
+    binary: config-linter
+    main: ./cmd/config-linter
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: cert-monitor
+    binary: cert-monitor
+    main: ./cmd/cert-monitor
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: log-parser
+    binary: log-parser
+    main: ./cmd/log-parser
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+  - id: db-toolkit
+    binary: db-toolkit
+    main: ./cmd/db-toolkit
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+# Archives: tar.gz for Linux/macOS, zip for Windows
+archives:
+  - id: unix
+    builds: [k8s-doctor, alert-analyzer, chaos-load, config-linter, cert-monitor, log-parser, db-toolkit]
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+# Auto-generate changelog from conventional commits
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: "New Features"
+      regexp: "^feat"
+      order: 0
+    - title: "Bug Fixes"
+      regexp: "^fix"
+      order: 1
+    - title: "Performance"
+      regexp: "^perf"
+      order: 2
+    - title: "Documentation"
+      regexp: "^docs"
+      order: 3
+    - title: "Other"
+      order: 999
+  filters:
+    exclude:
+      - "^chore"
+      - "^ci"
+      - "Merge pull request"
+      - "Merge remote-tracking branch"
+
+# GitHub Release
+release:
+  github:
+    owner: neogan74
+    name: sre-toolkit
+  name_template: "v{{ .Version }}"
+  draft: false
+  prerelease: auto
+  header: |
+    ## SRE Toolkit {{ .Tag }}
+
+    A comprehensive set of CLI tools for SRE engineers.
+
+    ### Included tools
+    | Tool | Description |
+    |------|-------------|
+    | `k8s-doctor` | Kubernetes cluster health checker and diagnostics |
+    | `alert-analyzer` | Prometheus/Alertmanager alert noise analyzer |
+    | `chaos-load` | HTTP load generator and chaos testing |
+    | `config-linter` | Kubernetes YAML, Helm, Terraform, Dockerfile linter |
+    | `cert-monitor` | TLS certificate expiry monitoring |
+    | `log-parser` | Smart log analyzer with pattern detection |
+    | `db-toolkit` | Database health checks and operations |
+
+    ### Quick install (Linux amd64)
+    ```bash
+    curl -sL https://github.com/neogan74/sre-toolkit/releases/download/{{ .Tag }}/sre-toolkit_{{ .Version }}_linux_amd64.tar.gz | tar xz
+    sudo mv k8s-doctor alert-analyzer chaos-load config-linter cert-monitor log-parser db-toolkit /usr/local/bin/
+    ```
+
+# Snapshot (for local testing without a tag)
+snapshot:
+  version_template: "{{ .Tag }}-next"
