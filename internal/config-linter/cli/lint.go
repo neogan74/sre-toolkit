@@ -37,8 +37,14 @@ type LintReport struct {
 }
 
 func runLint(cmd *cobra.Command, args []string) error {
-	path, _ := cmd.Flags().GetString("path")
-	outputFormat, _ := cmd.Flags().GetString("output")
+	path, err := cmd.Flags().GetString("path")
+	if err != nil {
+		return fmt.Errorf("failed to get path flag: %w", err)
+	}
+	outputFormat, outErr := cmd.Flags().GetString("output")
+	if outErr != nil {
+		return fmt.Errorf("failed to get output flag: %w", outErr)
+	}
 	logger := logging.GetLogger()
 
 	logger.Info().Str("path", path).Msg("Starting linting scan")
@@ -48,7 +54,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	var passedFiles int
 	var failedFiles int
 
-	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+	walkErr := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -94,11 +100,23 @@ func runLint(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
+		// Run Terraform Linter
+		if ext == ".tf" {
+			tfLinter := linter.NewTerraformLinter()
+			result, err := tfLinter.Lint(context.Background(), filePath)
+			if err != nil {
+				logger.Error().Err(err).Str("file", filePath).Msg("Failed to lint Terraform file")
+				return nil
+			}
+			processResult(result, &passedFiles, &failedFiles, &totalIssues)
+			return nil
+		}
+
 		return nil
 	})
 
-	if err != nil {
-		return fmt.Errorf("error walking path: %w", err)
+	if walkErr != nil {
+		return fmt.Errorf("error walking path: %w", walkErr)
 	}
 
 	// Build report

@@ -139,9 +139,9 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(statusCode)
 	if statusCode == http.StatusOK {
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	} else {
-		w.Write([]byte("Internal Server Error"))
+		_, _ = w.Write([]byte("Internal Server Error"))
 	}
 
 	logger.Info().

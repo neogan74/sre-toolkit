@@ -105,6 +105,7 @@ linters:
           - errcheck
 
 issues:
+  exclude-dirs-use-default: false
   exclude-rules:
     - linters:
         - typecheck
