@@ -1,4 +1,4 @@
-.PHONY: help build chaos-load db-toolkit test lint fmt vet clean run install deps tidy
+.PHONY: help build chaos-load db-toolkit test lint fmt vet clean run install deps tidy release snapshot
 
 # Variables
 BINARY_NAME=k8s-doctor
@@ -129,5 +129,15 @@ run: build ## Build and run k8s-doctor
 
 check: fmt vet lint test ## Run all checks (fmt, vet, lint, test)
 	@echo "$(GREEN)All checks passed!$(NC)"
+
+release: ## Create a new release (requires GITHUB_TOKEN and a git tag, e.g.: git tag v0.1.0 && make release)
+	@echo "$(CYAN)Running goreleaser...$(NC)"
+	@which goreleaser > /dev/null 2>&1 || (echo "$(RED)goreleaser not found. Install: https://goreleaser.com/install/$(NC)" && exit 1)
+	goreleaser release --clean
+
+snapshot: ## Build a local snapshot release without publishing (no tag required)
+	@echo "$(CYAN)Building snapshot release...$(NC)"
+	@which goreleaser > /dev/null 2>&1 || (echo "$(RED)goreleaser not found. Install: https://goreleaser.com/install/$(NC)" && exit 1)
+	goreleaser release --snapshot --clean
 
 .DEFAULT_GOAL := help
