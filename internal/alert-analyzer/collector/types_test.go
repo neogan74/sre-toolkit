@@ -93,6 +93,32 @@ func TestGroupAlertsByName(t *testing.T) {
 	assert.Len(t, groups["Alert2"], 1)
 }
 
+func TestAlertRule_GetGroupingKey(t *testing.T) {
+	t.Run("with cluster", func(t *testing.T) {
+		rule := AlertRule{Name: "HighCPU", Cluster: "prod"}
+		assert.Equal(t, "HighCPU [prod]", rule.GetGroupingKey())
+	})
+	t.Run("without cluster", func(t *testing.T) {
+		rule := AlertRule{Name: "HighCPU"}
+		assert.Equal(t, "HighCPU", rule.GetGroupingKey())
+	})
+}
+
+func TestAlertRule_GetSeverity(t *testing.T) {
+	t.Run("with severity label", func(t *testing.T) {
+		rule := AlertRule{Labels: map[string]string{"severity": "critical"}}
+		assert.Equal(t, "critical", rule.GetSeverity())
+	})
+	t.Run("without severity label", func(t *testing.T) {
+		rule := AlertRule{Labels: map[string]string{}}
+		assert.Equal(t, "unknown", rule.GetSeverity())
+	})
+	t.Run("nil labels", func(t *testing.T) {
+		rule := AlertRule{}
+		assert.Equal(t, "unknown", rule.GetSeverity())
+	})
+}
+
 func TestAlertHistory_Merge(t *testing.T) {
 	history1 := &AlertHistory{
 		Alerts:    []Alert{{Name: "Alert1"}},

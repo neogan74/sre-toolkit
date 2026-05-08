@@ -43,8 +43,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] CI/CD integration (exit codes on critical issues)
   - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
   - [x] Summary statistics
-  - [x] YAML output format ✅ **COMPLETE**
-  - [ ] HTML report with charts
+  - [x] YAML output format ✅ **COMPLETE*.
   - [ ] Prometheus metrics export
 
 **Technologies:** Go, client-go, cobra, tabwriter, zerolog
@@ -130,10 +129,10 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 ---
 
-### 3. chaos-load - Load Generator and Chaos Testing ⏳ **PHASE 1 COMPLETE**
+### 3. chaos-load - Load Generator and Chaos Testing ⏳ **PHASE 2 COMPLETE**
 **Priority:** MEDIUM
 **Complexity:** High
-**Status:** Phase 1 Complete (HTTP Load MVP)
+**Status:** Phase 2 Complete (Kubernetes Integration)
 
 #### Features:
 - [x] **HTTP Load Generation** ✅ **COMPLETE**
@@ -148,12 +147,13 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Random HTTP 5xx errors
   - [x] Network latency injection
   - [x] Connection failures
-  - [ ] Timeout simulation
+  - [x] Timeout simulation
   - [ ] Resource exhaustion (memory/CPU)
 
 - [ ] **Kubernetes Integration**
-  - [ ] Pod killing (graceful/force)
-  - [ ] Node draining
+  - [x] Pod killing (graceful/force) ✅ **COMPLETE**
+  - [x] Node draining ✅ **COMPLETE**
+  - [ ] Network partition between services
   - [ ] Network partition between services
   - [ ] Storage issues (disk full)
 
@@ -164,19 +164,26 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [ ] JMeter/Locust-compatible reports
   - [ ] Comparison reports (before/after)
 
-**Technologies:** Go, net/http, stats/collector, cobra
+**Technologies:** Go, net/http, stats/collector, cobra, k8s.io/client-go
 
 **Completed Files:**
 - `internal/chaos-load/http/worker.go`
 - `internal/chaos-load/stats/collector.go`
+- `internal/chaos-load/mock/server.go`
+- `internal/chaos-load/k8s/killer.go`
+- `internal/chaos-load/k8s/drainer.go`
 - `cmd/chaos-load/main.go`
+- `cmd/chaos-load/k8s.go`
 - `docs/chaos-load-tutorial.md`
 
 **Next Steps:**
 - [x] Unit tests for worker and collector ✅ **COMPLETE**
+- [x] Pod killing chaos scenario ✅ **COMPLETE**
+- [x] Node draining chaos scenario ✅ **COMPLETE**
 - [ ] Support for POST/PUT methods with payloads
 - [ ] Real-time Progress indicator
-- [ ] Pod killing chaos scenario
+- [ ] Network partition between services
+- [ ] Storage issues (disk full)
 
 ---
 
@@ -232,8 +239,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 - [ ] **Alerting**
   - Email/Slack notifications
-  - Prometheus metrics (days_until_expiry)
-  - Webhook integration
+  - [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`) ✅ **COMPLETE**
+  - [x] Webhook integration ✅ **COMPLETE**
   - Escalation policy
 
 - [ ] **Reporting**
@@ -440,17 +447,17 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Status:** COMPLETE (Dec 2024)
 **Deliverables:** Working skeleton, CI pipeline, metrics framework, logging
 
-### Phase 2 - Core Tools ⏳ **IN PROGRESS**
+### Phase 2 - Core Tools ✅ **COMPLETE**
 1. [x] k8s-doctor MVP (healthcheck, diagnostics commands)
 2. [x] alert-analyzer Phase 1 (frequency analysis)
 3. [x] k8s-doctor unit tests (84% coverage) ✅ **COMPLETE**
 4. [x] chaos-load Phase 1 (HTTP load MVP) ✅ **COMPLETE**
-5. [ ] k8s-doctor integration tests (kind)
-6. [ ] alert-analyzer unit tests
-7. [ ] chaos-load unit tests
+5. [x] k8s-doctor integration tests (kind) ✅ **COMPLETE**
+6. [x] alert-analyzer unit tests ✅ **COMPLETE**
+7. [x] chaos-load unit tests ✅ **COMPLETE**
 8. [x] k8s-doctor audit command ✅ **COMPLETE**
 
-**Status:** 65% COMPLETE
+**Status:** 100% COMPLETE ✅ ✅
 **Current Focus:** Testing & Production Readiness
 
 ### Phase 3 - Advanced (Month 4-6)

@@ -462,6 +462,88 @@ func TestReportCompleteWithInsights(t *testing.T) {
 	})
 }
 
+func TestReportComplete(t *testing.T) {
+	stats := analyzer.SummaryStats{TotalAlerts: 5}
+	freq := []analyzer.FrequencyResult{{AlertName: "A1", FiringCount: 3}}
+
+	t.Run("Table Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatTable, &buf)
+		err := r.ReportComplete(stats, freq)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "=== Alert Analysis Summary ===")
+		assert.Contains(t, buf.String(), "=== Alert Frequency Analysis ===")
+	})
+
+	t.Run("JSON Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatJSON, &buf)
+		err := r.ReportComplete(stats, freq)
+		assert.NoError(t, err)
+		var out map[string]interface{}
+		require.NoError(t, json.Unmarshal(buf.Bytes(), &out))
+		assert.Contains(t, out, "summary")
+		assert.Contains(t, out, "frequency_analysis")
+	})
+
+	t.Run("Markdown Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter(FormatMarkdown, &buf)
+		err := r.ReportComplete(stats, freq)
+		assert.NoError(t, err)
+		assert.Contains(t, buf.String(), "## Summary")
+		assert.Contains(t, buf.String(), "## Frequency Analysis")
+	})
+
+	t.Run("Invalid Format", func(t *testing.T) {
+		var buf bytes.Buffer
+		r := NewReporter("xml", &buf)
+		err := r.ReportComplete(stats, freq)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "unsupported format")
+	})
+}
+
+func TestReportCompleteWithCorrelation(t *testing.T) {
+	stats := analyzer.SummaryStats{TotalAlerts: 5}
+	freq := []analyzer.FrequencyResult{{AlertName: "A1"}}
+	corr := []analyzer.CorrelationResult{{AlertA: "A1", AlertB: "A2", CorrelationScore: 0.9}}
+
+	var buf bytes.Buffer
+	r := NewReporter(FormatTable, &buf)
+	err := r.ReportCompleteWithCorrelation(stats, freq, corr)
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "=== Alert Correlation Analysis ===")
+}
+
+func TestReportFrequency_InvalidFormat(t *testing.T) {
+	var buf bytes.Buffer
+	r := NewReporter("csv", &buf)
+	err := r.ReportFrequency([]analyzer.FrequencyResult{{AlertName: "A"}})
+	assert.Error(t, err)
+}
+
+func TestReportCorrelation_InvalidFormat(t *testing.T) {
+	var buf bytes.Buffer
+	r := NewReporter("csv", &buf)
+	err := r.ReportCorrelation([]analyzer.CorrelationResult{{AlertA: "A", AlertB: "B"}})
+	assert.Error(t, err)
+}
+
+func TestReportRecommendations_InvalidFormat(t *testing.T) {
+	var buf bytes.Buffer
+	r := NewReporter("csv", &buf)
+	err := r.ReportRecommendations([]analyzer.Recommendation{{Target: "A", Action: "fix"}})
+	assert.Error(t, err)
+}
+
+func TestReportTemporalPatterns_InvalidFormat(t *testing.T) {
+	var buf bytes.Buffer
+	r := NewReporter("csv", &buf)
+	err := r.ReportTemporalPatterns([]analyzer.TemporalResult{{AlertName: "A"}})
+	assert.Error(t, err)
+}
+
 func TestFormatDuration(t *testing.T) {
 	tests := []struct {
 		input    time.Duration

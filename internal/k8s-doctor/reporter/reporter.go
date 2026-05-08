@@ -22,7 +22,20 @@ const (
 	FormatTable OutputFormat = "table"
 	FormatJSON  OutputFormat = "json"
 	FormatYAML  OutputFormat = "yaml"
+	FormatHTML  OutputFormat = "html"
 )
+
+// formatSeverityEmoji prefixes a severity label with a matching emoji.
+func formatSeverityEmoji(severity string) string {
+	switch severity {
+	case "Critical":
+		return "🔴 " + severity
+	case "Warning":
+		return "⚠️  " + severity
+	default:
+		return "ℹ️  " + severity
+	}
+}
 
 // Reporter handles result reporting
 type Reporter struct {
@@ -39,6 +52,30 @@ func NewReporter(format OutputFormat, writer io.Writer) *Reporter {
 		format: format,
 		writer: writer,
 	}
+}
+
+// ReportHealthCheck generates a combined health report (all sections in one pass).
+// For HTML format this produces a single self-contained HTML page.
+// For other formats it falls back to calling each individual Report method in order.
+func (r *Reporter) ReportHealthCheck(
+	nodes []healthcheck.NodeStatus,
+	pods *healthcheck.PodStatus,
+	components []healthcheck.ComponentStatus,
+	netPols *healthcheck.NetworkPoliciesStatus,
+) error {
+	if r.format == FormatHTML {
+		return renderHealthCheckHTML(r.writer, nodes, pods, components, netPols)
+	}
+	if err := r.ReportNodeHealth(nodes); err != nil {
+		return err
+	}
+	if err := r.ReportPodHealth(pods); err != nil {
+		return err
+	}
+	if err := r.ReportComponentHealth(components); err != nil {
+		return err
+	}
+	return r.ReportNetworkPolicies(netPols)
 }
 
 // ReportNodeHealth reports node health status
@@ -104,6 +141,8 @@ func (r *Reporter) ReportDiagnostics(result *diagnostics.Result) error {
 		return r.reportJSON(result)
 	case FormatYAML:
 		return r.reportYAML(result)
+	case FormatHTML:
+		return renderDiagnosticsHTML(r.writer, result)
 	case FormatTable:
 		return r.reportDiagnosticsTable(result)
 	default:
@@ -118,6 +157,8 @@ func (r *Reporter) ReportAudit(result *audit.Result) error {
 		return r.reportJSON(result)
 	case FormatYAML:
 		return r.reportYAML(result)
+	case FormatHTML:
+		return renderAuditHTML(r.writer, result)
 	case FormatTable:
 		return r.reportAuditTable(result)
 	default:
@@ -279,6 +320,8 @@ func (r *Reporter) reportNetworkPoliciesTable(status *healthcheck.NetworkPolicie
 }
 
 // reportDiagnosticsTable outputs diagnostics as a table
+//
+//nolint:gocyclo // complexity is inherent: each issue type (node/pod/component/event/resource/probe) requires its own section
 func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 	// Summary
 	fmt.Fprintf(r.writer, "\n=== Diagnostics Summary ===\n")
@@ -404,19 +447,9 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 		fmt.Fprintln(w, "---\t--------\t-------")
 
 		for _, issue := range result.ResourceIssues {
-			severity := issue.Severity
-			switch issue.Severity {
-			case "Critical":
-				severity = "🔴 " + severity
-			case "Warning":
-				severity = "⚠️  " + severity
-			default:
-				severity = "ℹ️  " + severity
-			}
-
 			fmt.Fprintf(w, "%s\t%s\t%s\n",
 				issue.Pod,
-				severity,
+				formatSeverityEmoji(issue.Severity),
 				issue.Message,
 			)
 		}
@@ -432,20 +465,10 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 		fmt.Fprintln(w, "---------\t---\t--------\t-------")
 
 		for _, issue := range result.ProbeIssues {
-			severity := issue.Severity
-			switch issue.Severity {
-			case "Critical":
-				severity = "🔴 " + severity
-			case "Warning":
-				severity = "⚠️  " + severity
-			default:
-				severity = "ℹ️  " + severity
-			}
-
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 				issue.Namespace,
 				issue.Pod,
-				severity,
+				formatSeverityEmoji(issue.Severity),
 				issue.Message,
 			)
 		}
@@ -461,20 +484,10 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 		fmt.Fprintln(w, "---------\t---\t--------\t-------")
 
 		for _, issue := range result.SecurityIssues {
-			severity := issue.Severity
-			switch issue.Severity {
-			case "Critical":
-				severity = "🔴 " + severity
-			case "Warning":
-				severity = "⚠️  " + severity
-			default:
-				severity = "ℹ️  " + severity
-			}
-
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
 				issue.Namespace,
 				issue.Pod,
-				severity,
+				formatSeverityEmoji(issue.Severity),
 				issue.Message,
 			)
 		}
@@ -490,19 +503,9 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 		fmt.Fprintln(w, "---------\t--------\t-------")
 
 		for _, issue := range result.NetworkPolicyIssues {
-			severity := issue.Severity
-			switch issue.Severity {
-			case "Critical":
-				severity = "🔴 " + severity
-			case "Warning":
-				severity = "⚠️  " + severity
-			default:
-				severity = "ℹ️  " + severity
-			}
-
 			fmt.Fprintf(w, "%s\t%s\t%s\n",
 				issue.Namespace,
-				severity,
+				formatSeverityEmoji(issue.Severity),
 				issue.Message,
 			)
 		}
@@ -518,6 +521,8 @@ func (r *Reporter) reportDiagnosticsTable(result *diagnostics.Result) error {
 }
 
 // reportAuditTable outputs audit results as a table.
+//
+//nolint:gocyclo // complexity is inherent: each audit category (RBAC/probes/security/network/quotas) requires its own section
 func (r *Reporter) reportAuditTable(result *audit.Result) error {
 	fmt.Fprintf(r.writer, "\n=== Audit Summary ===\n")
 	fmt.Fprintf(r.writer, "Total Issues:   %d\n", result.Summary.TotalIssues)

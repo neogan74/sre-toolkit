@@ -144,3 +144,28 @@ func TestShouldPrioritizeReview(t *testing.T) {
 		FlappingResult{},
 	))
 }
+
+func TestPriorityWeight(t *testing.T) {
+	assert.Equal(t, 4, priorityWeight(RecommendationPriorityCritical))
+	assert.Equal(t, 3, priorityWeight(RecommendationPriorityHigh))
+	assert.Equal(t, 2, priorityWeight(RecommendationPriorityMedium))
+	assert.Equal(t, 1, priorityWeight("low"))
+	assert.Equal(t, 1, priorityWeight("unknown"))
+}
+
+func TestFormatCompactDuration(t *testing.T) {
+	tests := []struct {
+		input    time.Duration
+		expected string
+	}{
+		{0, "0s"},
+		{30 * time.Second, "30s"},
+		{90 * time.Second, "1m0s"}, // Truncate(time.Minute)
+		{5 * time.Minute, "5m0s"},
+		{90 * time.Minute, "1h30m0s"},
+		{2 * time.Hour, "2h0m0s"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, formatCompactDuration(tt.input), "input: %v", tt.input)
+	}
+}

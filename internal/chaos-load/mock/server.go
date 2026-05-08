@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -14,6 +15,8 @@ type ServerConfig struct {
 	Port                  int
 	ErrorRate             int           // Percentage 0-100
 	ConnectionFailureRate int           // Percentage 0-100
+	TimeoutRate           int           // Percentage 0-100
+	TimeoutDuration       time.Duration // How long to delay before returning 504
 	Latency               time.Duration // Sleep duration
 	Jitter                time.Duration // Latency variation (+/-)
 }
@@ -29,6 +32,24 @@ func NewServer(cfg ServerConfig) *Server {
 	return &Server{
 		config: cfg,
 	}
+}
+
+// Validate ensures the mock server configuration is internally consistent.
+func (c ServerConfig) Validate() error {
+	if err := validatePercentage("error-rate", c.ErrorRate); err != nil {
+		return err
+	}
+	if err := validatePercentage("connection-failure-rate", c.ConnectionFailureRate); err != nil {
+		return err
+	}
+	if err := validatePercentage("timeout-rate", c.TimeoutRate); err != nil {
+		return err
+	}
+	if c.TimeoutRate > 0 && c.TimeoutDuration <= 0 {
+		return errors.New("timeout simulation requires --timeout-duration > 0")
+	}
+
+	return nil
 }
 
 // Run starts the mock server
@@ -48,6 +69,8 @@ func (s *Server) Run() error {
 		Int("port", s.config.Port).
 		Int("error_rate", s.config.ErrorRate).
 		Int("connection_failure_rate", s.config.ConnectionFailureRate).
+		Int("timeout_rate", s.config.TimeoutRate).
+		Dur("timeout_duration", s.config.TimeoutDuration).
 		Dur("latency", s.config.Latency).
 		Dur("jitter", s.config.Jitter).
 		Msg("Starting chaos mock server")
@@ -90,6 +113,20 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Simulate timeout
+	if s.shouldTimeout() {
+		time.Sleep(s.config.TimeoutDuration)
+		http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
+
+		logger.Info().
+			Str("method", r.Method).
+			Str("path", r.URL.Path).
+			Int("status", http.StatusGatewayTimeout).
+			Dur("duration", time.Since(start)).
+			Msg("Timeout simulated")
+		return
+	}
+
 	// Simulate error
 	statusCode := http.StatusOK
 	if s.config.ErrorRate > 0 {
@@ -119,6 +156,10 @@ func (s *Server) shouldFailConnection() bool {
 	return s.config.ConnectionFailureRate > 0 && rand.Intn(100) < s.config.ConnectionFailureRate
 }
 
+func (s *Server) shouldTimeout() bool {
+	return s.config.TimeoutRate > 0 && rand.Intn(100) < s.config.TimeoutRate
+}
+
 func closeConnection(w http.ResponseWriter) error {
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
@@ -131,4 +172,12 @@ func closeConnection(w http.ResponseWriter) error {
 	}
 
 	return conn.Close()
+}
+
+func validatePercentage(flag string, value int) error {
+	if value < 0 || value > 100 {
+		return fmt.Errorf("%s must be between 0 and 100", flag)
+	}
+
+	return nil
 }
