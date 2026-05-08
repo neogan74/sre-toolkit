@@ -421,7 +421,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Codecov coverage reporting
   - [x] Trivy security scanning
   - [x] Artifact upload
-  - [ ] Release automation (goreleaser)
+  - [x] Release automation (goreleaser) ✅ **COMPLETE** — cross-compile all 7 tools for linux/darwin/windows amd64+arm64, auto-changelog from conventional commits
   - [ ] Container image builds
 
 - [x] **Documentation** ✅ **PARTIAL**
