@@ -205,17 +205,23 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - Dependency analysis
   - Version compatibility
 
-- [ ] **Terraform**
-  - HCL syntax check
-  - State file analysis
-  - Provider version constraints
-  - Security rules (open security groups)
+- [x] **Terraform** ✅ **COMPLETE**
+  - [x] Provider version constraints check
+  - [x] Security rules: open security groups (SSH/RDP/MySQL/Redis/all-traffic from 0.0.0.0/0)
+  - [x] Hardcoded credentials detection (AWS keys, secrets, tokens)
+  - [x] Unencrypted storage (EBS encrypted=false, RDS storage_encrypted=false)
+  - [x] Public S3/GCS ACLs
+  - [x] Local backend warning (use remote state)
+  - [x] GCP firewall open source_ranges
 
-- [ ] **Docker/Containerfiles**
-  - Multi-stage builds recommendations
-  - Base image vulnerabilities
-  - Layer optimization
-  - Best practices (COPY vs ADD, etc.)
+- [x] **Docker/Containerfiles** ✅ **COMPLETE**
+  - [x] Latest tag / unpinned base image
+  - [x] MAINTAINER deprecated
+  - [x] sudo in RUN
+  - [x] apt-get upgrade (non-deterministic builds)
+  - [x] ADD vs COPY preference
+  - [x] Non-root USER check (last stage)
+  - [x] Absolute WORKDIR paths
 
 - [ ] **CI/CD Configs**
   - GitHub Actions workflow validation
