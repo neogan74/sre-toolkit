@@ -1,0 +1,1365 @@
+=== RUN   TestParsePrometheusURL
+=== RUN   TestParsePrometheusURL/Explicit_Cluster
+=== RUN   TestParsePrometheusURL/Derived_From_Host
+=== RUN   TestParsePrometheusURL/Fallback_To_Default
+--- PASS: TestParsePrometheusURL (0.00s)
+    --- PASS: TestParsePrometheusURL/Explicit_Cluster (0.00s)
+    --- PASS: TestParsePrometheusURL/Derived_From_Host (0.00s)
+    --- PASS: TestParsePrometheusURL/Fallback_To_Default (0.00s)
+=== RUN   TestNewAnalyzeCmd_RequiresPrometheusURL
+--- PASS: TestNewAnalyzeCmd_RequiresPrometheusURL (0.02s)
+=== RUN   TestNewVersionCmd
+--- PASS: TestNewVersionCmd (0.00s)
+=== RUN   TestRunAnalyzeValidationErrors
+=== RUN   TestRunAnalyzeValidationErrors/Missing_Prometheus_URL
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mStarting alert-analyzer[0m
+=== RUN   TestRunAnalyzeValidationErrors/Invalid_Lookback
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mStarting alert-analyzer[0m
+=== RUN   TestRunAnalyzeValidationErrors/Invalid_Resolution
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mStarting alert-analyzer[0m
+=== RUN   TestRunAnalyzeValidationErrors/Invalid_Timeout
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mStarting alert-analyzer[0m
+=== RUN   TestRunAnalyzeValidationErrors/Invalid_Prometheus_Client_URL
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mStarting alert-analyzer[0m
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mCollecting alert data[0m [36mlookback=[0m604800000 [36mresolution=[0m300000
+[90m2026-05-01T17:31:30+02:00[0m [32mINF[0m [1mConnecting to Prometheus[0m [36mcluster=[0mdefault [36murl=[0m://bad
+[90m2026-05-01T17:31:30+02:00[0m [31mERR[0m [1mFailed to create Prometheus client[0m [36merror=[0m[31m[1m"failed to create prometheus client: parse \"://bad\": missing protocol scheme"[0m[0m [36mcluster=[0mdefault
+--- PASS: TestRunAnalyzeValidationErrors (0.01s)
+    --- PASS: TestRunAnalyzeValidationErrors/Missing_Prometheus_URL (0.00s)
+    --- PASS: TestRunAnalyzeValidationErrors/Invalid_Lookback (0.00s)
+    --- PASS: TestRunAnalyzeValidationErrors/Invalid_Resolution (0.00s)
+    --- PASS: TestRunAnalyzeValidationErrors/Invalid_Timeout (0.00s)
+    --- PASS: TestRunAnalyzeValidationErrors/Invalid_Prometheus_Client_URL (0.00s)
+=== RUN   TestCollectAlertmanagerData_InvalidURL
+--- PASS: TestCollectAlertmanagerData_InvalidURL (0.00s)
+PASS
+coverage: 29.4% of statements
+ok  	github.com/neogan/sre-toolkit/cmd/alert-analyzer	(cached)	coverage: 29.4% of statements
+	github.com/neogan/sre-toolkit/cmd/cert-monitor		coverage: 0.0% of statements
+=== RUN   TestHTTPCmdRejectsConflictingAuthFlags
+Error: bearer and basic authentication cannot be used together
+Usage:
+  http [flags]
+
+Flags:
+      --basic-password string   Password for HTTP Basic authentication
+      --basic-username string   Username for HTTP Basic authentication
+      --bearer-token string     Bearer token for Authorization header
+      --body string             Request body
+      --concurrency int         Number of concurrent workers (default 10)
+      --duration duration       Duration of the test (default 30s)
+  -h, --help                    help for http
+      --method string           HTTP method (GET, POST, PUT, DELETE, etc.) (default "GET")
+      --requests int            Total number of requests (0 for unlimited)
+      --url string              Target URL
+
+--- PASS: TestHTTPCmdRejectsConflictingAuthFlags (0.00s)
+=== RUN   TestHTTPCmdRejectsBasicPasswordWithoutUsername
+Error: basic authentication requires --basic-username
+Usage:
+  http [flags]
+
+Flags:
+      --basic-password string   Password for HTTP Basic authentication
+      --basic-username string   Username for HTTP Basic authentication
+      --bearer-token string     Bearer token for Authorization header
+      --body string             Request body
+      --concurrency int         Number of concurrent workers (default 10)
+      --duration duration       Duration of the test (default 30s)
+  -h, --help                    help for http
+      --method string           HTTP method (GET, POST, PUT, DELETE, etc.) (default "GET")
+      --requests int            Total number of requests (0 for unlimited)
+      --url string              Target URL
+
+--- PASS: TestHTTPCmdRejectsBasicPasswordWithoutUsername (0.00s)
+=== RUN   TestMockCmdRejectsMissingTimeoutDuration
+Error: timeout simulation requires --timeout-duration > 0
+Usage:
+  mock [flags]
+
+Flags:
+      --connection-failure-rate int   Percentage of requests to drop by closing the client connection (0-100)
+      --error-rate int                Percentage of requests to fail with 500 (0-100)
+  -h, --help                          help for mock
+      --jitter duration               Random latency variation (+/- duration)
+      --latency duration              Artificial latency to inject (e.g. 100ms)
+      --port int                      Port to listen on (default 8080)
+      --timeout-duration duration     Duration to wait before returning HTTP 504 for timed-out requests
+      --timeout-rate int              Percentage of requests to delay and return HTTP 504 Gateway Timeout (0-100)
+
+--- PASS: TestMockCmdRejectsMissingTimeoutDuration (0.00s)
+=== RUN   TestMockCmdRejectsInvalidTimeoutRate
+Error: timeout-rate must be between 0 and 100
+Usage:
+  mock [flags]
+
+Flags:
+      --connection-failure-rate int   Percentage of requests to drop by closing the client connection (0-100)
+      --error-rate int                Percentage of requests to fail with 500 (0-100)
+  -h, --help                          help for mock
+      --jitter duration               Random latency variation (+/- duration)
+      --latency duration              Artificial latency to inject (e.g. 100ms)
+      --port int                      Port to listen on (default 8080)
+      --timeout-duration duration     Duration to wait before returning HTTP 504 for timed-out requests
+      --timeout-rate int              Percentage of requests to delay and return HTTP 504 Gateway Timeout (0-100)
+
+--- PASS: TestMockCmdRejectsInvalidTimeoutRate (0.00s)
+=== RUN   TestMockCmdRejectsInvalidErrorRate
+Error: error-rate must be between 0 and 100
+Usage:
+  mock [flags]
+
+Flags:
+      --connection-failure-rate int   Percentage of requests to drop by closing the client connection (0-100)
+      --error-rate int                Percentage of requests to fail with 500 (0-100)
+  -h, --help                          help for mock
+      --jitter duration               Random latency variation (+/- duration)
+      --latency duration              Artificial latency to inject (e.g. 100ms)
+      --port int                      Port to listen on (default 8080)
+      --timeout-duration duration     Duration to wait before returning HTTP 504 for timed-out requests
+      --timeout-rate int              Percentage of requests to delay and return HTTP 504 Gateway Timeout (0-100)
+
+--- PASS: TestMockCmdRejectsInvalidErrorRate (0.00s)
+PASS
+coverage: 38.1% of statements
+ok  	github.com/neogan/sre-toolkit/cmd/chaos-load	3.084s	coverage: 38.1% of statements
+	github.com/neogan/sre-toolkit/cmd/config-linter		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/cmd/db-toolkit		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/cmd/k8s-doctor		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/cmd/log-parser		coverage: 0.0% of statements
+=== RUN   TestCorrelationAnalyzer_Analyze
+--- PASS: TestCorrelationAnalyzer_Analyze (0.00s)
+=== RUN   TestCorrelationAnalyzer_AnalyzeTopN
+--- PASS: TestCorrelationAnalyzer_AnalyzeTopN (0.00s)
+=== RUN   TestCorrelationAnalyzer_Analyze_NilHistory
+--- PASS: TestCorrelationAnalyzer_Analyze_NilHistory (0.00s)
+=== RUN   TestCorrelationAnalyzer_Analyze_EmptyAlerts
+--- PASS: TestCorrelationAnalyzer_Analyze_EmptyAlerts (0.00s)
+=== RUN   TestCorrelationAnalyzer_AnalyzeTopN_ZeroN
+--- PASS: TestCorrelationAnalyzer_AnalyzeTopN_ZeroN (0.00s)
+=== RUN   TestAlertEnd_FallbackBranches
+=== RUN   TestAlertEnd_FallbackBranches/uses_history_EndTime_when_alert_not_resolved
+=== RUN   TestAlertEnd_FallbackBranches/falls_back_to_FiredAt_when_EndTime_is_zero
+--- PASS: TestAlertEnd_FallbackBranches (0.00s)
+    --- PASS: TestAlertEnd_FallbackBranches/uses_history_EndTime_when_alert_not_resolved (0.00s)
+    --- PASS: TestAlertEnd_FallbackBranches/falls_back_to_FiredAt_when_EndTime_is_zero (0.00s)
+=== RUN   TestOverlapDuration
+--- PASS: TestOverlapDuration (0.00s)
+=== RUN   TestNewFlappingAnalyzer
+=== RUN   TestNewFlappingAnalyzer/default_threshold_when_zero
+=== RUN   TestNewFlappingAnalyzer/default_threshold_when_negative
+=== RUN   TestNewFlappingAnalyzer/custom_threshold
+--- PASS: TestNewFlappingAnalyzer (0.00s)
+    --- PASS: TestNewFlappingAnalyzer/default_threshold_when_zero (0.00s)
+    --- PASS: TestNewFlappingAnalyzer/default_threshold_when_negative (0.00s)
+    --- PASS: TestNewFlappingAnalyzer/custom_threshold (0.00s)
+=== RUN   TestFlappingAnalyzer_Analyze
+=== RUN   TestFlappingAnalyzer_Analyze/empty_history
+=== RUN   TestFlappingAnalyzer_Analyze/stable_alert_-_no_flapping
+=== RUN   TestFlappingAnalyzer_Analyze/flapping_alert_-_multiple_transitions
+=== RUN   TestFlappingAnalyzer_Analyze/multiple_alerts_-_mixed_flapping
+--- PASS: TestFlappingAnalyzer_Analyze (0.00s)
+    --- PASS: TestFlappingAnalyzer_Analyze/empty_history (0.00s)
+    --- PASS: TestFlappingAnalyzer_Analyze/stable_alert_-_no_flapping (0.00s)
+    --- PASS: TestFlappingAnalyzer_Analyze/flapping_alert_-_multiple_transitions (0.00s)
+    --- PASS: TestFlappingAnalyzer_Analyze/multiple_alerts_-_mixed_flapping (0.00s)
+=== RUN   TestFlappingAnalyzer_AnalyzeTopN
+=== RUN   TestFlappingAnalyzer_AnalyzeTopN/top_1
+=== RUN   TestFlappingAnalyzer_AnalyzeTopN/top_2
+=== RUN   TestFlappingAnalyzer_AnalyzeTopN/top_10_(more_than_available)
+--- PASS: TestFlappingAnalyzer_AnalyzeTopN (0.00s)
+    --- PASS: TestFlappingAnalyzer_AnalyzeTopN/top_1 (0.00s)
+    --- PASS: TestFlappingAnalyzer_AnalyzeTopN/top_2 (0.00s)
+    --- PASS: TestFlappingAnalyzer_AnalyzeTopN/top_10_(more_than_available) (0.00s)
+=== RUN   TestFlappingAnalyzer_GetFlappingAlerts
+=== RUN   TestFlappingAnalyzer_GetFlappingAlerts/no_flapping_alerts
+=== RUN   TestFlappingAnalyzer_GetFlappingAlerts/one_flapping_alert
+--- PASS: TestFlappingAnalyzer_GetFlappingAlerts (0.00s)
+    --- PASS: TestFlappingAnalyzer_GetFlappingAlerts/no_flapping_alerts (0.00s)
+    --- PASS: TestFlappingAnalyzer_GetFlappingAlerts/one_flapping_alert (0.00s)
+=== RUN   TestFlappingAnalyzer_GetSummary
+=== RUN   TestFlappingAnalyzer_GetSummary/empty_history
+=== RUN   TestFlappingAnalyzer_GetSummary/with_flapping_alert
+--- PASS: TestFlappingAnalyzer_GetSummary (0.00s)
+    --- PASS: TestFlappingAnalyzer_GetSummary/empty_history (0.00s)
+    --- PASS: TestFlappingAnalyzer_GetSummary/with_flapping_alert (0.00s)
+=== RUN   TestDetectStateTransitions
+=== RUN   TestDetectStateTransitions/no_alerts
+=== RUN   TestDetectStateTransitions/single_firing_-_one_transition
+=== RUN   TestDetectStateTransitions/firing_then_resolved_-_two_transitions
+=== RUN   TestDetectStateTransitions/multiple_fire-resolve_cycles
+--- PASS: TestDetectStateTransitions (0.00s)
+    --- PASS: TestDetectStateTransitions/no_alerts (0.00s)
+    --- PASS: TestDetectStateTransitions/single_firing_-_one_transition (0.00s)
+    --- PASS: TestDetectStateTransitions/firing_then_resolved_-_two_transitions (0.00s)
+    --- PASS: TestDetectStateTransitions/multiple_fire-resolve_cycles (0.00s)
+=== RUN   TestFrequencyAnalyzer_Analyze
+--- PASS: TestFrequencyAnalyzer_Analyze (0.00s)
+=== RUN   TestFrequencyAnalyzer_AnalyzeTopN
+--- PASS: TestFrequencyAnalyzer_AnalyzeTopN (0.00s)
+=== RUN   TestFrequencyAnalyzer_GetNoisyAlerts
+--- PASS: TestFrequencyAnalyzer_GetNoisyAlerts (0.00s)
+=== RUN   TestFrequencyAnalyzer_GetSummaryStats
+--- PASS: TestFrequencyAnalyzer_GetSummaryStats (0.00s)
+=== RUN   TestRecommendationEngine_Generate
+--- PASS: TestRecommendationEngine_Generate (0.00s)
+=== RUN   TestAssessSignalToNoise
+=== RUN   TestAssessSignalToNoise/Low
+=== RUN   TestAssessSignalToNoise/Medium
+=== RUN   TestAssessSignalToNoise/High
+--- PASS: TestAssessSignalToNoise (0.00s)
+    --- PASS: TestAssessSignalToNoise/Low (0.00s)
+    --- PASS: TestAssessSignalToNoise/Medium (0.00s)
+    --- PASS: TestAssessSignalToNoise/High (0.00s)
+=== RUN   TestShouldPrioritizeReview
+--- PASS: TestShouldPrioritizeReview (0.00s)
+=== RUN   TestPriorityWeight
+--- PASS: TestPriorityWeight (0.00s)
+=== RUN   TestFormatCompactDuration
+--- PASS: TestFormatCompactDuration (0.00s)
+=== RUN   TestTemporalAnalyzer_Analyze
+--- PASS: TestTemporalAnalyzer_Analyze (0.00s)
+=== RUN   TestTemporalAnalyzer_AnalyzeTopN
+--- PASS: TestTemporalAnalyzer_AnalyzeTopN (0.00s)
+=== RUN   TestTemporalAnalyzer_AnalyzeEmpty
+--- PASS: TestTemporalAnalyzer_AnalyzeEmpty (0.00s)
+=== RUN   TestIsBusinessHour
+--- PASS: TestIsBusinessHour (0.00s)
+PASS
+coverage: 94.1% of statements
+ok  	github.com/neogan/sre-toolkit/internal/alert-analyzer/analyzer	2.695s	coverage: 94.1% of statements
+=== RUN   TestAlertmanagerCollector_CollectCurrentAlerts
+=== RUN   TestAlertmanagerCollector_CollectCurrentAlerts/Success
+=== RUN   TestAlertmanagerCollector_CollectCurrentAlerts/API_Error
+--- PASS: TestAlertmanagerCollector_CollectCurrentAlerts (0.00s)
+    --- PASS: TestAlertmanagerCollector_CollectCurrentAlerts/Success (0.00s)
+    --- PASS: TestAlertmanagerCollector_CollectCurrentAlerts/API_Error (0.00s)
+=== RUN   TestPrometheusCollector_Collect
+=== RUN   TestPrometheusCollector_Collect/Success
+=== RUN   TestPrometheusCollector_Collect/Empty_Result
+=== RUN   TestPrometheusCollector_Collect/API_Error
+=== RUN   TestPrometheusCollector_Collect/Parse_Error
+--- PASS: TestPrometheusCollector_Collect (0.00s)
+    --- PASS: TestPrometheusCollector_Collect/Success (0.00s)
+    --- PASS: TestPrometheusCollector_Collect/Empty_Result (0.00s)
+    --- PASS: TestPrometheusCollector_Collect/API_Error (0.00s)
+    --- PASS: TestPrometheusCollector_Collect/Parse_Error (0.00s)
+=== RUN   TestPrometheusCollector_ParseAlerts
+--- PASS: TestPrometheusCollector_ParseAlerts (0.00s)
+=== RUN   TestPrometheusCollector_CollectCurrentAlerts
+=== RUN   TestPrometheusCollector_CollectCurrentAlerts/Success
+=== RUN   TestPrometheusCollector_CollectCurrentAlerts/Invalid_Result_Type
+--- PASS: TestPrometheusCollector_CollectCurrentAlerts (0.00s)
+    --- PASS: TestPrometheusCollector_CollectCurrentAlerts/Success (0.00s)
+    --- PASS: TestPrometheusCollector_CollectCurrentAlerts/Invalid_Result_Type (0.00s)
+=== RUN   TestCreateAlertKey
+--- PASS: TestCreateAlertKey (0.00s)
+=== RUN   TestRuleCollector_CollectAlertRules
+=== RUN   TestRuleCollector_CollectAlertRules/Success
+=== RUN   TestRuleCollector_CollectAlertRules/API_Error
+--- PASS: TestRuleCollector_CollectAlertRules (0.00s)
+    --- PASS: TestRuleCollector_CollectAlertRules/Success (0.00s)
+    --- PASS: TestRuleCollector_CollectAlertRules/API_Error (0.00s)
+=== RUN   TestAlert_Getters
+--- PASS: TestAlert_Getters (0.00s)
+=== RUN   TestAlert_Duration
+=== RUN   TestAlert_Duration/Resolved_Alert
+=== RUN   TestAlert_Duration/Firing_Alert
+--- PASS: TestAlert_Duration (0.00s)
+    --- PASS: TestAlert_Duration/Resolved_Alert (0.00s)
+    --- PASS: TestAlert_Duration/Firing_Alert (0.00s)
+=== RUN   TestAlertHistory_Counts
+--- PASS: TestAlertHistory_Counts (0.00s)
+=== RUN   TestGroupAlertsByName
+--- PASS: TestGroupAlertsByName (0.04s)
+=== RUN   TestAlertRule_GetGroupingKey
+=== RUN   TestAlertRule_GetGroupingKey/with_cluster
+=== RUN   TestAlertRule_GetGroupingKey/without_cluster
+--- PASS: TestAlertRule_GetGroupingKey (0.00s)
+    --- PASS: TestAlertRule_GetGroupingKey/with_cluster (0.00s)
+    --- PASS: TestAlertRule_GetGroupingKey/without_cluster (0.00s)
+=== RUN   TestAlertRule_GetSeverity
+=== RUN   TestAlertRule_GetSeverity/with_severity_label
+=== RUN   TestAlertRule_GetSeverity/without_severity_label
+=== RUN   TestAlertRule_GetSeverity/nil_labels
+--- PASS: TestAlertRule_GetSeverity (0.00s)
+    --- PASS: TestAlertRule_GetSeverity/with_severity_label (0.00s)
+    --- PASS: TestAlertRule_GetSeverity/without_severity_label (0.00s)
+    --- PASS: TestAlertRule_GetSeverity/nil_labels (0.00s)
+=== RUN   TestAlertHistory_Merge
+--- PASS: TestAlertHistory_Merge (0.00s)
+PASS
+coverage: 97.7% of statements
+ok  	github.com/neogan/sre-toolkit/internal/alert-analyzer/collector	4.511s	coverage: 97.7% of statements
+=== RUN   TestNewReporter
+--- PASS: TestNewReporter (0.00s)
+=== RUN   TestReportSummary
+=== RUN   TestReportSummary/Table_Format
+=== RUN   TestReportSummary/JSON_Format
+=== RUN   TestReportSummary/Markdown_Format
+=== RUN   TestReportSummary/Invalid_Format
+--- PASS: TestReportSummary (0.02s)
+    --- PASS: TestReportSummary/Table_Format (0.01s)
+    --- PASS: TestReportSummary/JSON_Format (0.01s)
+    --- PASS: TestReportSummary/Markdown_Format (0.00s)
+    --- PASS: TestReportSummary/Invalid_Format (0.00s)
+=== RUN   TestReportFrequency
+=== RUN   TestReportFrequency/Table_Format
+=== RUN   TestReportFrequency/JSON_Format
+=== RUN   TestReportFrequency/Markdown_Format
+=== RUN   TestReportFrequency/Empty_Results
+--- PASS: TestReportFrequency (0.03s)
+    --- PASS: TestReportFrequency/Table_Format (0.02s)
+    --- PASS: TestReportFrequency/JSON_Format (0.00s)
+    --- PASS: TestReportFrequency/Markdown_Format (0.00s)
+    --- PASS: TestReportFrequency/Empty_Results (0.00s)
+=== RUN   TestReportFlapping
+=== RUN   TestReportFlapping/Table_Format
+=== RUN   TestReportFlapping/JSON_Format
+=== RUN   TestReportFlapping/Markdown_Format
+=== RUN   TestReportFlapping/Table_Format_Empty
+=== RUN   TestReportFlapping/Unsupported_Format
+--- PASS: TestReportFlapping (0.01s)
+    --- PASS: TestReportFlapping/Table_Format (0.00s)
+    --- PASS: TestReportFlapping/JSON_Format (0.01s)
+    --- PASS: TestReportFlapping/Markdown_Format (0.00s)
+    --- PASS: TestReportFlapping/Table_Format_Empty (0.00s)
+    --- PASS: TestReportFlapping/Unsupported_Format (0.00s)
+=== RUN   TestReportCorrelation
+=== RUN   TestReportCorrelation/Table_Format
+=== RUN   TestReportCorrelation/JSON_Format
+=== RUN   TestReportCorrelation/Markdown_Format
+=== RUN   TestReportCorrelation/Empty_Results
+--- PASS: TestReportCorrelation (0.01s)
+    --- PASS: TestReportCorrelation/Table_Format (0.00s)
+    --- PASS: TestReportCorrelation/JSON_Format (0.01s)
+    --- PASS: TestReportCorrelation/Markdown_Format (0.00s)
+    --- PASS: TestReportCorrelation/Empty_Results (0.00s)
+=== RUN   TestReportRecommendations
+=== RUN   TestReportRecommendations/Table_Format
+=== RUN   TestReportRecommendations/JSON_Format
+=== RUN   TestReportRecommendations/Markdown_Format
+--- PASS: TestReportRecommendations (0.00s)
+    --- PASS: TestReportRecommendations/Table_Format (0.00s)
+    --- PASS: TestReportRecommendations/JSON_Format (0.00s)
+    --- PASS: TestReportRecommendations/Markdown_Format (0.00s)
+=== RUN   TestReportTemporalPatterns
+=== RUN   TestReportTemporalPatterns/Table_Format
+=== RUN   TestReportTemporalPatterns/JSON_Format
+=== RUN   TestReportTemporalPatterns/Markdown_Format
+--- PASS: TestReportTemporalPatterns (0.01s)
+    --- PASS: TestReportTemporalPatterns/Table_Format (0.00s)
+    --- PASS: TestReportTemporalPatterns/JSON_Format (0.00s)
+    --- PASS: TestReportTemporalPatterns/Markdown_Format (0.00s)
+=== RUN   TestReportCompleteWithFlapping
+=== RUN   TestReportCompleteWithFlapping/Table_Format
+=== RUN   TestReportCompleteWithFlapping/JSON_Format
+=== RUN   TestReportCompleteWithFlapping/Markdown_Format
+=== RUN   TestReportCompleteWithFlapping/Unsupported_Format
+--- PASS: TestReportCompleteWithFlapping (0.01s)
+    --- PASS: TestReportCompleteWithFlapping/Table_Format (0.00s)
+    --- PASS: TestReportCompleteWithFlapping/JSON_Format (0.01s)
+    --- PASS: TestReportCompleteWithFlapping/Markdown_Format (0.00s)
+    --- PASS: TestReportCompleteWithFlapping/Unsupported_Format (0.00s)
+=== RUN   TestReportCompleteWithInsights
+=== RUN   TestReportCompleteWithInsights/Table_Format
+=== RUN   TestReportCompleteWithInsights/JSON_Format
+=== RUN   TestReportCompleteWithInsights/Markdown_Format
+--- PASS: TestReportCompleteWithInsights (0.02s)
+    --- PASS: TestReportCompleteWithInsights/Table_Format (0.00s)
+    --- PASS: TestReportCompleteWithInsights/JSON_Format (0.01s)
+    --- PASS: TestReportCompleteWithInsights/Markdown_Format (0.00s)
+=== RUN   TestReportComplete
+=== RUN   TestReportComplete/Table_Format
+=== RUN   TestReportComplete/JSON_Format
+=== RUN   TestReportComplete/Markdown_Format
+=== RUN   TestReportComplete/Invalid_Format
+--- PASS: TestReportComplete (0.01s)
+    --- PASS: TestReportComplete/Table_Format (0.00s)
+    --- PASS: TestReportComplete/JSON_Format (0.00s)
+    --- PASS: TestReportComplete/Markdown_Format (0.00s)
+    --- PASS: TestReportComplete/Invalid_Format (0.00s)
+=== RUN   TestReportCompleteWithCorrelation
+--- PASS: TestReportCompleteWithCorrelation (0.00s)
+=== RUN   TestReportFrequency_InvalidFormat
+--- PASS: TestReportFrequency_InvalidFormat (0.00s)
+=== RUN   TestReportCorrelation_InvalidFormat
+--- PASS: TestReportCorrelation_InvalidFormat (0.00s)
+=== RUN   TestReportRecommendations_InvalidFormat
+--- PASS: TestReportRecommendations_InvalidFormat (0.00s)
+=== RUN   TestReportTemporalPatterns_InvalidFormat
+--- PASS: TestReportTemporalPatterns_InvalidFormat (0.00s)
+=== RUN   TestFormatDuration
+--- PASS: TestFormatDuration (0.00s)
+=== RUN   TestGetSeverityIcon
+--- PASS: TestGetSeverityIcon (0.00s)
+PASS
+coverage: 88.3% of statements
+ok  	github.com/neogan/sre-toolkit/internal/alert-analyzer/reporter	8.815s	coverage: 88.3% of statements
+=== RUN   TestNewMemoryStorage
+--- PASS: TestNewMemoryStorage (0.00s)
+=== RUN   TestMemoryStorage_StoreAndRetrieve
+--- PASS: TestMemoryStorage_StoreAndRetrieve (0.00s)
+=== RUN   TestMemoryStorage_StoreNil
+--- PASS: TestMemoryStorage_StoreNil (0.00s)
+=== RUN   TestMemoryStorage_Clear
+--- PASS: TestMemoryStorage_Clear (0.00s)
+PASS
+coverage: 100.0% of statements
+ok  	github.com/neogan/sre-toolkit/internal/alert-analyzer/storage	10.901s	coverage: 100.0% of statements
+=== RUN   TestScanSecrets_Empty
+--- PASS: TestScanSecrets_Empty (0.00s)
+=== RUN   TestScanSecrets_ValidCert
+--- PASS: TestScanSecrets_ValidCert (0.00s)
+=== RUN   TestScanSecrets_ExpiredCert
+--- PASS: TestScanSecrets_ExpiredCert (0.00s)
+=== RUN   TestScanSecrets_CriticalCert
+--- PASS: TestScanSecrets_CriticalCert (0.00s)
+=== RUN   TestScanSecrets_InvalidCertData
+--- PASS: TestScanSecrets_InvalidCertData (0.00s)
+=== RUN   TestScanSecrets_MissingTLSCrt
+--- PASS: TestScanSecrets_MissingTLSCrt (0.00s)
+=== RUN   TestScanSecrets_MultipleNamespaces
+--- PASS: TestScanSecrets_MultipleNamespaces (0.00s)
+=== RUN   TestParseCertificates
+--- PASS: TestParseCertificates (0.00s)
+=== RUN   TestParseCertificates_Invalid
+--- PASS: TestParseCertificates_Invalid (0.00s)
+PASS
+coverage: 91.7% of statements
+ok  	github.com/neogan/sre-toolkit/internal/cert-monitor/k8ssecrets	3.223s	coverage: 91.7% of statements
+=== RUN   TestWebhookNotifier_NoAlerts
+--- PASS: TestWebhookNotifier_NoAlerts (0.00s)
+=== RUN   TestWebhookNotifier_WithAlerts
+--- PASS: TestWebhookNotifier_WithAlerts (0.01s)
+=== RUN   TestWebhookNotifier_ServerError
+--- PASS: TestWebhookNotifier_ServerError (0.00s)
+=== RUN   TestWebhookNotifier_InvalidURL
+--- PASS: TestWebhookNotifier_InvalidURL (0.00s)
+=== RUN   TestWebhookNotifier_ExpiredAlert
+--- PASS: TestWebhookNotifier_ExpiredAlert (0.00s)
+PASS
+coverage: 91.4% of statements
+ok  	github.com/neogan/sre-toolkit/internal/cert-monitor/notifier	5.462s	coverage: 91.4% of statements
+	github.com/neogan/sre-toolkit/internal/cert-monitor/reporter		coverage: 0.0% of statements
+=== RUN   TestParseTarget
+=== RUN   TestParseTarget/example.com
+=== RUN   TestParseTarget/example.com:8443
+=== RUN   TestParseTarget/https://example.com
+=== RUN   TestParseTarget/https://example.com:8443
+=== RUN   TestParseTarget/http://example.com
+=== RUN   TestParseTarget/https://example.com/some/path
+--- PASS: TestParseTarget (0.03s)
+    --- PASS: TestParseTarget/example.com (0.00s)
+    --- PASS: TestParseTarget/example.com:8443 (0.00s)
+    --- PASS: TestParseTarget/https://example.com (0.00s)
+    --- PASS: TestParseTarget/https://example.com:8443 (0.00s)
+    --- PASS: TestParseTarget/http://example.com (0.00s)
+    --- PASS: TestParseTarget/https://example.com/some/path (0.00s)
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+=== RUN   TestFillCertInfo_OK
+--- PASS: TestFillCertInfo_OK (0.00s)
+=== RUN   TestFillCertInfo_Warning
+--- PASS: TestFillCertInfo_Warning (0.00s)
+=== RUN   TestFillCertInfo_Critical
+--- PASS: TestFillCertInfo_Critical (0.00s)
+=== RUN   TestFillCertInfo_Expired
+--- PASS: TestFillCertInfo_Expired (0.00s)
+=== RUN   TestScanURL_RealServer
+--- PASS: TestScanURL_RealServer (0.06s)
+=== RUN   TestScanURL_InvalidHost
+--- PASS: TestScanURL_InvalidHost (0.48s)
+=== RUN   TestScanURLs_Concurrent
+--- PASS: TestScanURLs_Concurrent (0.27s)
+=== RUN   TestScanCertificate
+--- PASS: TestScanCertificate (0.00s)
+PASS
+coverage: 86.5% of statements
+ok  	github.com/neogan/sre-toolkit/internal/cert-monitor/scanner	5.118s	coverage: 86.5% of statements
+=== RUN   TestPoolRunHonorsRequestLimit
+
+=== Load Test Results ===
+Total Requests: 20
+Total Duration: 13.650708ms
+Requests/sec:   1465.13
+Errors:         0
+
+Latency:
+  p50: 62.458µs
+  p95: 10.59125ms
+  p99: 10.59125ms
+  Max: 10.59125ms
+
+Status Codes:
+  [200]: 20
+--- PASS: TestPoolRunHonorsRequestLimit (0.02s)
+=== RUN   TestPoolRunStopsAroundDuration
+
+=== Load Test Results ===
+Total Requests: 10
+Total Duration: 50.855125ms
+Requests/sec:   196.64
+Errors:         2
+
+Latency:
+  p50: 10.863541ms
+  p95: 13.013083ms
+  p99: 13.013083ms
+  Max: 13.013083ms
+
+Status Codes:
+  [200]: 8
+--- PASS: TestPoolRunStopsAroundDuration (0.05s)
+=== RUN   TestPoolRunCapturesRequestErrors
+
+=== Load Test Results ===
+Total Requests: 1
+Total Duration: 177.75µs
+Requests/sec:   5625.88
+Errors:         1
+--- PASS: TestPoolRunCapturesRequestErrors (0.00s)
+=== RUN   TestPoolRunUsesMethodAndBody
+
+=== Load Test Results ===
+Total Requests: 1
+Total Duration: 116.125µs
+Requests/sec:   8611.41
+Errors:         0
+
+Latency:
+  p50: 52.958µs
+  p95: 52.958µs
+  p99: 52.958µs
+  Max: 52.958µs
+
+Status Codes:
+  [200]: 1
+--- PASS: TestPoolRunUsesMethodAndBody (0.00s)
+=== RUN   TestPoolNewRequestSetsBearerToken
+--- PASS: TestPoolNewRequestSetsBearerToken (0.00s)
+=== RUN   TestPoolNewRequestSetsBasicAuth
+--- PASS: TestPoolNewRequestSetsBasicAuth (0.00s)
+=== RUN   TestPoolConfigValidateRejectsConflictingAuthModes
+--- PASS: TestPoolConfigValidateRejectsConflictingAuthModes (0.00s)
+=== RUN   TestPoolConfigValidateRequiresBasicUsername
+--- PASS: TestPoolConfigValidateRequiresBasicUsername (0.00s)
+=== RUN   TestPoolConfigValidate_Valid
+=== RUN   TestPoolConfigValidate_Valid/no_auth
+=== RUN   TestPoolConfigValidate_Valid/bearer_only
+=== RUN   TestPoolConfigValidate_Valid/basic_only
+--- PASS: TestPoolConfigValidate_Valid (0.00s)
+    --- PASS: TestPoolConfigValidate_Valid/no_auth (0.00s)
+    --- PASS: TestPoolConfigValidate_Valid/bearer_only (0.00s)
+    --- PASS: TestPoolConfigValidate_Valid/basic_only (0.00s)
+=== RUN   TestPoolNewRequest_DefaultMethodIsGET
+--- PASS: TestPoolNewRequest_DefaultMethodIsGET (0.00s)
+=== RUN   TestPoolNewRequest_InvalidURLReturnsError
+--- PASS: TestPoolNewRequest_InvalidURLReturnsError (0.00s)
+PASS
+coverage: 98.4% of statements
+ok  	github.com/neogan/sre-toolkit/internal/chaos-load/http	6.300s	coverage: 98.4% of statements
+=== RUN   TestNodeDrainer_DryRun
+--- PASS: TestNodeDrainer_DryRun (0.00s)
+=== RUN   TestNodeDrainer_CordonsNode
+--- PASS: TestNodeDrainer_CordonsNode (0.00s)
+=== RUN   TestNodeDrainer_AlreadyCordoned
+--- PASS: TestNodeDrainer_AlreadyCordoned (0.00s)
+=== RUN   TestNodeDrainer_SkipsDaemonSetPods
+--- PASS: TestNodeDrainer_SkipsDaemonSetPods (0.00s)
+=== RUN   TestNodeDrainer_SkipsMirrorPods
+--- PASS: TestNodeDrainer_SkipsMirrorPods (0.00s)
+=== RUN   TestNodeDrainer_SkipsEmptyDirPodsWhenNotConfigured
+--- PASS: TestNodeDrainer_SkipsEmptyDirPodsWhenNotConfigured (0.00s)
+=== RUN   TestNodeDrainer_NodeNotFound
+--- PASS: TestNodeDrainer_NodeNotFound (0.00s)
+=== RUN   TestPodKiller_KillsOneRandomPod
+--- PASS: TestPodKiller_KillsOneRandomPod (0.00s)
+=== RUN   TestPodKiller_ForceKill
+--- PASS: TestPodKiller_ForceKill (0.00s)
+=== RUN   TestPodKiller_DryRun
+--- PASS: TestPodKiller_DryRun (0.00s)
+=== RUN   TestPodKiller_NoPodsReturnsError
+--- PASS: TestPodKiller_NoPodsReturnsError (0.00s)
+=== RUN   TestPodKiller_SkipsNonRunningPods
+--- PASS: TestPodKiller_SkipsNonRunningPods (0.00s)
+=== RUN   TestPodKiller_MultipleIterations
+--- PASS: TestPodKiller_MultipleIterations (0.00s)
+PASS
+coverage: 78.7% of statements
+ok  	github.com/neogan/sre-toolkit/internal/chaos-load/k8s	8.870s	coverage: 78.7% of statements
+=== RUN   TestServer_LatencyWithJitter
+    server_test.go:69: Request took 121.904167ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 141.909292ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 160.685541ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 151.781875ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 199.869584ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 181.300625ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 147.978416ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 196.469834ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 117.627375ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 88.400041ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 75.780167ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 103.991875ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 159.131166ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 76.293042ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 83.172041ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 78.327958ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 83.33075ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 96.896042ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 99.44725ms (expected 100ms +/- 50ms)
+    server_test.go:69: Request took 155.812667ms (expected 100ms +/- 50ms)
+--- PASS: TestServer_LatencyWithJitter (2.74s)
+=== RUN   TestServer_ErrorRate
+--- PASS: TestServer_ErrorRate (0.00s)
+=== RUN   TestServer_ConnectionFailure_DropsConnection
+--- PASS: TestServer_ConnectionFailure_DropsConnection (0.00s)
+=== RUN   TestServer_ConnectionFailure_FallsBackWhenHijackNotSupported
+--- PASS: TestServer_ConnectionFailure_FallsBackWhenHijackNotSupported (0.00s)
+=== RUN   TestServer_ConnectionFailure_ZeroRateDoesNotDrop
+--- PASS: TestServer_ConnectionFailure_ZeroRateDoesNotDrop (0.00s)
+=== RUN   TestServer_ZeroErrorRate
+--- PASS: TestServer_ZeroErrorRate (0.02s)
+=== RUN   TestServer_LatencyNoJitter
+--- PASS: TestServer_LatencyNoJitter (0.06s)
+=== RUN   TestServer_TimeoutSimulation
+--- PASS: TestServer_TimeoutSimulation (0.07s)
+=== RUN   TestServerConfigValidate_RequiresTimeoutDuration
+--- PASS: TestServerConfigValidate_RequiresTimeoutDuration (0.00s)
+=== RUN   TestServerConfigValidate_RejectsInvalidRates
+=== RUN   TestServerConfigValidate_RejectsInvalidRates/error-rate_>_100
+=== RUN   TestServerConfigValidate_RejectsInvalidRates/connection-failure-rate_<_0
+=== RUN   TestServerConfigValidate_RejectsInvalidRates/timeout-rate_>_100
+--- PASS: TestServerConfigValidate_RejectsInvalidRates (0.00s)
+    --- PASS: TestServerConfigValidate_RejectsInvalidRates/error-rate_>_100 (0.00s)
+    --- PASS: TestServerConfigValidate_RejectsInvalidRates/connection-failure-rate_<_0 (0.00s)
+    --- PASS: TestServerConfigValidate_RejectsInvalidRates/timeout-rate_>_100 (0.00s)
+=== RUN   TestServerConfigValidate_Valid
+--- PASS: TestServerConfigValidate_Valid (0.00s)
+=== RUN   TestServer_Run_StartsAndShutdown
+--- PASS: TestServer_Run_StartsAndShutdown (0.01s)
+PASS
+coverage: 96.7% of statements
+ok  	github.com/neogan/sre-toolkit/internal/chaos-load/mock	13.216s	coverage: 96.7% of statements
+=== RUN   TestCollector_AddAndReport
+--- PASS: TestCollector_AddAndReport (0.02s)
+=== RUN   TestCollector_Empty
+--- PASS: TestCollector_Empty (0.00s)
+=== RUN   TestCollector_Report_Smoke
+
+=== Load Test Results ===
+Total Requests: 1
+Total Duration: 14.25µs
+Requests/sec:   70175.44
+Errors:         0
+
+Latency:
+  p50: 5ms
+  p95: 5ms
+  p99: 5ms
+  Max: 5ms
+
+Status Codes:
+  [200]: 1
+--- PASS: TestCollector_Report_Smoke (0.00s)
+=== RUN   TestCollector_ConcurrentAdd
+--- PASS: TestCollector_ConcurrentAdd (0.20s)
+=== RUN   TestCollector_Percentiles
+--- PASS: TestCollector_Percentiles (0.00s)
+PASS
+coverage: 100.0% of statements
+ok  	github.com/neogan/sre-toolkit/internal/chaos-load/stats	11.747s	coverage: 100.0% of statements
+	github.com/neogan/sre-toolkit/internal/config-linter/cli		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/internal/config-linter/config		coverage: 0.0% of statements
+=== RUN   TestDockerfileLinter_Lint
+=== RUN   TestDockerfileLinter_Lint/Good_Dockerfile
+=== RUN   TestDockerfileLinter_Lint/Bad_Dockerfile_-_Latest_Tag
+=== RUN   TestDockerfileLinter_Lint/Bad_Dockerfile_-_No_Tag
+=== RUN   TestDockerfileLinter_Lint/Bad_Dockerfile_-_MAINTAINER
+=== RUN   TestDockerfileLinter_Lint/Bad_Dockerfile_-_Sudo_and_Upgrade
+=== RUN   TestDockerfileLinter_Lint/Bad_Dockerfile_-_ADD_instead_of_COPY
+=== RUN   TestDockerfileLinter_Lint/Good_Dockerfile_-_ADD_with_URL
+=== RUN   TestDockerfileLinter_Lint/Bad_Dockerfile_-_Relative_WORKDIR
+=== RUN   TestDockerfileLinter_Lint/Multi-stage_Dockerfile_-_User_in_last_stage_only
+--- PASS: TestDockerfileLinter_Lint (0.03s)
+    --- PASS: TestDockerfileLinter_Lint/Good_Dockerfile (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Bad_Dockerfile_-_Latest_Tag (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Bad_Dockerfile_-_No_Tag (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Bad_Dockerfile_-_MAINTAINER (0.01s)
+    --- PASS: TestDockerfileLinter_Lint/Bad_Dockerfile_-_Sudo_and_Upgrade (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Bad_Dockerfile_-_ADD_instead_of_COPY (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Good_Dockerfile_-_ADD_with_URL (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Bad_Dockerfile_-_Relative_WORKDIR (0.00s)
+    --- PASS: TestDockerfileLinter_Lint/Multi-stage_Dockerfile_-_User_in_last_stage_only (0.00s)
+=== RUN   TestHelmLinter_Lint
+=== RUN   TestHelmLinter_Lint/Valid_Chart
+=== RUN   TestHelmLinter_Lint/Missing_Required_Fields
+=== RUN   TestHelmLinter_Lint/Invalid_Version
+=== RUN   TestHelmLinter_Lint/Missing_Structure
+--- PASS: TestHelmLinter_Lint (0.09s)
+    --- PASS: TestHelmLinter_Lint/Valid_Chart (0.06s)
+    --- PASS: TestHelmLinter_Lint/Missing_Required_Fields (0.00s)
+    --- PASS: TestHelmLinter_Lint/Invalid_Version (0.01s)
+    --- PASS: TestHelmLinter_Lint/Missing_Structure (0.00s)
+=== RUN   TestHelmLinter_Dependencies
+=== RUN   TestHelmLinter_Dependencies/Valid_Dependencies
+=== RUN   TestHelmLinter_Dependencies/Missing_Dependency_Fields
+=== RUN   TestHelmLinter_Dependencies/Insecure_HTTP_Repository
+    helm_test.go:230: Issues found: [{Low Dependency 'myapp' uses exact version '1.0.0'. Consider using version constraints (e.g., ^1.2.0, >=1.2.0,<2.0.0) for better maintainability /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Dependencies1332117265/001/Insecure HTTP Repository/Chart.yaml 0} {Medium Dependency 'myapp' uses insecure HTTP repository. Consider using HTTPS /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Dependencies1332117265/001/Insecure HTTP Repository/Chart.yaml 0}]
+    helm_test.go:232: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:232
+        	Error:      	Not equal: 
+        	            	expected: 3
+        	            	actual  : 2
+        	Test:       	TestHelmLinter_Dependencies/Insecure_HTTP_Repository
+        	Messages:   	Issue count mismatch
+--- FAIL: TestHelmLinter_Dependencies (0.02s)
+    --- PASS: TestHelmLinter_Dependencies/Valid_Dependencies (0.00s)
+    --- PASS: TestHelmLinter_Dependencies/Missing_Dependency_Fields (0.00s)
+    --- FAIL: TestHelmLinter_Dependencies/Insecure_HTTP_Repository (0.01s)
+=== RUN   TestHelmLinter_KubeVersion
+=== RUN   TestHelmLinter_KubeVersion/Valid_KubeVersion
+=== RUN   TestHelmLinter_KubeVersion/Old_KubeVersion
+--- PASS: TestHelmLinter_KubeVersion (0.01s)
+    --- PASS: TestHelmLinter_KubeVersion/Valid_KubeVersion (0.00s)
+    --- PASS: TestHelmLinter_KubeVersion/Old_KubeVersion (0.00s)
+=== RUN   TestHelmLinter_Templates
+=== RUN   TestHelmLinter_Templates/Valid_Template
+    helm_test.go:399: Issues found: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Valid Template/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Valid Template/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Valid Template/Chart.yaml 0} {Error Template syntax error: template: configmap.yaml:9:19: executing "configmap.yaml" at <.Values.config.key>: nil data; no entry for key "Values" /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Valid Template/templates/configmap.yaml 0} {Low Template contains hardcoded value 'test'. Consider parameterizing it in values.yaml /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Valid Template/templates/configmap.yaml 0}]
+    helm_test.go:401: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:401
+        	Error:      	Not equal: 
+        	            	expected: 0
+        	            	actual  : 5
+        	Test:       	TestHelmLinter_Templates/Valid_Template
+        	Messages:   	Issue count mismatch
+=== RUN   TestHelmLinter_Templates/Unclosed_Braces
+    helm_test.go:399: Issues found: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/Chart.yaml 0} {Error Template syntax error: syntax error: template: configmap.yaml:6: unclosed action /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/templates/configmap.yaml 0} {Error Unclosed template braces: found 1 opening and 0 closing /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/templates/configmap.yaml 0} {Low Line 6 has trailing whitespace /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/templates/configmap.yaml 6} {Low Template contains hardcoded value 'test'. Consider parameterizing it in values.yaml /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Templates2335723487/001/Unclosed Braces/templates/configmap.yaml 0}]
+    helm_test.go:401: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:401
+        	Error:      	Not equal: 
+        	            	expected: 4
+        	            	actual  : 7
+        	Test:       	TestHelmLinter_Templates/Unclosed_Braces
+        	Messages:   	Issue count mismatch
+--- FAIL: TestHelmLinter_Templates (0.02s)
+    --- FAIL: TestHelmLinter_Templates/Valid_Template (0.01s)
+    --- FAIL: TestHelmLinter_Templates/Unclosed_Braces (0.01s)
+=== RUN   TestHelmLinter_Values
+=== RUN   TestHelmLinter_Values/Valid_Values
+    helm_test.go:489: Issues found: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Valid Values/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Valid Values/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Valid Values/Chart.yaml 0}]
+    helm_test.go:491: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:491
+        	Error:      	Not equal: 
+        	            	expected: 1
+        	            	actual  : 3
+        	Test:       	TestHelmLinter_Values/Valid_Values
+        	Messages:   	Issue count mismatch
+    helm_test.go:502: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:502
+        	Error:      	Should be true
+        	Test:       	TestHelmLinter_Values/Valid_Values
+        	Messages:   	Expected to find issue containing 'hardcoded value 'localhost'', but found issues: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Valid Values/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Valid Values/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Valid Values/Chart.yaml 0}]
+=== RUN   TestHelmLinter_Values/Latest_Tag
+    helm_test.go:489: Issues found: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0}]
+    helm_test.go:491: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:491
+        	Error:      	Not equal: 
+        	            	expected: 2
+        	            	actual  : 3
+        	Test:       	TestHelmLinter_Values/Latest_Tag
+        	Messages:   	Issue count mismatch
+    helm_test.go:502: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:502
+        	Error:      	Should be true
+        	Test:       	TestHelmLinter_Values/Latest_Tag
+        	Messages:   	Expected to find issue containing 'latest image tag', but found issues: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0}]
+    helm_test.go:502: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:502
+        	Error:      	Should be true
+        	Test:       	TestHelmLinter_Values/Latest_Tag
+        	Messages:   	Expected to find issue containing 'hardcoded value 'localhost'', but found issues: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Latest Tag/Chart.yaml 0}]
+=== RUN   TestHelmLinter_Values/Plaintext_Password
+    helm_test.go:489: Issues found: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/Chart.yaml 0} {Low values.yaml contains plaintext password/secret. Consider using secrets management or external references /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/values.yaml 6}]
+    helm_test.go:491: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:491
+        	Error:      	Not equal: 
+        	            	expected: 2
+        	            	actual  : 4
+        	Test:       	TestHelmLinter_Values/Plaintext_Password
+        	Messages:   	Issue count mismatch
+    helm_test.go:502: 
+        	Error Trace:	/Users/neogan/GitHub/sre-toolkit/internal/config-linter/linter/helm_test.go:502
+        	Error:      	Should be true
+        	Test:       	TestHelmLinter_Values/Plaintext_Password
+        	Messages:   	Expected to find issue containing 'hardcoded value '10.0.0.1'', but found issues: [{Low Chart.yaml missing 'maintainers' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/Chart.yaml 0} {Low Chart.yaml missing 'description' /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/Chart.yaml 0} {Low Chart.yaml missing 'icon' (recommended for public charts) /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/Chart.yaml 0} {Low values.yaml contains plaintext password/secret. Consider using secrets management or external references /var/folders/k2/fh2q0z1s3llf742lv4y2mtg00000gn/T/TestHelmLinter_Values664547247/001/Plaintext Password/values.yaml 6}]
+--- FAIL: TestHelmLinter_Values (0.18s)
+    --- FAIL: TestHelmLinter_Values/Valid_Values (0.01s)
+    --- FAIL: TestHelmLinter_Values/Latest_Tag (0.01s)
+    --- FAIL: TestHelmLinter_Values/Plaintext_Password (0.06s)
+=== RUN   TestKubernetesLinter_Lint
+=== RUN   TestKubernetesLinter_Lint/Fully_Compliant_Pod
+=== RUN   TestKubernetesLinter_Lint/No_Limits
+=== RUN   TestKubernetesLinter_Lint/Privileged_Container
+=== RUN   TestKubernetesLinter_Lint/Latest_Tag
+=== RUN   TestKubernetesLinter_Lint/Host_Network
+=== RUN   TestKubernetesLinter_Lint/Dangerous_Capability_SYS_ADMIN
+=== RUN   TestKubernetesLinter_Lint/Missing_Probes
+=== RUN   TestKubernetesLinter_Lint/Allow_Privilege_Escalation
+--- PASS: TestKubernetesLinter_Lint (1.30s)
+    --- PASS: TestKubernetesLinter_Lint/Fully_Compliant_Pod (0.82s)
+    --- PASS: TestKubernetesLinter_Lint/No_Limits (0.01s)
+    --- PASS: TestKubernetesLinter_Lint/Privileged_Container (0.01s)
+    --- PASS: TestKubernetesLinter_Lint/Latest_Tag (0.02s)
+    --- PASS: TestKubernetesLinter_Lint/Host_Network (0.01s)
+    --- PASS: TestKubernetesLinter_Lint/Dangerous_Capability_SYS_ADMIN (0.01s)
+    --- PASS: TestKubernetesLinter_Lint/Missing_Probes (0.05s)
+    --- PASS: TestKubernetesLinter_Lint/Allow_Privilege_Escalation (0.01s)
+FAIL
+coverage: 80.6% of statements
+FAIL	github.com/neogan/sre-toolkit/internal/config-linter/linter	12.333s
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+=== RUN   TestSlowQueryFields
+--- PASS: TestSlowQueryFields (0.00s)
+=== RUN   TestTableStatFields
+--- PASS: TestTableStatFields (0.00s)
+=== RUN   TestIndexStatFields
+--- PASS: TestIndexStatFields (0.00s)
+PASS
+coverage: 1.3% of statements
+ok  	github.com/neogan/sre-toolkit/internal/db-toolkit/analyzer	13.259s	coverage: 1.3% of statements
+	github.com/neogan/sre-toolkit/internal/db-toolkit/backup		coverage: 0.0% of statements
+=== RUN   TestBuildDSN_Postgres
+--- PASS: TestBuildDSN_Postgres (0.00s)
+=== RUN   TestBuildDSN_PostgresDefaultSSL
+--- PASS: TestBuildDSN_PostgresDefaultSSL (0.00s)
+=== RUN   TestBuildDSN_MySQL
+--- PASS: TestBuildDSN_MySQL (0.00s)
+=== RUN   TestBuildDSN_UnsupportedType
+--- PASS: TestBuildDSN_UnsupportedType (0.00s)
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+PASS
+coverage: 36.4% of statements
+ok  	github.com/neogan/sre-toolkit/internal/db-toolkit/connector	11.989s	coverage: 36.4% of statements
+=== RUN   TestWorstStatus
+=== RUN   TestWorstStatus/empty_returns_OK
+=== RUN   TestWorstStatus/all_OK
+=== RUN   TestWorstStatus/warning_present
+=== RUN   TestWorstStatus/critical_present
+=== RUN   TestWorstStatus/critical_dominates_warning
+--- PASS: TestWorstStatus (0.00s)
+    --- PASS: TestWorstStatus/empty_returns_OK (0.00s)
+    --- PASS: TestWorstStatus/all_OK (0.00s)
+    --- PASS: TestWorstStatus/warning_present (0.00s)
+    --- PASS: TestWorstStatus/critical_present (0.00s)
+    --- PASS: TestWorstStatus/critical_dominates_warning (0.00s)
+=== RUN   TestStatusConstants
+--- PASS: TestStatusConstants (0.00s)
+PASS
+coverage: 7.5% of statements
+ok  	github.com/neogan/sre-toolkit/internal/db-toolkit/health	12.009s	coverage: 7.5% of statements
+=== RUN   TestPrintHealthReport_Table
+--- PASS: TestPrintHealthReport_Table (0.00s)
+=== RUN   TestPrintHealthReport_JSON
+--- PASS: TestPrintHealthReport_JSON (0.00s)
+=== RUN   TestPrintAnalysisReport_Table
+--- PASS: TestPrintAnalysisReport_Table (0.00s)
+=== RUN   TestPrintBackupResult_Table
+--- PASS: TestPrintBackupResult_Table (0.00s)
+=== RUN   TestHumanSize
+--- PASS: TestHumanSize (0.00s)
+PASS
+coverage: 79.5% of statements
+ok  	github.com/neogan/sre-toolkit/internal/db-toolkit/reporter	12.368s	coverage: 79.5% of statements
+=== RUN   TestRunAudit
+=== RUN   TestRunAudit/healthy_namespace
+=== RUN   TestRunAudit/namespace_filter_limits_scope
+=== RUN   TestRunAudit/network_policy_suppresses_warning
+--- PASS: TestRunAudit (0.01s)
+    --- PASS: TestRunAudit/healthy_namespace (0.00s)
+    --- PASS: TestRunAudit/namespace_filter_limits_scope (0.00s)
+    --- PASS: TestRunAudit/network_policy_suppresses_warning (0.00s)
+=== RUN   TestRunAuditRBAC
+=== RUN   TestRunAuditRBAC/cluster_wide_wildcard_role_and_binding_are_critical
+=== RUN   TestRunAuditRBAC/namespace_scoped_audit_ignores_out_of_scope_bindings
+=== RUN   TestRunAuditRBAC/cluster_admin_binding_for_namespace_service_account_is_detected
+--- PASS: TestRunAuditRBAC (0.00s)
+    --- PASS: TestRunAuditRBAC/cluster_wide_wildcard_role_and_binding_are_critical (0.00s)
+    --- PASS: TestRunAuditRBAC/namespace_scoped_audit_ignores_out_of_scope_bindings (0.00s)
+    --- PASS: TestRunAuditRBAC/cluster_admin_binding_for_namespace_service_account_is_detected (0.00s)
+=== RUN   TestRunAuditResourceQuotas
+=== RUN   TestRunAuditResourceQuotas/missing_quota_in_target_namespace_produces_warning
+=== RUN   TestRunAuditResourceQuotas/namespace_filter_ignores_quotas_outside_scope
+=== RUN   TestRunAuditResourceQuotas/system_namespaces_are_skipped_in_cluster_wide_audit
+--- PASS: TestRunAuditResourceQuotas (0.00s)
+    --- PASS: TestRunAuditResourceQuotas/missing_quota_in_target_namespace_produces_warning (0.00s)
+    --- PASS: TestRunAuditResourceQuotas/namespace_filter_ignores_quotas_outside_scope (0.00s)
+    --- PASS: TestRunAuditResourceQuotas/system_namespaces_are_skipped_in_cluster_wide_audit (0.00s)
+PASS
+coverage: 75.6% of statements
+ok  	github.com/neogan/sre-toolkit/internal/k8s-doctor/audit	11.590s	coverage: 75.6% of statements
+=== RUN   TestRunDiagnostics
+=== RUN   TestRunDiagnostics/healthy_cluster
+=== RUN   TestRunDiagnostics/cluster_with_node_issues
+=== RUN   TestRunDiagnostics/cluster_with_pod_issues
+=== RUN   TestRunDiagnostics/mixed_severity_issues
+=== RUN   TestRunDiagnostics/namespace_filtering
+--- PASS: TestRunDiagnostics (0.13s)
+    --- PASS: TestRunDiagnostics/healthy_cluster (0.03s)
+    --- PASS: TestRunDiagnostics/cluster_with_node_issues (0.00s)
+    --- PASS: TestRunDiagnostics/cluster_with_pod_issues (0.08s)
+    --- PASS: TestRunDiagnostics/mixed_severity_issues (0.00s)
+    --- PASS: TestRunDiagnostics/namespace_filtering (0.02s)
+=== RUN   TestDiagnoseNode
+=== RUN   TestDiagnoseNode/healthy_node
+=== RUN   TestDiagnoseNode/not_ready_node
+=== RUN   TestDiagnoseNode/memory_pressure
+=== RUN   TestDiagnoseNode/disk_pressure
+=== RUN   TestDiagnoseNode/cordoned_node
+=== RUN   TestDiagnoseNode/multiple_issues
+--- PASS: TestDiagnoseNode (0.00s)
+    --- PASS: TestDiagnoseNode/healthy_node (0.00s)
+    --- PASS: TestDiagnoseNode/not_ready_node (0.00s)
+    --- PASS: TestDiagnoseNode/memory_pressure (0.00s)
+    --- PASS: TestDiagnoseNode/disk_pressure (0.00s)
+    --- PASS: TestDiagnoseNode/cordoned_node (0.00s)
+    --- PASS: TestDiagnoseNode/multiple_issues (0.00s)
+=== RUN   TestDiagnosePod
+=== RUN   TestDiagnosePod/CrashLoopBackOff
+=== RUN   TestDiagnosePod/ImagePullBackOff
+=== RUN   TestDiagnosePod/high_restart_count
+=== RUN   TestDiagnosePod/moderate_restart_count
+=== RUN   TestDiagnosePod/pending_pod
+=== RUN   TestDiagnosePod/failed_pod
+--- PASS: TestDiagnosePod (0.00s)
+    --- PASS: TestDiagnosePod/CrashLoopBackOff (0.00s)
+    --- PASS: TestDiagnosePod/ImagePullBackOff (0.00s)
+    --- PASS: TestDiagnosePod/high_restart_count (0.00s)
+    --- PASS: TestDiagnosePod/moderate_restart_count (0.00s)
+    --- PASS: TestDiagnosePod/pending_pod (0.00s)
+    --- PASS: TestDiagnosePod/failed_pod (0.00s)
+=== RUN   TestDiagnoseComponent
+=== RUN   TestDiagnoseComponent/healthy_component
+=== RUN   TestDiagnoseComponent/unhealthy_component
+=== RUN   TestDiagnoseComponent/unknown_component_status
+--- PASS: TestDiagnoseComponent (0.00s)
+    --- PASS: TestDiagnoseComponent/healthy_component (0.00s)
+    --- PASS: TestDiagnoseComponent/unhealthy_component (0.00s)
+    --- PASS: TestDiagnoseComponent/unknown_component_status (0.00s)
+=== RUN   TestCalculateSummary
+=== RUN   TestCalculateSummary/no_issues
+=== RUN   TestCalculateSummary/mixed_issues
+=== RUN   TestCalculateSummary/security_issues_only
+--- PASS: TestCalculateSummary (0.00s)
+    --- PASS: TestCalculateSummary/no_issues (0.00s)
+    --- PASS: TestCalculateSummary/mixed_issues (0.00s)
+    --- PASS: TestCalculateSummary/security_issues_only (0.00s)
+PASS
+coverage: 66.4% of statements
+ok  	github.com/neogan/sre-toolkit/internal/k8s-doctor/diagnostics	14.186s	coverage: 66.4% of statements
+=== RUN   TestCheckComponents
+=== RUN   TestCheckComponents/with_component_pods_in_kube-system
+=== RUN   TestCheckComponents/no_pods_at_all
+--- PASS: TestCheckComponents (0.01s)
+    --- PASS: TestCheckComponents/with_component_pods_in_kube-system (0.01s)
+    --- PASS: TestCheckComponents/no_pods_at_all (0.00s)
+=== RUN   TestCheckComponentPods
+=== RUN   TestCheckComponentPods/all_component_pods_running_and_ready
+=== RUN   TestCheckComponentPods/component_pod_not_ready
+=== RUN   TestCheckComponentPods/component_pod_in_pending_phase
+=== RUN   TestCheckComponentPods/multiple_instances_of_same_component
+=== RUN   TestCheckComponentPods/component_with_version_skew
+--- PASS: TestCheckComponentPods (0.00s)
+    --- PASS: TestCheckComponentPods/all_component_pods_running_and_ready (0.00s)
+    --- PASS: TestCheckComponentPods/component_pod_not_ready (0.00s)
+    --- PASS: TestCheckComponentPods/component_pod_in_pending_phase (0.00s)
+    --- PASS: TestCheckComponentPods/multiple_instances_of_same_component (0.00s)
+    --- PASS: TestCheckComponentPods/component_with_version_skew (0.00s)
+=== RUN   TestMatchesComponent
+=== RUN   TestMatchesComponent/kube-apiserver-control-plane_kube-apiserver
+=== RUN   TestMatchesComponent/kube-controller-manager-node1_kube-controller-manager
+=== RUN   TestMatchesComponent/kube-scheduler-master_kube-scheduler
+=== RUN   TestMatchesComponent/etcd-control-plane_etcd
+=== RUN   TestMatchesComponent/coredns-abc123_coredns
+=== RUN   TestMatchesComponent/kube-proxy-xyz789_kube-proxy
+=== RUN   TestMatchesComponent/nginx-deployment-abc_kube-apiserver
+=== RUN   TestMatchesComponent/application-pod_etcd
+=== RUN   TestMatchesComponent/api_kube-apiserver
+--- PASS: TestMatchesComponent (0.01s)
+    --- PASS: TestMatchesComponent/kube-apiserver-control-plane_kube-apiserver (0.00s)
+    --- PASS: TestMatchesComponent/kube-controller-manager-node1_kube-controller-manager (0.00s)
+    --- PASS: TestMatchesComponent/kube-scheduler-master_kube-scheduler (0.00s)
+    --- PASS: TestMatchesComponent/etcd-control-plane_etcd (0.00s)
+    --- PASS: TestMatchesComponent/coredns-abc123_coredns (0.00s)
+    --- PASS: TestMatchesComponent/kube-proxy-xyz789_kube-proxy (0.00s)
+    --- PASS: TestMatchesComponent/nginx-deployment-abc_kube-apiserver (0.00s)
+    --- PASS: TestMatchesComponent/application-pod_etcd (0.00s)
+    --- PASS: TestMatchesComponent/api_kube-apiserver (0.00s)
+=== RUN   TestCheckEvents
+=== RUN   TestCheckEvents/warning_and_error_events
+=== RUN   TestCheckEvents/no_events
+--- PASS: TestCheckEvents (0.00s)
+    --- PASS: TestCheckEvents/warning_and_error_events (0.00s)
+    --- PASS: TestCheckEvents/no_events (0.00s)
+=== RUN   TestCheckNetworkPolicies
+=== RUN   TestCheckNetworkPolicies/All_namespaces
+=== RUN   TestCheckNetworkPolicies/Specific_namespace_without_policies
+=== RUN   TestCheckNetworkPolicies/Specific_namespace_with_policies
+--- PASS: TestCheckNetworkPolicies (0.00s)
+    --- PASS: TestCheckNetworkPolicies/All_namespaces (0.00s)
+    --- PASS: TestCheckNetworkPolicies/Specific_namespace_without_policies (0.00s)
+    --- PASS: TestCheckNetworkPolicies/Specific_namespace_with_policies (0.00s)
+=== RUN   TestIsSystemNamespace
+=== RUN   TestIsSystemNamespace/kube-system
+=== RUN   TestIsSystemNamespace/kube-public
+=== RUN   TestIsSystemNamespace/kube-node-lease
+=== RUN   TestIsSystemNamespace/local-path-storage
+=== RUN   TestIsSystemNamespace/cert-manager
+=== RUN   TestIsSystemNamespace/ingress-nginx
+=== RUN   TestIsSystemNamespace/kube-custom
+=== RUN   TestIsSystemNamespace/default
+=== RUN   TestIsSystemNamespace/app-namespace
+--- PASS: TestIsSystemNamespace (0.00s)
+    --- PASS: TestIsSystemNamespace/kube-system (0.00s)
+    --- PASS: TestIsSystemNamespace/kube-public (0.00s)
+    --- PASS: TestIsSystemNamespace/kube-node-lease (0.00s)
+    --- PASS: TestIsSystemNamespace/local-path-storage (0.00s)
+    --- PASS: TestIsSystemNamespace/cert-manager (0.00s)
+    --- PASS: TestIsSystemNamespace/ingress-nginx (0.00s)
+    --- PASS: TestIsSystemNamespace/kube-custom (0.00s)
+    --- PASS: TestIsSystemNamespace/default (0.00s)
+    --- PASS: TestIsSystemNamespace/app-namespace (0.00s)
+=== RUN   TestCheckNodes
+=== RUN   TestCheckNodes/single_healthy_node
+=== RUN   TestCheckNodes/multiple_nodes_with_issues
+=== RUN   TestCheckNodes/no_nodes
+--- PASS: TestCheckNodes (0.01s)
+    --- PASS: TestCheckNodes/single_healthy_node (0.00s)
+    --- PASS: TestCheckNodes/multiple_nodes_with_issues (0.00s)
+    --- PASS: TestCheckNodes/no_nodes (0.00s)
+=== RUN   TestAnalyzeNode
+=== RUN   TestAnalyzeNode/healthy_control-plane_node
+=== RUN   TestAnalyzeNode/not_ready_node
+=== RUN   TestAnalyzeNode/node_with_memory_pressure
+=== RUN   TestAnalyzeNode/node_with_disk_pressure
+=== RUN   TestAnalyzeNode/node_with_PID_pressure
+=== RUN   TestAnalyzeNode/cordoned_node
+=== RUN   TestAnalyzeNode/node_with_multiple_issues
+=== RUN   TestAnalyzeNode/node_with_network_unavailable
+=== RUN   TestAnalyzeNode/node_with_version_skew
+--- PASS: TestAnalyzeNode (0.01s)
+    --- PASS: TestAnalyzeNode/healthy_control-plane_node (0.00s)
+    --- PASS: TestAnalyzeNode/not_ready_node (0.00s)
+    --- PASS: TestAnalyzeNode/node_with_memory_pressure (0.00s)
+    --- PASS: TestAnalyzeNode/node_with_disk_pressure (0.00s)
+    --- PASS: TestAnalyzeNode/node_with_PID_pressure (0.00s)
+    --- PASS: TestAnalyzeNode/cordoned_node (0.00s)
+    --- PASS: TestAnalyzeNode/node_with_multiple_issues (0.00s)
+    --- PASS: TestAnalyzeNode/node_with_network_unavailable (0.00s)
+    --- PASS: TestAnalyzeNode/node_with_version_skew (0.00s)
+=== RUN   TestGetRoles
+=== RUN   TestGetRoles/control-plane_role
+=== RUN   TestGetRoles/master_role_(legacy)
+=== RUN   TestGetRoles/worker_role
+=== RUN   TestGetRoles/no_role_labels
+=== RUN   TestGetRoles/other_labels
+--- PASS: TestGetRoles (0.00s)
+    --- PASS: TestGetRoles/control-plane_role (0.00s)
+    --- PASS: TestGetRoles/master_role_(legacy) (0.00s)
+    --- PASS: TestGetRoles/worker_role (0.00s)
+    --- PASS: TestGetRoles/no_role_labels (0.00s)
+    --- PASS: TestGetRoles/other_labels (0.00s)
+=== RUN   TestCheckPods
+=== RUN   TestCheckPods/all_pods_running
+=== RUN   TestCheckPods/pod_with_CrashLoopBackOff
+=== RUN   TestCheckPods/pod_with_ImagePullBackOff
+=== RUN   TestCheckPods/failed_pods
+=== RUN   TestCheckPods/high_restart_count
+=== RUN   TestCheckPods/namespace_filtering
+=== RUN   TestCheckPods/no_pods
+--- PASS: TestCheckPods (0.00s)
+    --- PASS: TestCheckPods/all_pods_running (0.00s)
+    --- PASS: TestCheckPods/pod_with_CrashLoopBackOff (0.00s)
+    --- PASS: TestCheckPods/pod_with_ImagePullBackOff (0.00s)
+    --- PASS: TestCheckPods/failed_pods (0.00s)
+    --- PASS: TestCheckPods/high_restart_count (0.00s)
+    --- PASS: TestCheckPods/namespace_filtering (0.00s)
+    --- PASS: TestCheckPods/no_pods (0.00s)
+=== RUN   TestIsProblemPod
+=== RUN   TestIsProblemPod/healthy_running_pod
+=== RUN   TestIsProblemPod/failed_pod
+=== RUN   TestIsProblemPod/pending_pod
+=== RUN   TestIsProblemPod/CrashLoopBackOff
+=== RUN   TestIsProblemPod/ImagePullBackOff
+=== RUN   TestIsProblemPod/high_restart_count
+=== RUN   TestIsProblemPod/medium_restart_count_(<_6)
+=== RUN   TestIsProblemPod/terminated_with_non-zero_exit_code
+=== RUN   TestIsProblemPod/CreateContainerError
+--- PASS: TestIsProblemPod (0.00s)
+    --- PASS: TestIsProblemPod/healthy_running_pod (0.00s)
+    --- PASS: TestIsProblemPod/failed_pod (0.00s)
+    --- PASS: TestIsProblemPod/pending_pod (0.00s)
+    --- PASS: TestIsProblemPod/CrashLoopBackOff (0.00s)
+    --- PASS: TestIsProblemPod/ImagePullBackOff (0.00s)
+    --- PASS: TestIsProblemPod/high_restart_count (0.00s)
+    --- PASS: TestIsProblemPod/medium_restart_count_(<_6) (0.00s)
+    --- PASS: TestIsProblemPod/terminated_with_non-zero_exit_code (0.00s)
+    --- PASS: TestIsProblemPod/CreateContainerError (0.00s)
+=== RUN   TestAnalyzePodProblem
+=== RUN   TestAnalyzePodProblem/CrashLoopBackOff
+=== RUN   TestAnalyzePodProblem/ImagePullBackOff
+=== RUN   TestAnalyzePodProblem/high_restart_count
+=== RUN   TestAnalyzePodProblem/terminated
+--- PASS: TestAnalyzePodProblem (0.00s)
+    --- PASS: TestAnalyzePodProblem/CrashLoopBackOff (0.00s)
+    --- PASS: TestAnalyzePodProblem/ImagePullBackOff (0.00s)
+    --- PASS: TestAnalyzePodProblem/high_restart_count (0.00s)
+    --- PASS: TestAnalyzePodProblem/terminated (0.00s)
+=== RUN   TestAuditPodResources
+=== RUN   TestAuditPodResources/pod_with_limits_and_requests
+=== RUN   TestAuditPodResources/pod_missing_all_limits_and_requests
+=== RUN   TestAuditPodResources/pod_missing_some_limits
+--- PASS: TestAuditPodResources (0.00s)
+    --- PASS: TestAuditPodResources/pod_with_limits_and_requests (0.00s)
+    --- PASS: TestAuditPodResources/pod_missing_all_limits_and_requests (0.00s)
+    --- PASS: TestAuditPodResources/pod_missing_some_limits (0.00s)
+=== RUN   TestAuditPodProbes
+=== RUN   TestAuditPodProbes/pod_with_all_probes_configured
+=== RUN   TestAuditPodProbes/pod_missing_liveness_probe
+=== RUN   TestAuditPodProbes/pod_missing_readiness_probe
+=== RUN   TestAuditPodProbes/pod_missing_both_probes
+=== RUN   TestAuditPodProbes/multi-container_pod_with_mixed_probe_configs
+=== RUN   TestAuditPodProbes/all_containers_have_both_probes
+--- PASS: TestAuditPodProbes (0.00s)
+    --- PASS: TestAuditPodProbes/pod_with_all_probes_configured (0.00s)
+    --- PASS: TestAuditPodProbes/pod_missing_liveness_probe (0.00s)
+    --- PASS: TestAuditPodProbes/pod_missing_readiness_probe (0.00s)
+    --- PASS: TestAuditPodProbes/pod_missing_both_probes (0.00s)
+    --- PASS: TestAuditPodProbes/multi-container_pod_with_mixed_probe_configs (0.00s)
+    --- PASS: TestAuditPodProbes/all_containers_have_both_probes (0.00s)
+=== RUN   TestAuditPodProbes_IssueMessages
+--- PASS: TestAuditPodProbes_IssueMessages (0.00s)
+=== RUN   TestAuditPodSecurityContext
+=== RUN   TestAuditPodSecurityContext/secure_pod
+=== RUN   TestAuditPodSecurityContext/insecure_pod_-_no_security_context
+=== RUN   TestAuditPodSecurityContext/insecure_pod_-_runAsNonRoot_false
+=== RUN   TestAuditPodSecurityContext/insecure_pod_-_readOnlyRootFilesystem_false
+=== RUN   TestAuditPodSecurityContext/mixed_containers
+=== RUN   TestAuditPodSecurityContext/container_override_runAsNonRoot
+--- PASS: TestAuditPodSecurityContext (0.00s)
+    --- PASS: TestAuditPodSecurityContext/secure_pod (0.00s)
+    --- PASS: TestAuditPodSecurityContext/insecure_pod_-_no_security_context (0.00s)
+    --- PASS: TestAuditPodSecurityContext/insecure_pod_-_runAsNonRoot_false (0.00s)
+    --- PASS: TestAuditPodSecurityContext/insecure_pod_-_readOnlyRootFilesystem_false (0.00s)
+    --- PASS: TestAuditPodSecurityContext/mixed_containers (0.00s)
+    --- PASS: TestAuditPodSecurityContext/container_override_runAsNonRoot (0.00s)
+=== RUN   TestParseVersion
+=== RUN   TestParseVersion/v1.28.0
+=== RUN   TestParseVersion/1.27.4-gke.100
+=== RUN   TestParseVersion/v1.29.0-alpha.1
+=== RUN   TestParseVersion/invalid
+--- PASS: TestParseVersion (0.00s)
+    --- PASS: TestParseVersion/v1.28.0 (0.00s)
+    --- PASS: TestParseVersion/1.27.4-gke.100 (0.00s)
+    --- PASS: TestParseVersion/v1.29.0-alpha.1 (0.00s)
+    --- PASS: TestParseVersion/invalid (0.00s)
+=== RUN   TestIsKubeletCompatible
+=== RUN   TestIsKubeletCompatible/same_version
+=== RUN   TestIsKubeletCompatible/1_minor_older
+=== RUN   TestIsKubeletCompatible/3_minor_older
+=== RUN   TestIsKubeletCompatible/4_minor_older
+=== RUN   TestIsKubeletCompatible/newer
+--- PASS: TestIsKubeletCompatible (0.00s)
+    --- PASS: TestIsKubeletCompatible/same_version (0.00s)
+    --- PASS: TestIsKubeletCompatible/1_minor_older (0.00s)
+    --- PASS: TestIsKubeletCompatible/3_minor_older (0.00s)
+    --- PASS: TestIsKubeletCompatible/4_minor_older (0.00s)
+    --- PASS: TestIsKubeletCompatible/newer (0.00s)
+=== RUN   TestGetVersionSkewDescription
+=== RUN   TestGetVersionSkewDescription/kubelet_too_old
+=== RUN   TestGetVersionSkewDescription/component_newer
+=== RUN   TestGetVersionSkewDescription/no_issue
+--- PASS: TestGetVersionSkewDescription (0.00s)
+    --- PASS: TestGetVersionSkewDescription/kubelet_too_old (0.00s)
+    --- PASS: TestGetVersionSkewDescription/component_newer (0.00s)
+    --- PASS: TestGetVersionSkewDescription/no_issue (0.00s)
+PASS
+coverage: 81.3% of statements
+ok  	github.com/neogan/sre-toolkit/internal/k8s-doctor/healthcheck	19.288s	coverage: 81.3% of statements
+	github.com/neogan/sre-toolkit/internal/k8s-doctor/reporter		coverage: 0.0% of statements
+=== RUN   TestAnalyze_JSONLogs
+--- PASS: TestAnalyze_JSONLogs (0.01s)
+=== RUN   TestAnalyze_PlainLogs
+--- PASS: TestAnalyze_PlainLogs (0.00s)
+=== RUN   TestAnalyze_LogfmtLogs
+--- PASS: TestAnalyze_LogfmtLogs (0.02s)
+=== RUN   TestAnalyze_TopMessages
+--- PASS: TestAnalyze_TopMessages (0.00s)
+=== RUN   TestAnalyze_PatternMatching
+--- PASS: TestAnalyze_PatternMatching (0.02s)
+=== RUN   TestAnalyze_AnomalyDetection
+--- PASS: TestAnalyze_AnomalyDetection (0.01s)
+=== RUN   TestAnalyze_EmptyInput
+--- PASS: TestAnalyze_EmptyInput (0.01s)
+=== RUN   TestAnalyze_TimeRange
+--- PASS: TestAnalyze_TimeRange (0.00s)
+=== RUN   TestAnalyze_InvalidPattern
+--- PASS: TestAnalyze_InvalidPattern (0.00s)
+=== RUN   TestAnalyze_ContextCancellation
+--- PASS: TestAnalyze_ContextCancellation (0.03s)
+=== RUN   TestNormalise
+=== RUN   TestNormalise/request_12345_failed
+=== RUN   TestNormalise/connected_user_42_times
+=== RUN   TestNormalise/0xdeadbeef_address
+--- PASS: TestNormalise (0.00s)
+    --- PASS: TestNormalise/request_12345_failed (0.00s)
+    --- PASS: TestNormalise/connected_user_42_times (0.00s)
+    --- PASS: TestNormalise/0xdeadbeef_address (0.00s)
+=== RUN   TestMeanStddev
+--- PASS: TestMeanStddev (0.00s)
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+PASS
+coverage: 95.2% of statements
+ok  	github.com/neogan/sre-toolkit/internal/log-parser/analyzer	16.009s	coverage: 95.2% of statements
+=== RUN   TestJSONParser_Detect
+--- PASS: TestJSONParser_Detect (0.00s)
+=== RUN   TestJSONParser_Parse_Zerolog
+--- PASS: TestJSONParser_Parse_Zerolog (0.00s)
+=== RUN   TestJSONParser_Parse_Logrus
+--- PASS: TestJSONParser_Parse_Logrus (0.00s)
+=== RUN   TestJSONParser_Parse_NoMessage
+--- PASS: TestJSONParser_Parse_NoMessage (0.00s)
+=== RUN   TestLogfmtParser_Detect
+--- PASS: TestLogfmtParser_Detect (0.00s)
+=== RUN   TestLogfmtParser_Parse
+--- PASS: TestLogfmtParser_Parse (0.00s)
+=== RUN   TestLogfmtParser_Parse_QuotedMsg
+--- PASS: TestLogfmtParser_Parse_QuotedMsg (0.00s)
+=== RUN   TestAccessLogParser_Detect
+--- PASS: TestAccessLogParser_Detect (0.00s)
+=== RUN   TestAccessLogParser_Parse_200
+--- PASS: TestAccessLogParser_Parse_200 (0.00s)
+=== RUN   TestAccessLogParser_Parse_500
+--- PASS: TestAccessLogParser_Parse_500 (0.00s)
+=== RUN   TestAccessLogParser_Parse_404
+--- PASS: TestAccessLogParser_Parse_404 (0.00s)
+=== RUN   TestAccessLogParser_Parse_Invalid
+--- PASS: TestAccessLogParser_Parse_Invalid (0.00s)
+=== RUN   TestSyslogParser_Detect
+--- PASS: TestSyslogParser_Detect (0.00s)
+=== RUN   TestSyslogParser_Parse
+--- PASS: TestSyslogParser_Parse (0.00s)
+=== RUN   TestSyslogParser_Parse_Invalid
+--- PASS: TestSyslogParser_Parse_Invalid (0.00s)
+=== RUN   TestPlainParser_Parse_WithTimestampAndLevel
+--- PASS: TestPlainParser_Parse_WithTimestampAndLevel (0.00s)
+=== RUN   TestPlainParser_Parse_NoTimestamp
+--- PASS: TestPlainParser_Parse_NoTimestamp (0.00s)
+=== RUN   TestPlainParser_Parse_Fallback
+--- PASS: TestPlainParser_Parse_Fallback (0.00s)
+=== RUN   TestDetect_JSON
+--- PASS: TestDetect_JSON (0.00s)
+=== RUN   TestDetect_Access
+--- PASS: TestDetect_Access (0.00s)
+=== RUN   TestDetect_Logfmt
+--- PASS: TestDetect_Logfmt (0.00s)
+=== RUN   TestDetect_Plain_Fallback
+--- PASS: TestDetect_Plain_Fallback (0.00s)
+=== RUN   TestParseLevel
+=== RUN   TestParseLevel/info
+=== RUN   TestParseLevel/INFO
+=== RUN   TestParseLevel/WARN
+=== RUN   TestParseLevel/WARNING
+=== RUN   TestParseLevel/error
+=== RUN   TestParseLevel/ERR
+=== RUN   TestParseLevel/debug
+=== RUN   TestParseLevel/FATAL
+=== RUN   TestParseLevel/CRITICAL
+=== RUN   TestParseLevel/trace
+=== RUN   TestParseLevel/unknown_level
+--- PASS: TestParseLevel (0.01s)
+    --- PASS: TestParseLevel/info (0.00s)
+    --- PASS: TestParseLevel/INFO (0.00s)
+    --- PASS: TestParseLevel/WARN (0.00s)
+    --- PASS: TestParseLevel/WARNING (0.00s)
+    --- PASS: TestParseLevel/error (0.00s)
+    --- PASS: TestParseLevel/ERR (0.00s)
+    --- PASS: TestParseLevel/debug (0.00s)
+    --- PASS: TestParseLevel/FATAL (0.00s)
+    --- PASS: TestParseLevel/CRITICAL (0.00s)
+    --- PASS: TestParseLevel/trace (0.00s)
+    --- PASS: TestParseLevel/unknown_level (0.00s)
+=== RUN   TestParseTime_RFC3339
+--- PASS: TestParseTime_RFC3339 (0.00s)
+=== RUN   TestParseTime_UnixTimestamp
+--- PASS: TestParseTime_UnixTimestamp (0.00s)
+=== RUN   TestParseTime_Invalid
+--- PASS: TestParseTime_Invalid (0.00s)
+PASS
+coverage: 92.4% of statements
+ok  	github.com/neogan/sre-toolkit/internal/log-parser/formats	16.276s	coverage: 92.4% of statements
+	github.com/neogan/sre-toolkit/internal/log-parser/reporter		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/pkg/alertmanager		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/pkg/cli		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/pkg/config		coverage: 0.0% of statements
+	github.com/neogan/sre-toolkit/pkg/k8s		coverage: 0.0% of statements
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+=== RUN   TestInit
+--- PASS: TestInit (0.00s)
+=== RUN   TestWithComponent
+[90m2026-05-01T17:39:46+02:00[0m [32mINF[0m [1mtest message[0m [36mcomponent=[0mtest-component
+--- PASS: TestWithComponent (0.00s)
+PASS
+coverage: 82.4% of statements
+ok  	github.com/neogan/sre-toolkit/pkg/logging	14.333s	coverage: 82.4% of statements
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+=== RUN   TestNewServer
+--- PASS: TestNewServer (0.00s)
+=== RUN   TestServerStartStop
+--- PASS: TestServerStartStop (0.00s)
+=== RUN   TestSetAlertAnalyzerMetrics
+--- PASS: TestSetAlertAnalyzerMetrics (0.00s)
+=== RUN   TestSetCertMonitorMetrics
+--- PASS: TestSetCertMonitorMetrics (0.00s)
+PASS
+coverage: 94.0% of statements
+ok  	github.com/neogan/sre-toolkit/pkg/metrics	16.232s	coverage: 94.0% of statements
+=== RUN   TestQueryRange
+=== RUN   TestQueryRange/success
+=== RUN   TestQueryRange/error
+=== RUN   TestQueryRange/warnings
+--- PASS: TestQueryRange (0.01s)
+    --- PASS: TestQueryRange/success (0.00s)
+    --- PASS: TestQueryRange/error (0.00s)
+    --- PASS: TestQueryRange/warnings (0.00s)
+=== RUN   TestLabelValues
+=== RUN   TestLabelValues/success
+=== RUN   TestLabelValues/error
+=== RUN   TestLabelValues/warnings
+--- PASS: TestLabelValues (0.00s)
+    --- PASS: TestLabelValues/success (0.00s)
+    --- PASS: TestLabelValues/error (0.00s)
+    --- PASS: TestLabelValues/warnings (0.00s)
+=== RUN   TestBuildInfo
+=== RUN   TestBuildInfo/success
+=== RUN   TestBuildInfo/error
+--- PASS: TestBuildInfo (0.00s)
+    --- PASS: TestBuildInfo/success (0.00s)
+    --- PASS: TestBuildInfo/error (0.00s)
+=== RUN   TestRules
+=== RUN   TestRules/success
+=== RUN   TestRules/error
+--- PASS: TestRules (0.00s)
+    --- PASS: TestRules/success (0.00s)
+    --- PASS: TestRules/error (0.00s)
+=== RUN   TestClient_Auth
+--- PASS: TestClient_Auth (0.00s)
+PASS
+coverage: 47.1% of statements
+ok  	github.com/neogan/sre-toolkit/pkg/prometheus	17.327s	coverage: 47.1% of statements
+	github.com/neogan/sre-toolkit/pkg/tracing		coverage: 0.0% of statements

@@ -623,7 +623,7 @@ func hasHostAccess(rule rbacv1.PolicyRule) bool {
 func hasPVDestruction(rule rbacv1.PolicyRule) bool {
 	pvResources := []string{"persistentvolumes", "persistentvolumeclaims"}
 	destructiveVerbs := []string{"delete", "patch", "deletecollection"}
-	
+
 	hasDestructiveVerb := false
 	for _, v := range destructiveVerbs {
 		if contains(rule.Verbs, v) || hasWildcard(rule.Verbs) {
@@ -631,7 +631,7 @@ func hasPVDestruction(rule rbacv1.PolicyRule) bool {
 			break
 		}
 	}
-	
+
 	if !hasDestructiveVerb {
 		return false
 	}

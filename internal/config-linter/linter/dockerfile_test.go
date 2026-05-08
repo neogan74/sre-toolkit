@@ -15,10 +15,10 @@ func TestDockerfileLinter_Lint(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	tests := []struct {
-		name          string
-		content       string
+		name           string
+		content        string
 		expectedIssues int
-		issuePatterns []string
+		issuePatterns  []string
 	}{
 		{
 			name: "Good Dockerfile",

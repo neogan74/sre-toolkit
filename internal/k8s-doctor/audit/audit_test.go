@@ -400,3 +400,244 @@ func makeClusterRoleBinding(name, roleName string, subjects ...rbacv1.Subject) r
 		Subjects: subjects,
 	}
 }
+
+// Tests for helper functions
+
+func TestHasWildcard(t *testing.T) {
+	tests := []struct {
+		name     string
+		values   []string
+		expected bool
+	}{
+		{
+			name:     "contains wildcard",
+			values:   []string{"pods", "*", "services"},
+			expected: true,
+		},
+		{
+			name:     "no wildcard",
+			values:   []string{"pods", "services"},
+			expected: false,
+		},
+		{
+			name:     "empty list",
+			values:   []string{},
+			expected: false,
+		},
+		{
+			name:     "only wildcard",
+			values:   []string{"*"},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasWildcard(tt.values); got != tt.expected {
+				t.Errorf("hasWildcard(%v) = %v, want %v", tt.values, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestContains(t *testing.T) {
+	tests := []struct {
+		name     string
+		values   []string
+		expected string
+		result   bool
+	}{
+		{
+			name:     "value exists",
+			values:   []string{"get", "list", "watch"},
+			expected: "list",
+			result:   true,
+		},
+		{
+			name:     "value not exists",
+			values:   []string{"get", "list", "watch"},
+			expected: "delete",
+			result:   false,
+		},
+		{
+			name:     "empty list",
+			values:   []string{},
+			expected: "get",
+			result:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := contains(tt.values, tt.expected); got != tt.result {
+				t.Errorf("contains(%v, %q) = %v, want %v", tt.values, tt.expected, got, tt.result)
+			}
+		})
+	}
+}
+
+func TestEvaluateSecretAccess(t *testing.T) {
+	tests := []struct {
+		name          string
+		rule          rbacv1.PolicyRule
+		expectedSev   string
+		expectedFound bool
+	}{
+		{
+			name: "secret create access",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"secrets"},
+				Verbs:     []string{"create"},
+			},
+			expectedSev:   "Critical",
+			expectedFound: true,
+		},
+		{
+			name: "secret get access",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"secrets"},
+				Verbs:     []string{"get"},
+			},
+			expectedSev:   "Warning",
+			expectedFound: true,
+		},
+		{
+			name: "secret list access",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"secrets"},
+				Verbs:     []string{"list"},
+			},
+			expectedSev:   "Warning",
+			expectedFound: true,
+		},
+		{
+			name: "no secret access",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"pods"},
+				Verbs:     []string{"get"},
+			},
+			expectedSev:   "",
+			expectedFound: false,
+		},
+		{
+			name: "wildcard resources with get",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"*"},
+				Verbs:     []string{"get"},
+			},
+			expectedSev:   "Warning",
+			expectedFound: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sev, found := evaluateSecretAccess(tt.rule)
+			if found != tt.expectedFound {
+				t.Errorf("evaluateSecretAccess found = %v, want %v", found, tt.expectedFound)
+			}
+			if found && sev != tt.expectedSev {
+				t.Errorf("evaluateSecretAccess severity = %v, want %v", sev, tt.expectedSev)
+			}
+		})
+	}
+}
+
+func TestHasPVDestruction(t *testing.T) {
+	tests := []struct {
+		name     string
+		rule     rbacv1.PolicyRule
+		expected bool
+	}{
+		{
+			name: "delete persistent volumes",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"persistentvolumes"},
+				Verbs:     []string{"delete"},
+			},
+			expected: true,
+		},
+		{
+			name: "patch persistent volume claims",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"persistentvolumeclaims"},
+				Verbs:     []string{"patch"},
+			},
+			expected: true,
+		},
+		{
+			name: "wildcard with delete",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"*"},
+				Verbs:     []string{"delete"},
+			},
+			expected: true,
+		},
+		{
+			name: "no destructive verbs",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"persistentvolumes"},
+				Verbs:     []string{"get", "list"},
+			},
+			expected: false,
+		},
+		{
+			name: "wrong resource",
+			rule: rbacv1.PolicyRule{
+				Resources: []string{"pods"},
+				Verbs:     []string{"delete"},
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := hasPVDestruction(tt.rule); got != tt.expected {
+				t.Errorf("hasPVDestruction() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatSubject(t *testing.T) {
+	tests := []struct {
+		name           string
+		subject        rbacv1.Subject
+		expectedFormat string
+	}{
+		{
+			name: "ServiceAccount with namespace",
+			subject: rbacv1.Subject{
+				Kind:      "ServiceAccount",
+				Name:      "default",
+				Namespace: "kube-system",
+			},
+			expectedFormat: "ServiceAccount/kube-system/default",
+		},
+		{
+			name: "User without namespace",
+			subject: rbacv1.Subject{
+				Kind: "User",
+				Name: "admin@example.com",
+			},
+			expectedFormat: "User/admin@example.com",
+		},
+		{
+			name: "Group without namespace",
+			subject: rbacv1.Subject{
+				Kind: "Group",
+				Name: "developers",
+			},
+			expectedFormat: "Group/developers",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatSubject(tt.subject); got != tt.expectedFormat {
+				t.Errorf("formatSubject() = %q, want %q", got, tt.expectedFormat)
+			}
+		})
+	}
+}

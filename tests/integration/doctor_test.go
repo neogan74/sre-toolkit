@@ -161,7 +161,7 @@ func TestDiagnosticsWithFailure(t *testing.T) {
 	}
 
 	t.Logf("Diagnostics output:\n%s\n", output)
-	
+
 	// Assertions
 	outputStr := string(output)
 	if !contains(outputStr, "failing-pod") {

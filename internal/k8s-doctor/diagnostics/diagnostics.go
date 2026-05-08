@@ -11,12 +11,12 @@ import (
 
 // Result represents the result of diagnostics
 type Result struct {
-	Summary        Summary
-	NodeIssues     []NodeIssue
-	PodIssues      []PodIssue
-	SystemIssues   []SystemIssue
-	EventIssues    []EventIssue
-	ResourceIssues []ResourceIssue
+	Summary             Summary
+	NodeIssues          []NodeIssue
+	PodIssues           []PodIssue
+	SystemIssues        []SystemIssue
+	EventIssues         []EventIssue
+	ResourceIssues      []ResourceIssue
 	ProbeIssues         []ProbeIssue
 	SecurityIssues      []SecurityContextIssue
 	NetworkPolicyIssues []healthcheck.NetworkPolicyIssue
@@ -94,11 +94,11 @@ type SecurityContextIssue struct {
 // RunDiagnostics performs comprehensive cluster diagnostics
 func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
 	result := &Result{
-		NodeIssues:     []NodeIssue{},
-		PodIssues:      []PodIssue{},
-		SystemIssues:   []SystemIssue{},
-		EventIssues:    []EventIssue{},
-		ResourceIssues: []ResourceIssue{},
+		NodeIssues:          []NodeIssue{},
+		PodIssues:           []PodIssue{},
+		SystemIssues:        []SystemIssue{},
+		EventIssues:         []EventIssue{},
+		ResourceIssues:      []ResourceIssue{},
 		ProbeIssues:         []ProbeIssue{},
 		SecurityIssues:      []SecurityContextIssue{},
 		NetworkPolicyIssues: []healthcheck.NetworkPolicyIssue{},
