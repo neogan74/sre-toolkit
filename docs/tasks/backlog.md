@@ -239,8 +239,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 - [ ] **Alerting**
   - Email/Slack notifications
-  - Prometheus metrics (days_until_expiry)
-  - Webhook integration
+  - [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`) ✅ **COMPLETE**
+  - [x] Webhook integration ✅ **COMPLETE**
   - Escalation policy
 
 - [ ] **Reporting**

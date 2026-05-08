@@ -75,11 +75,14 @@ func severityChart(critical, warning, info int) map[string]interface{} {
 
 // renderHealthCheckHTML writes a complete HTML health report to w.
 func renderHealthCheckHTML(w io.Writer, nodes []healthcheck.NodeStatus, pods *healthcheck.PodStatus, components []healthcheck.ComponentStatus, netPols *healthcheck.NetworkPoliciesStatus) error {
-	podChartRaw, _ := json.Marshal(doughnutChart(
+	podChartRaw, err := json.Marshal(doughnutChart(
 		[]string{"Running", "Pending", "Failed", "Succeeded", "Unknown"},
 		[]int{pods.Running, pods.Pending, pods.Failed, pods.Succeeded, pods.Unknown},
 		[]string{"#22c55e", "#f59e0b", "#ef4444", "#3b82f6", "#94a3b8"},
 	))
+	if err != nil {
+		return fmt.Errorf("marshal pod chart: %w", err)
+	}
 
 	readyCount, notReadyCount := 0, 0
 	for _, n := range nodes {
@@ -89,11 +92,14 @@ func renderHealthCheckHTML(w io.Writer, nodes []healthcheck.NodeStatus, pods *he
 			notReadyCount++
 		}
 	}
-	nodeChartRaw, _ := json.Marshal(doughnutChart(
+	nodeChartRaw, err := json.Marshal(doughnutChart(
 		[]string{"Ready", "Not Ready"},
 		[]int{readyCount, notReadyCount},
 		[]string{"#22c55e", "#ef4444"},
 	))
+	if err != nil {
+		return fmt.Errorf("marshal node chart: %w", err)
+	}
 
 	data := healthCheckViewData{
 		GeneratedAt:     time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
@@ -101,8 +107,8 @@ func renderHealthCheckHTML(w io.Writer, nodes []healthcheck.NodeStatus, pods *he
 		Pods:            pods,
 		Components:      components,
 		NetworkPolicies: netPols,
-		PodChartJSON:    template.JS(podChartRaw),  //nolint:gosec
-		NodeChartJSON:   template.JS(nodeChartRaw), //nolint:gosec
+		PodChartJSON:    template.JS(podChartRaw),  //nolint:gosec // chart JSON is generated internally, not user input
+		NodeChartJSON:   template.JS(nodeChartRaw), //nolint:gosec // chart JSON is generated internally, not user input
 	}
 
 	tmpl, err := template.New("hc").Funcs(htmlFuncMap()).Parse(healthCheckHTMLTemplate)
@@ -113,12 +119,17 @@ func renderHealthCheckHTML(w io.Writer, nodes []healthcheck.NodeStatus, pods *he
 }
 
 // renderDiagnosticsHTML writes a complete HTML diagnostics report to w.
+//
+//nolint:gocyclo // complexity is inherent: each issue type requires its own rendering branch
 func renderDiagnosticsHTML(w io.Writer, result *diagnostics.Result) error {
-	chartRaw, _ := json.Marshal(severityChart(
+	chartRaw, err := json.Marshal(severityChart(
 		result.Summary.CriticalCount,
 		result.Summary.WarningCount,
 		result.Summary.InfoCount,
 	))
+	if err != nil {
+		return fmt.Errorf("marshal severity chart: %w", err)
+	}
 
 	var sections []htmlSection
 
@@ -225,7 +236,7 @@ func renderDiagnosticsHTML(w io.Writer, result *diagnostics.Result) error {
 		Critical:    result.Summary.CriticalCount,
 		Warning:     result.Summary.WarningCount,
 		Info:        result.Summary.InfoCount,
-		ChartJSON:   template.JS(chartRaw), //nolint:gosec
+		ChartJSON:   template.JS(chartRaw), //nolint:gosec // chart JSON is generated internally, not user input
 		Sections:    sections,
 	}
 
@@ -237,12 +248,17 @@ func renderDiagnosticsHTML(w io.Writer, result *diagnostics.Result) error {
 }
 
 // renderAuditHTML writes a complete HTML audit report to w.
+//
+//nolint:gocyclo // complexity is inherent: each audit category requires its own rendering branch
 func renderAuditHTML(w io.Writer, result *audit.Result) error {
-	chartRaw, _ := json.Marshal(severityChart(
+	chartRaw, err := json.Marshal(severityChart(
 		result.Summary.CriticalCount,
 		result.Summary.WarningCount,
 		result.Summary.InfoCount,
 	))
+	if err != nil {
+		return fmt.Errorf("marshal severity chart: %w", err)
+	}
 
 	var sections []htmlSection
 
@@ -333,7 +349,7 @@ func renderAuditHTML(w io.Writer, result *audit.Result) error {
 		Critical:    result.Summary.CriticalCount,
 		Warning:     result.Summary.WarningCount,
 		Info:        result.Summary.InfoCount,
-		ChartJSON:   template.JS(chartRaw), //nolint:gosec
+		ChartJSON:   template.JS(chartRaw), //nolint:gosec // chart JSON is generated internally, not user input
 		Sections:    sections,
 	}
 

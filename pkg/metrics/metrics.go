@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/analyzer"
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -102,6 +103,47 @@ var (
 			Help: "Recommendation counts from the latest alert-analyzer run",
 		},
 		[]string{"category", "priority"},
+	)
+
+	// cert-monitor metrics
+
+	CertMonitorDaysLeft = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cert_monitor_cert_days_left",
+			Help: "Number of days until the certificate expires (negative = already expired)",
+		},
+		[]string{"host", "subject", "issuer"},
+	)
+
+	CertMonitorCertStatus = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cert_monitor_cert_status",
+			Help: "Certificate status (1 = cert has this status, 0 = it does not). Labels: ok, warning, critical, expired, error",
+		},
+		[]string{"host", "status"},
+	)
+
+	CertMonitorTotal = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "cert_monitor_certs_total",
+			Help: "Total number of certificates by status after the last scan",
+		},
+		[]string{"status"},
+	)
+
+	CertMonitorLastScan = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "cert_monitor_last_scan_timestamp_seconds",
+			Help: "Unix timestamp of the last completed certificate scan",
+		},
+	)
+
+	CertMonitorScanDuration = promauto.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "cert_monitor_scan_duration_seconds",
+			Help:    "Duration of the certificate scan in seconds",
+			Buckets: []float64{0.1, 0.5, 1, 2, 5, 10, 30, 60},
+		},
 	)
 )
 
@@ -217,6 +259,59 @@ func SetAlertAnalyzerMetrics(
 	for key, count := range seen {
 		parts := splitMetricKey(key)
 		AlertAnalyzerRecommendationTotal.WithLabelValues(parts[0], parts[1]).Set(count)
+	}
+}
+
+// SetCertMonitorMetrics updates cert-monitor Prometheus gauges after a scan.
+// scanDuration is how long the scan took; results are the scanned certificates.
+func SetCertMonitorMetrics(results []*scanner.CertInfo, scanDuration time.Duration) {
+	CertMonitorLastScan.SetToCurrentTime()
+	CertMonitorScanDuration.Observe(scanDuration.Seconds())
+
+	// Reset per-cert vectors so stale entries don't linger between scans.
+	CertMonitorDaysLeft.Reset()
+	CertMonitorCertStatus.Reset()
+
+	counts := map[string]float64{
+		string(scanner.StatusOK):       0,
+		string(scanner.StatusWarning):  0,
+		string(scanner.StatusCritical): 0,
+		string(scanner.StatusExpired):  0,
+		string(scanner.StatusError):    0,
+	}
+
+	allStatuses := []string{
+		string(scanner.StatusOK),
+		string(scanner.StatusWarning),
+		string(scanner.StatusCritical),
+		string(scanner.StatusExpired),
+		string(scanner.StatusError),
+	}
+
+	for _, info := range results {
+		host := info.Host
+		subject := info.Subject
+		issuer := info.Issuer
+		status := string(info.Status)
+
+		CertMonitorDaysLeft.WithLabelValues(host, subject, issuer).Set(float64(info.DaysLeft))
+
+		// One gauge per (host, status) — 1 if active, 0 for all others.
+		for _, s := range allStatuses {
+			v := 0.0
+			if s == status {
+				v = 1.0
+			}
+			CertMonitorCertStatus.WithLabelValues(host, s).Set(v)
+		}
+
+		if _, ok := counts[status]; ok {
+			counts[status]++
+		}
+	}
+
+	for status, count := range counts {
+		CertMonitorTotal.WithLabelValues(status).Set(count)
 	}
 }
 

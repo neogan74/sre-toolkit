@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/analyzer"
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
@@ -100,5 +101,66 @@ func TestSetAlertAnalyzerMetrics(t *testing.T) {
 
 	if got := testutil.ToFloat64(AlertAnalyzerRecommendationTotal.WithLabelValues("review", "high")); got != 2 {
 		t.Fatalf("expected recommendation count 2, got %v", got)
+	}
+}
+
+func TestSetCertMonitorMetrics(t *testing.T) {
+	results := []*scanner.CertInfo{
+		{
+			Host:     "example.com",
+			Subject:  "example.com",
+			Issuer:   "Let's Encrypt",
+			DaysLeft: 45,
+			Status:   scanner.StatusOK,
+		},
+		{
+			Host:     "api.example.com",
+			Subject:  "api.example.com",
+			Issuer:   "Let's Encrypt",
+			DaysLeft: 20,
+			Status:   scanner.StatusWarning,
+		},
+		{
+			Host:     "old.example.com",
+			Subject:  "old.example.com",
+			Issuer:   "Self-Signed",
+			DaysLeft: -5,
+			Status:   scanner.StatusExpired,
+		},
+	}
+
+	SetCertMonitorMetrics(results, 2*time.Second)
+
+	// Days left per cert
+	if got := testutil.ToFloat64(CertMonitorDaysLeft.WithLabelValues("example.com", "example.com", "Let's Encrypt")); got != 45 {
+		t.Errorf("expected days_left 45 for example.com, got %v", got)
+	}
+	if got := testutil.ToFloat64(CertMonitorDaysLeft.WithLabelValues("old.example.com", "old.example.com", "Self-Signed")); got != -5 {
+		t.Errorf("expected days_left -5 for old.example.com, got %v", got)
+	}
+
+	// Status flags: OK cert should have status=OK → 1, status=WARNING → 0
+	if got := testutil.ToFloat64(CertMonitorCertStatus.WithLabelValues("example.com", "OK")); got != 1 {
+		t.Errorf("expected cert_status OK=1 for example.com, got %v", got)
+	}
+	if got := testutil.ToFloat64(CertMonitorCertStatus.WithLabelValues("example.com", "WARNING")); got != 0 {
+		t.Errorf("expected cert_status WARNING=0 for example.com, got %v", got)
+	}
+	if got := testutil.ToFloat64(CertMonitorCertStatus.WithLabelValues("old.example.com", "EXPIRED")); got != 1 {
+		t.Errorf("expected cert_status EXPIRED=1 for old.example.com, got %v", got)
+	}
+
+	// Totals by status
+	if got := testutil.ToFloat64(CertMonitorTotal.WithLabelValues("OK")); got != 1 {
+		t.Errorf("expected total OK=1, got %v", got)
+	}
+	if got := testutil.ToFloat64(CertMonitorTotal.WithLabelValues("WARNING")); got != 1 {
+		t.Errorf("expected total WARNING=1, got %v", got)
+	}
+	if got := testutil.ToFloat64(CertMonitorTotal.WithLabelValues("EXPIRED")); got != 1 {
+		t.Errorf("expected total EXPIRED=1, got %v", got)
+	}
+	if got := testutil.ToFloat64(CertMonitorTotal.WithLabelValues("CRITICAL")); got != 0 {
+		t.Errorf("expected total CRITICAL=0, got %v", got)
 	}
 }

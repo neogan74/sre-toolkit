@@ -13,6 +13,7 @@ import (
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 	"github.com/neogan/sre-toolkit/pkg/k8s"
 	"github.com/neogan/sre-toolkit/pkg/logging"
+	"github.com/neogan/sre-toolkit/pkg/metrics"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -32,9 +33,11 @@ tracks expiry dates, and sends alerts via webhooks.`,
 	rootCmd.PersistentFlags().String("log-level", "info", "Log level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().String("output", "table", "Output format (table, json)")
 	rootCmd.PersistentFlags().String("config", "", "Config file path")
+	rootCmd.PersistentFlags().String("metrics-addr", "", "Address to expose Prometheus metrics (e.g. :9101). Empty = disabled")
 
 	_ = viper.BindPFlag("log_level", rootCmd.PersistentFlags().Lookup("log-level"))
 	_ = viper.BindPFlag("output", rootCmd.PersistentFlags().Lookup("output"))
+	_ = viper.BindPFlag("metrics_addr", rootCmd.PersistentFlags().Lookup("metrics-addr"))
 
 	rootCmd.AddCommand(
 		newScanCmd(),
@@ -84,10 +87,22 @@ Examples:
 				Concurrency:        concurrency,
 			}
 
+			// Start metrics server if address is configured.
+			if addr := viper.GetString("metrics_addr"); addr != "" {
+				ms := metrics.NewServer(&metrics.Config{Enabled: true, Address: addr, Path: "/metrics"})
+				go func() { _ = ms.Start() }()
+				defer func() { _ = ms.Stop() }()
+				logger.Info().Str("addr", addr).Msg("Prometheus metrics available at /metrics")
+			}
+
 			ctx := cmd.Context()
 			logger.Info().Strs("hosts", args).Msg("Scanning certificates")
 
+			start := time.Now()
 			results := scanner.ScanURLs(ctx, args, cfg)
+			scanDuration := time.Since(start)
+
+			metrics.SetCertMonitorMetrics(results, scanDuration)
 
 			if err := rep.ReportURLScan(results); err != nil {
 				return err
@@ -271,6 +286,14 @@ Examples:
 				Concurrency:        concurrency,
 			}
 
+			// Start metrics server — essential for watch mode so Prometheus can scrape.
+			if addr := viper.GetString("metrics_addr"); addr != "" {
+				ms := metrics.NewServer(&metrics.Config{Enabled: true, Address: addr, Path: "/metrics"})
+				go func() { _ = ms.Start() }()
+				defer func() { _ = ms.Stop() }()
+				logger.Info().Str("addr", addr).Msg("Prometheus metrics available at /metrics")
+			}
+
 			logger.Info().
 				Strs("hosts", args).
 				Dur("interval", interval).
@@ -279,7 +302,9 @@ Examples:
 			ctx := cmd.Context()
 			runScan := func() {
 				rep := reporter.New(outputFmt, os.Stdout)
+				start := time.Now()
 				results := scanner.ScanURLs(ctx, args, cfg)
+				metrics.SetCertMonitorMetrics(results, time.Since(start))
 				_ = rep.ReportURLScan(results)
 				ok, warn, crit, expired, errs := countStatuses(results)
 				rep.PrintSummary(len(results), ok, warn, crit, expired, errs)

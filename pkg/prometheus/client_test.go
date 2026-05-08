@@ -317,8 +317,11 @@ func TestClient_Auth(t *testing.T) {
 		next:     &mockTransport{mock: &mockRT},
 	}
 
-	req, _ := http.NewRequest("GET", "http://example.com", nil)
-	_, err := authRT.RoundTrip(req)
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://example.com", nil)
+	resp, err := authRT.RoundTrip(req)
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
 
 	assert.NoError(t, err)
 	u, p, ok := captured.req.BasicAuth()
