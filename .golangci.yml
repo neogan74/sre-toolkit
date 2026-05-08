@@ -7,24 +7,24 @@ run:
 
 linters:
   enable:
-    - errcheck      # Check for unchecked errors
-    - govet         # Reports suspicious constructs
-    - ineffassign   # Detects ineffectual assignments
-    - staticcheck   # Advanced go vet
-    - unused        # Checks for unused code
-    - misspell      # Finds commonly misspelled words
-    - revive        # Replacement for golint
-    - unconvert     # Remove unnecessary type conversions
-    - unparam       # Reports unused function parameters
-    - gosec         # Security checks
-    - bodyclose     # Checks HTTP response body is closed
-    - noctx         # Finds sending HTTP requests without context
-    - errname       # Checks error naming conventions
-    - errorlint     # Find error wrapping issues
-    - gocritic      # Provides diagnostics for bugs, performance, style
-    - gocyclo       # Computes cyclomatic complexity
-    - dupl          # Code clone detection
-    - prealloc      # Find slice declarations that could potentially be preallocated
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+    - gosec
+    - bodyclose
+    - noctx
+    - errname
+    - errorlint
+    - gocritic
+    - gocyclo
+    - dupl
+    - prealloc
 
   settings:
     errcheck:
@@ -48,8 +48,8 @@ linters:
     govet:
       enable-all: true
       disable:
-        - fieldalignment  # Low priority memory optimization
-        - shadow          # Common pattern in Go, often false positives
+        - fieldalignment
+        - shadow
 
     gocyclo:
       min-complexity: 15
@@ -65,7 +65,7 @@ linters:
         - performance
         - style
       disabled-checks:
-        - rangeValCopy  # Often unavoidable with Kubernetes types
+        - rangeValCopy
 
     revive:
       rules:
@@ -81,11 +81,10 @@ linters:
 
     gosec:
       excludes:
-        - G104 # Audit errors not checked - covered by errcheck
+        - G104
 
   exclusions:
     rules:
-      # Exclude some linters from running on tests files
       - path: _test\.go
         linters:
           - gocyclo
@@ -94,37 +93,32 @@ linters:
           - gosec
           - gocritic
 
-      # Exclude weak cryptographic primitive warnings
       - text: "weak cryptographic primitive"
         linters:
           - gosec
 
-      # Exclude deferred calls from errcheck
       - source: "defer"
         linters:
           - errcheck
 
-issues:
-  exclude-dirs-use-default: false
-  exclude-rules:
-    - linters:
-        - typecheck
-      text: "undefined: yaml"
-    - linters:
-        - typecheck
-      text: "missing type in composite literal"
-    - linters:
-        - typecheck
-      text: "declared and not used"
-    - linters:
-        - typecheck
-      text: "undefined .*field or method"
-    - linters:
-        - typecheck
-      text: "could not import sync/atomic"
-    - linters:
-        - typecheck
-      text: "Called undefined"
-    - linters:
-        - typecheck
-      text: ".On undefined"
+      - text: "undefined: yaml"
+        linters:
+          - typecheck
+      - text: "missing type in composite literal"
+        linters:
+          - typecheck
+      - text: "declared and not used"
+        linters:
+          - typecheck
+      - text: "undefined .*field or method"
+        linters:
+          - typecheck
+      - text: "could not import sync/atomic"
+        linters:
+          - typecheck
+      - text: "Called undefined"
+        linters:
+          - typecheck
+      - text: ".On undefined"
+        linters:
+          - typecheck
