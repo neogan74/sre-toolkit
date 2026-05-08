@@ -94,6 +94,18 @@ func runLint(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
+		// Run Terraform Linter
+		if ext == ".tf" {
+			tfLinter := linter.NewTerraformLinter()
+			result, err := tfLinter.Lint(context.Background(), filePath)
+			if err != nil {
+				logger.Error().Err(err).Str("file", filePath).Msg("Failed to lint Terraform file")
+				return nil
+			}
+			processResult(result, &passedFiles, &failedFiles, &totalIssues)
+			return nil
+		}
+
 		return nil
 	})
 
