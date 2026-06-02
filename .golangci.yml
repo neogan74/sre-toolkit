@@ -7,7 +7,7 @@ run:
 
 linters:
   enable:
-    - errcheck      # Check for unchecked errors
+    - errcheck      # Check for unchecked errors 
     - govet         # Reports suspicious constructs
     - ineffassign   # Detects ineffectual assignments
     - staticcheck   # Advanced go vet
