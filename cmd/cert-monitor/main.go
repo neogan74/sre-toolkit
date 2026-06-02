@@ -285,8 +285,9 @@ func newWatchCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "watch [host...]",
-		Short: "Continuously monitor TLS certificates",
+		Use:          "watch [host...]",
+		Short:        "Continuously monitor TLS certificates",
+		SilenceUsage: true,
 		Long: `Runs certificate scans on a configurable interval and sends
 webhook alerts when issues are detected.
 
