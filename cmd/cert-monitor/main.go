@@ -80,8 +80,9 @@ func newScanCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "scan [host...]",
-		Short: "Scan TLS certificates for one or more hosts",
+		Use:          "scan [host...]",
+		Short:        "Scan TLS certificates for one or more hosts",
+		SilenceUsage: true,
 		Long: `Connects to each host via TLS and retrieves certificate information.
 Accepts hostnames, host:port pairs, or full https:// URLs.
 
@@ -169,8 +170,9 @@ func newK8sCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "k8s",
-		Short: "Scan TLS certificates in Kubernetes secrets",
+		Use:          "k8s",
+		Short:        "Scan TLS certificates in Kubernetes secrets",
+		SilenceUsage: true,
 		Long: `Lists all Kubernetes secrets of type kubernetes.io/tls and checks
 their certificates for expiry.
 
@@ -283,8 +285,9 @@ func newWatchCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "watch [host...]",
-		Short: "Continuously monitor TLS certificates",
+		Use:          "watch [host...]",
+		Short:        "Continuously monitor TLS certificates",
+		SilenceUsage: true,
 		Long: `Runs certificate scans on a configurable interval and sends
 webhook alerts when issues are detected.
 

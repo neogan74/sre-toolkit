@@ -140,9 +140,40 @@ config-linter lint --path . --min-severity High
 config-linter lint --path . --output json
 ```
 
-### 🔒 cert-monitor - Certificate Monitoring (🚧 Coming Soon)
+### 🔒 cert-monitor - Certificate Monitoring (✅ Available)
 
-Proactive SSL/TLS certificate monitoring and alerting.
+Proactive SSL/TLS certificate expiry monitoring with Kubernetes integration and webhook alerting.
+
+**Features:**
+- TLS certificate scanning for hosts, host:port pairs, and HTTPS URLs
+- Configurable warning/critical thresholds (days before expiry)
+- Kubernetes TLS secret scanning (`kubernetes.io/tls`) across namespaces
+- Continuous `watch` mode with configurable scan interval
+- Webhook alerting on warning/critical/expired certificates
+- Prometheus metrics for Grafana dashboards
+- Multiple output formats (table, JSON)
+- Concurrent scanning for large host lists
+
+**Quick Start:**
+```bash
+# Scan a single host
+cert-monitor scan github.com
+
+# Scan multiple hosts with custom thresholds
+cert-monitor scan github.com api.example.com --warn-days 60 --crit-days 14
+
+# JSON output for tooling integration
+cert-monitor --output json scan github.com
+
+# Scan Kubernetes TLS secrets in a namespace
+cert-monitor k8s --namespace production
+
+# Continuous monitoring every hour with Prometheus metrics
+cert-monitor watch --interval 1h --metrics-addr :9101 github.com api.example.com
+
+# CI: exit non-zero if any cert is critical/expired
+cert-monitor scan github.com api.example.com
+```
 
 ### 📝 log-parser - Intelligent Log Analyzer (🚧 Coming Soon)
 
