@@ -170,8 +170,9 @@ func newK8sCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "k8s",
-		Short: "Scan TLS certificates in Kubernetes secrets",
+		Use:          "k8s",
+		Short:        "Scan TLS certificates in Kubernetes secrets",
+		SilenceUsage: true,
 		Long: `Lists all Kubernetes secrets of type kubernetes.io/tls and checks
 their certificates for expiry.
 
