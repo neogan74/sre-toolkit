@@ -10,20 +10,30 @@ import (
 
 	"github.com/neogan/sre-toolkit/internal/config-linter/linter"
 	"github.com/neogan/sre-toolkit/pkg/logging"
-	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
 
+// severityRank maps severity strings to a numeric rank for comparison.
+var severityRank = map[string]int{
+	"Low":      1,
+	"Medium":   2,
+	"High":     3,
+	"Critical": 4,
+	"Error":    3,
+}
+
 func newLintCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "lint",
-		Short: "Lint configuration files",
-		Long:  `Scan directories or files for configuration issues in Kubernetes YAMLs, etc.`,
-		RunE:  runLint,
+		Use:          "lint",
+		Short:        "Lint configuration files",
+		Long:         `Scan directories or files for configuration issues in Kubernetes YAML, Helm charts, Dockerfiles, and Terraform.`,
+		RunE:         runLint,
+		SilenceUsage: true,
 	}
 
 	cmd.Flags().StringP("path", "p", ".", "Path to directory or file to lint")
 	cmd.Flags().StringP("output", "o", "table", "Output format (table, json)")
+	cmd.Flags().StringP("min-severity", "s", "Low", "Minimum severity to report (Low, Medium, High, Critical)")
 	return cmd
 }
 
@@ -44,6 +54,14 @@ func runLint(cmd *cobra.Command, args []string) error {
 	outputFormat, outErr := cmd.Flags().GetString("output")
 	if outErr != nil {
 		return fmt.Errorf("failed to get output flag: %w", outErr)
+	}
+	minSeverity, msErr := cmd.Flags().GetString("min-severity")
+	if msErr != nil {
+		return fmt.Errorf("failed to get min-severity flag: %w", msErr)
+	}
+	minRank, ok := severityRank[minSeverity]
+	if !ok {
+		return fmt.Errorf("invalid --min-severity %q: must be Low, Medium, High, or Critical", minSeverity)
 	}
 	logger := logging.GetLogger()
 
@@ -119,13 +137,21 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error walking path: %w", walkErr)
 	}
 
+	// Filter issues by min severity
+	var filteredIssues []linter.Issue
+	for _, issue := range totalIssues {
+		if severityRank[issue.Severity] >= minRank {
+			filteredIssues = append(filteredIssues, issue)
+		}
+	}
+
 	// Build report
 	report := LintReport{
 		Path:        path,
 		FilesPassed: passedFiles,
 		FilesFailed: failedFiles,
-		TotalIssues: len(totalIssues),
-		Issues:      totalIssues,
+		TotalIssues: len(filteredIssues),
+		Issues:      filteredIssues,
 	}
 
 	// Output based on format
@@ -136,30 +162,33 @@ func runLint(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Println(string(output))
 	} else {
-		// Table output
 		fmt.Println("\n--- Lint Report ---")
-		fmt.Printf("Scanned Path: %s\n", path)
-		fmt.Printf("Files Passed: %d\n", passedFiles)
-		fmt.Printf("Files Failed: %d\n", failedFiles)
-		fmt.Printf("Total Issues: %d\n\n", len(totalIssues))
+		fmt.Printf("Scanned Path:  %s\n", path)
+		fmt.Printf("Files Passed:  %d\n", passedFiles)
+		fmt.Printf("Files Failed:  %d\n", failedFiles)
+		fmt.Printf("Total Issues:  %d", len(totalIssues))
+		if minSeverity != "Low" {
+			fmt.Printf(" (showing %s+ only: %d)", minSeverity, len(filteredIssues))
+		}
+		fmt.Println()
 
-		if len(totalIssues) > 0 {
-			fmt.Printf("%-10s | %-30s | %s\n", "SEVERITY", "FILE", "MESSAGE")
-			fmt.Println("--------------------------------------------------------------------------------")
-			for _, issue := range totalIssues {
-				// Truncate file path if too long
+		if len(filteredIssues) > 0 {
+			fmt.Println()
+			fmt.Printf("%-10s | %-35s | %s\n", "SEVERITY", "FILE", "MESSAGE")
+			fmt.Println(strings.Repeat("-", 90))
+			for _, issue := range filteredIssues {
 				shortFile := issue.File
-				if len(shortFile) > 30 {
-					shortFile = "..." + shortFile[len(shortFile)-27:]
+				if len(shortFile) > 35 {
+					shortFile = "..." + shortFile[len(shortFile)-32:]
 				}
-				fmt.Printf("%-10s | %-30s | %s\n", issue.Severity, shortFile, issue.Message)
+				fmt.Printf("%-10s | %-35s | %s\n", issue.Severity, shortFile, issue.Message)
 			}
-			fmt.Println("")
+			fmt.Println()
 		}
 	}
 
-	if len(totalIssues) > 0 {
-		return fmt.Errorf("linting failed with %d issues", len(totalIssues))
+	if len(filteredIssues) > 0 {
+		return fmt.Errorf("linting failed with %d issues", len(filteredIssues))
 	}
 
 	logger.Info().Msg("Linting completed successfully")
@@ -178,14 +207,3 @@ func processResult(result *linter.Result, passed *int, failed *int, issues *[]li
 	}
 }
 
-// Map zerolog level to string if needed, but we use string in Issue struct.
-func severityToLevel(severity string) zerolog.Level {
-	switch severity {
-	case "High", "Critical":
-		return zerolog.ErrorLevel
-	case "Medium", "Warning":
-		return zerolog.WarnLevel
-	default:
-		return zerolog.InfoLevel
-	}
-}

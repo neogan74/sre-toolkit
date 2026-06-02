@@ -1,4 +1,4 @@
-.PHONY: help build chaos-load db-toolkit test lint fmt vet clean run install deps tidy release snapshot
+.PHONY: help build chaos-load config-linter db-toolkit test lint fmt vet clean run install deps tidy release snapshot
 
 # Variables
 BINARY_NAME=k8s-doctor
@@ -56,6 +56,12 @@ db-toolkit: ## Build the db-toolkit binary
 	@mkdir -p $(BUILD_DIR)
 	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/db-toolkit ./cmd/db-toolkit
 	@echo "$(GREEN)Build complete: $(BUILD_DIR)/db-toolkit$(NC)"
+
+config-linter: ## Build the config-linter binary
+	@echo "$(CYAN)Building config-linter...$(NC)"
+	@mkdir -p $(BUILD_DIR)
+	$(GO) build $(GOFLAGS) -ldflags="$(LDFLAGS)" -o $(BUILD_DIR)/config-linter ./cmd/config-linter
+	@echo "$(GREEN)Build complete: $(BUILD_DIR)/config-linter$(NC)"
 
 build-all: ## Build all tools
 	@echo "$(CYAN)Building all tools...$(NC)"

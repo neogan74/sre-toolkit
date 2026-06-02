@@ -113,9 +113,32 @@ chaos-load http --url https://example.com --duration 30s --concurrency 20
 chaos-load http --url https://api.example.com --bearer-token "$API_TOKEN" --duration 30s --concurrency 20
 ```
 
-### ✅ config-linter - Configuration Validator (🚧 Coming Soon)
+### ✅ config-linter - Configuration Validator (✅ Available)
 
-Multi-format configuration linter with security checks.
+Multi-format configuration linter with security checks for Kubernetes YAML, Helm charts, Dockerfiles, and Terraform.
+
+**Features:**
+- Kubernetes YAML security audit (privileged containers, missing resource limits, probe checks)
+- Dockerfile best practices (pinned tags, non-root USER, no sudo, COPY vs ADD)
+- Terraform security checks (open ingress, hardcoded credentials, encryption, local backend)
+- Helm chart validation (semver, maintainers, template syntax, plaintext secrets in values)
+- Multiple output formats (table, JSON)
+- Severity filtering (`--min-severity High` for CI gates)
+
+**Quick Start:**
+```bash
+# Lint current directory (all supported formats)
+config-linter lint
+
+# Lint a specific path
+config-linter lint --path ./k8s/
+
+# CI: fail only on High+ issues
+config-linter lint --path . --min-severity High
+
+# JSON output for tooling integration
+config-linter lint --path . --output json
+```
 
 ### 🔒 cert-monitor - Certificate Monitoring (🚧 Coming Soon)
 
