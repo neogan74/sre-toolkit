@@ -138,7 +138,7 @@ func TestServer_ZeroErrorRate(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	resp, err := ts.Client().Get(ts.URL)
+	resp, err := ts.Client().Get(ts.URL) //nolint:noctx // context not needed in test helper
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	resp.Body.Close()
@@ -214,7 +214,7 @@ func TestServerConfigValidate_Valid(t *testing.T) {
 
 func TestServer_Run_StartsAndShutdown(t *testing.T) {
 	// Find a free port
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", "127.0.0.1:0") //nolint:noctx // ListenConfig not needed for test server
 	assert.NoError(t, err)
 	port := ln.Addr().(*net.TCPAddr).Port
 	ln.Close()

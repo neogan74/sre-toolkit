@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 
 func createCluster() error {
 	fmt.Printf("Creating Kind cluster %s...\n", clusterName)
-	cmd := exec.Command("kind", "create", "cluster", "--name", clusterName, "--kubeconfig", kubeconfigPath)
+	cmd := exec.Command("kind", "create", "cluster", "--name", clusterName, "--kubeconfig", kubeconfigPath) //nolint:noctx // exec.Command used in integration test setup
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to create kind cluster: %w, output: %s", err, output)
@@ -61,7 +61,7 @@ func createCluster() error {
 	fmt.Println("Waiting for nodes to be ready...")
 	// We need to retry waiting because API server might not be immediately available after create returns
 	for i := 0; i < connRetry; i++ {
-		cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=2m")
+		cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=2m") //nolint:noctx // exec.Command used in integration test setup
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			fmt.Println("Nodes are ready!")
@@ -76,7 +76,7 @@ func createCluster() error {
 
 	// Wait for pods to be ready (kube-system)
 	fmt.Println("Waiting for kube-system pods to be ready...")
-	cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "pods", "--all", "-n", "kube-system", "--timeout=2m")
+	cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "pods", "--all", "-n", "kube-system", "--timeout=2m") //nolint:noctx // exec.Command used in integration test setup
 	// We don't error here strictly because some pods might be tricky (like coredns needing network)
 	// but mostly if nodes are ready, CNI is ready.
 	if output, err := cmd.CombinedOutput(); err != nil {

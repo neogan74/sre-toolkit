@@ -43,7 +43,7 @@ type analysisResult struct {
 	history         *collector.AlertHistory
 }
 
-func performAnalysis(opts analysisOptions, logger zerolog.Logger) (*analysisResult, error) {
+func performAnalysis(opts analysisOptions, logger zerolog.Logger) (*analysisResult, error) { //nolint:gocyclo // complex analysis function with many code paths
 	if len(opts.prometheusURLs) == 0 {
 		return nil, fmt.Errorf("at least one prometheus-url is required")
 	}

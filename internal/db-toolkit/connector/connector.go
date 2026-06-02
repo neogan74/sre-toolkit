@@ -2,6 +2,7 @@
 package connector
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -62,7 +63,7 @@ func Connect(cfg *Config) (*sql.DB, error) {
 	db.SetMaxIdleConns(cfg.MaxIdleConns)
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 
-	if err := db.Ping(); err != nil {
+	if err := db.PingContext(context.Background()); err != nil {
 		if closeErr := db.Close(); closeErr != nil {
 			// Log but don't override the original error
 			logger := logging.GetLogger()
