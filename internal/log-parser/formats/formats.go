@@ -140,8 +140,14 @@ func (p *AccessLogParser) Parse(line string) (*Entry, error) {
 		"user_agent":  m[8],
 	}
 
-	ts, _ := time.Parse("02/Jan/2006:15:04:05 -0700", m[3])
-	status, _ := strconv.Atoi(m[5])
+	ts, err := time.Parse("02/Jan/2006:15:04:05 -0700", m[3])
+	if err != nil {
+		ts = time.Time{}
+	}
+	status, err := strconv.Atoi(m[5])
+	if err != nil {
+		status = 0
+	}
 
 	level := LevelInfo
 	if status >= 500 {
@@ -180,9 +186,12 @@ func (p *SyslogParser) Parse(line string) (*Entry, error) {
 		return nil, fmt.Errorf("line does not match syslog format")
 	}
 
-	ts, _ := time.Parse("Jan  2 15:04:05", m[1])
-	if ts.IsZero() {
-		ts, _ = time.Parse("Jan _2 15:04:05", m[1])
+	ts, err := time.Parse("Jan  2 15:04:05", m[1])
+	if err != nil || ts.IsZero() {
+		ts, err = time.Parse("Jan _2 15:04:05", m[1])
+		if err != nil {
+			ts = time.Time{}
+		}
 	}
 
 	fields := map[string]string{

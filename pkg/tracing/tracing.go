@@ -60,7 +60,7 @@ func newExporter(config Config) (sdktrace.SpanExporter, error) {
 }
 
 func newResource(serviceName, version string) *resource.Resource {
-	r, _ := resource.Merge(
+	r, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
@@ -68,5 +68,8 @@ func newResource(serviceName, version string) *resource.Resource {
 			semconv.ServiceVersion(version),
 		),
 	)
+	if err != nil {
+		return resource.Default()
+	}
 	return r
 }

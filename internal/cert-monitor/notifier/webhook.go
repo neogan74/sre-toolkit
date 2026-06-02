@@ -61,7 +61,7 @@ func NewWebhookNotifier(url string, timeout time.Duration) *WebhookNotifier {
 // Notify sends certificate alerts for any non-OK results.
 // Returns nil if there are no alerts to send.
 func (n *WebhookNotifier) Notify(ctx context.Context, results []*scanner.CertInfo) error {
-	var alerts []CertAlert
+	alerts := make([]CertAlert, 0, len(results))
 	summary := AlertSummary{}
 
 	for _, info := range results {

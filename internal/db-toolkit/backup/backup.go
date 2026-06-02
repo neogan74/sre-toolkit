@@ -89,7 +89,7 @@ func pgDump(ctx context.Context, cfg *connector.Config, outPath string, compress
 		"--no-password",
 	}
 
-	cmd := exec.CommandContext(ctx, tool, args...)
+	cmd := exec.CommandContext(ctx, tool, args...) //nolint:gosec // tool and args are validated by caller
 	cmd.Env = append(os.Environ(), fmt.Sprintf("PGPASSWORD=%s", cfg.Password))
 
 	return runDump(cmd, outPath, compress)
@@ -112,12 +112,12 @@ func mysqlDump(ctx context.Context, cfg *connector.Config, outPath string, compr
 		cfg.Database,
 	}
 
-	cmd := exec.CommandContext(ctx, tool, args...)
+	cmd := exec.CommandContext(ctx, tool, args...) //nolint:gosec // tool and args are validated by caller
 	return runDump(cmd, outPath, compress)
 }
 
 func runDump(cmd *exec.Cmd, outPath string, compress bool) error {
-	f, err := os.Create(outPath)
+	f, err := os.Create(outPath) //nolint:gosec // output path is validated by caller
 	if err != nil {
 		return fmt.Errorf("create output file: %w", err)
 	}

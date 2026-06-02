@@ -180,7 +180,7 @@ Examples:
 				if lineNum {
 					lineStr = fmt.Sprintf("L%-5d ", entry.LineNum)
 				}
-				fmt.Fprintf(os.Stdout, "%s%s[%s] %s\n", lineStr, ts, levelColor(entry.Level), entry.Message)
+				fmt.Fprintf(os.Stdout, "%s%s[%s] %s\n", lineStr, ts, levelColor(entry.Level), entry.Message) //nolint:gosec // writing to stdout, not an HTTP context
 			}
 
 			fmt.Fprintf(os.Stderr, "\n%d/%d lines matched\n", matched, total)
@@ -260,7 +260,7 @@ Examples:
 				if !e.Timestamp.IsZero() {
 					ts = e.Timestamp.Format("2006-01-02 15:04:05") + " "
 				}
-				fmt.Fprintf(os.Stdout, "L%-5d %s[%s] %s\n", e.LineNum, ts, levelColor(e.Level), e.Message)
+				fmt.Fprintf(os.Stdout, "L%-5d %s[%s] %s\n", e.LineNum, ts, levelColor(e.Level), e.Message) //nolint:gosec // writing to stdout, not an HTTP context
 			}
 
 			return sc.Err()
@@ -290,7 +290,7 @@ func openInput(files []string) (io.Reader, func(), error) {
 		return os.Stdin, func() {}, nil
 	}
 	if len(files) == 1 {
-		f, err := os.Open(files[0])
+		f, err := os.Open(files[0]) //nolint:gosec // file path is provided by user via CLI argument
 		if err != nil {
 			return nil, func() {}, err
 		}

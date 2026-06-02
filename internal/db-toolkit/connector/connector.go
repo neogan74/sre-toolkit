@@ -25,7 +25,7 @@ type Config struct {
 	Host     string
 	Port     int
 	User     string
-	Password string
+	Password string //nolint:gosec // Password is a configuration field for DB connection
 	Database string
 	SSLMode  string // postgres only: disable, require, verify-full
 

@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -53,7 +54,7 @@ func createCluster() error {
 	cmd := exec.Command("kind", "create", "cluster", "--name", clusterName, "--kubeconfig", kubeconfigPath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to create kind cluster: %v, output: %s", err, output)
+		return fmt.Errorf("failed to create kind cluster: %w, output: %s", err, output)
 	}
 
 	// Wait for nodes to be ready
@@ -68,7 +69,7 @@ func createCluster() error {
 		}
 		if i == connRetry-1 {
 			fmt.Printf("kubectl wait output: %s\n", output)
-			return fmt.Errorf("timeout waiting for nodes to be ready: %v", err)
+			return fmt.Errorf("timeout waiting for nodes to be ready: %w", err)
 		}
 		time.Sleep(connWait)
 	}
@@ -155,7 +156,8 @@ func TestDiagnosticsWithFailure(t *testing.T) {
 	// We expect err != nil if there are critical issues, as k8s-doctor exits with 1.
 	// We only fail the test if there was a problem running the command itself.
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
 			t.Fatalf("Diagnostics command failed to execute: %v\nOutput: %s", err, output)
 		}
 	}
@@ -185,7 +187,8 @@ func TestAudit(t *testing.T) {
 	output, err := cmd.CombinedOutput()
 	// Audit might return 1 if there are warnings (like missing network policies in default)
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
 			t.Fatalf("Audit command failed to execute: %v\nOutput: %s", err, output)
 		}
 	}

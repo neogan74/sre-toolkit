@@ -61,7 +61,7 @@ type CertRow struct {
 	Status    string `json:"status"`
 	Error     string `json:"error,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
-	Secret    string `json:"secret,omitempty"`
+	Secret    string `json:"secret,omitempty"` //nolint:gosec // field name is part of certificate report schema, not a credential
 }
 
 func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {

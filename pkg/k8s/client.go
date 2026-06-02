@@ -65,7 +65,7 @@ func buildConfig(cfg *Config) (*rest.Config, error) {
 	}
 
 	// Check if kubeconfig exists
-	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) {
+	if _, err := os.Stat(kubeconfig); os.IsNotExist(err) { //nolint:gosec // kubeconfig path comes from environment/user configuration
 		return nil, fmt.Errorf("kubeconfig not found at %s", kubeconfig)
 	}
 

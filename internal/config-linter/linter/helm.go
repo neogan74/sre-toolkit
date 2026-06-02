@@ -314,10 +314,7 @@ func (l *HelmLinter) validateValues(result *Result, valuesPath string, content [
 	}
 
 	// Check for duplicate keys at top level
-	if len(values) > 0 {
-		// yaml.v3 doesn't have built-in duplicate key detection, so we warn about potential issues
-		// In production, consider using a YAML parser that reports duplicates
-	}
+	// yaml.v3 doesn't have built-in duplicate key detection; a dedicated YAML parser would be needed for this.
 }
 
 // validateTemplates checks Go template syntax and common issues
@@ -375,7 +372,7 @@ func (l *HelmLinter) validateGoTemplateSyntax(templatePath, content string) erro
 	if err != nil {
 		// Try to provide a more helpful error message
 		if strings.Contains(err.Error(), "unexpected") || strings.Contains(err.Error(), "unclosed") {
-			return fmt.Errorf("syntax error: %v", err)
+			return fmt.Errorf("syntax error: %w", err)
 		}
 		return err
 	}
@@ -401,14 +398,7 @@ func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, conten
 		})
 	}
 
-	// Check for deprecated template functions
-	deprecatedFuncs := []string{"include", "required"}
-	for _, funcName := range deprecatedFuncs {
-		if strings.Contains(content, funcName) {
-			// Note: These are actually commonly used in Helm, not deprecated
-			// This is just an example of what we could check
-		}
-	}
+	// Note: "include" and "required" are commonly used Helm functions, not actually deprecated.
 
 	// Check for potential XSS vulnerabilities in templates
 	if strings.Contains(content, " | nindent ") && strings.Contains(content, "HTML") {
@@ -448,10 +438,7 @@ func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, conten
 			if strings.HasPrefix(strings.TrimSpace(line), "{{") && !strings.Contains(line, ":") {
 				continue // It's probably fine
 			}
-			// Check for common indentation issues
-			if strings.Contains(line, "{{") && !strings.Contains(line, "  {{") {
-				// Might need proper indentation
-			}
+			// Check for common indentation issues: lines with "{{" but no leading spaces may need indentation.
 		}
 
 		// Check for trailing whitespace

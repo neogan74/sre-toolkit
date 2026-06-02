@@ -25,7 +25,6 @@ var (
 	reOpenCIDRv4       = regexp.MustCompile(`"0\.0\.0\.0/0"`)
 	reOpenCIDRv6       = regexp.MustCompile(`"::/0"`)
 	rePublicACL        = regexp.MustCompile(`(?i)acl\s*=\s*"(public-read|public-read-write|authenticated-read)"`)
-	reProviderSource   = regexp.MustCompile(`^\s*source\s*=\s*"`)
 	reProviderVersion  = regexp.MustCompile(`^\s*version\s*=`)
 	reBackendLocal     = regexp.MustCompile(`^\s*backend\s+"local"`)
 	reEncryptedFalse   = regexp.MustCompile(`(?i)\bencrypted\s*=\s*false`)

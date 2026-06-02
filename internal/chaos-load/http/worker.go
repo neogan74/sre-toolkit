@@ -18,7 +18,7 @@ type PoolConfig struct {
 	TargetURL     string
 	Method        string
 	Body          string
-	BearerToken   string
+	BearerToken   string //nolint:gosec // BearerToken is a configuration field for HTTP load testing, not a hardcoded credential
 	BasicUsername string
 	BasicPassword string
 	Concurrency   int
@@ -135,7 +135,7 @@ func (p *Pool) worker(ctx context.Context, _ /* id */ int, requests <-chan struc
 		req, err := p.newRequest(ctx)
 		var resp *http.Response
 		if err == nil {
-			resp, err = p.client.Do(req)
+			resp, err = p.client.Do(req) //nolint:gosec // SSRF is acceptable in chaos load testing tool
 		}
 		duration := time.Since(start)
 

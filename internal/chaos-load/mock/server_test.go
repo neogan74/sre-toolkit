@@ -46,7 +46,7 @@ func TestServer_LatencyWithJitter(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		start := time.Now()
-		resp, err := client.Get(ts.URL)
+		resp, err := client.Get(ts.URL) //nolint:noctx // context not needed in test helper
 		assert.NoError(t, err)
 		duration := time.Since(start)
 		resp.Body.Close()
@@ -80,7 +80,7 @@ func TestServer_ErrorRate(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	resp, err := ts.Client().Get(ts.URL)
+	resp, err := ts.Client().Get(ts.URL) //nolint:noctx // context not needed in test helper
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	resp.Body.Close()

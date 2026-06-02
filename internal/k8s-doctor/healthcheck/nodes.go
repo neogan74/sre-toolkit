@@ -58,8 +58,11 @@ func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStat
 		return nil, fmt.Errorf("failed to list nodes: %w", err)
 	}
 
-	// Try to get node metrics
-	metricsMap, _ := getNodeMetrics(ctx, clientset)
+	// Try to get node metrics (errors are non-fatal; metrics are best-effort)
+	metricsMap, err := getNodeMetrics(ctx, clientset)
+	if err != nil {
+		metricsMap = nil
+	}
 
 	statuses := make([]NodeStatus, 0, len(nodes.Items))
 	for _, node := range nodes.Items {

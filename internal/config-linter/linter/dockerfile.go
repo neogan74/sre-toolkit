@@ -27,7 +27,7 @@ func (l *DockerfileLinter) Lint(ctx context.Context, path string) (*Result, erro
 		return nil, nil
 	}
 
-	file, err := os.Open(path)
+	file, err := os.Open(path) //nolint:gosec // path is provided by user invocation of the linter
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}

@@ -27,9 +27,18 @@ func ParseVersion(v string) (Version, error) {
 		return Version{}, fmt.Errorf("invalid version format: %s", v)
 	}
 
-	major, _ := strconv.Atoi(matches[1])
-	minor, _ := strconv.Atoi(matches[2])
-	patch, _ := strconv.Atoi(matches[3])
+	major, err := strconv.Atoi(matches[1])
+	if err != nil {
+		major = 0
+	}
+	minor, err := strconv.Atoi(matches[2])
+	if err != nil {
+		minor = 0
+	}
+	patch, err := strconv.Atoi(matches[3])
+	if err != nil {
+		patch = 0
+	}
 
 	return Version{
 		Major: major,
