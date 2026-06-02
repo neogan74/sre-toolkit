@@ -1,4 +1,4 @@
-.PHONY: help build chaos-load config-linter db-toolkit test lint fmt vet clean run install deps tidy release snapshot
+.PHONY: help build chaos-load cert-monitor config-linter db-toolkit test lint fmt vet clean run install deps tidy release snapshot
 
 # Variables
 BINARY_NAME=k8s-doctor

@@ -108,8 +108,11 @@ func (r *Reporter) writeJSON(v interface{}) error {
 	return enc.Encode(v)
 }
 
-// PrintSummary writes a summary line to the output.
+// PrintSummary writes a summary line to the output. No-op for JSON format.
 func (r *Reporter) PrintSummary(total, ok, warn, critical, expired, errors int) {
+	if r.format == FormatJSON {
+		return
+	}
 	fmt.Fprintf(r.out, "\nSummary: %d checked | OK: %d | Warning: %d | Critical: %d | Expired: %d | Error: %d\n",
 		total, ok, warn, critical, expired, errors)
 }

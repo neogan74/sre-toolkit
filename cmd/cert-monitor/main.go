@@ -80,8 +80,9 @@ func newScanCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "scan [host...]",
-		Short: "Scan TLS certificates for one or more hosts",
+		Use:          "scan [host...]",
+		Short:        "Scan TLS certificates for one or more hosts",
+		SilenceUsage: true,
 		Long: `Connects to each host via TLS and retrieves certificate information.
 Accepts hostnames, host:port pairs, or full https:// URLs.
 
