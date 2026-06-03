@@ -104,7 +104,7 @@ func getNodeMetrics(ctx context.Context, client kubernetes.Interface) (map[strin
 }
 
 // analyzeNode analyzes a single node and returns its status
-func analyzeNode(node *corev1.Node, apiServerVersion string, usage corev1.ResourceList) NodeStatus {
+func analyzeNode(node *corev1.Node, apiServerVersion string, usage corev1.ResourceList) NodeStatus { //nolint:gocyclo // complex node analyzer with many condition and version check branches
 	status := NodeStatus{
 		Name:        node.Name,
 		Status:      "Unknown",

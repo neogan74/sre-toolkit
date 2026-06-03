@@ -48,7 +48,7 @@ type Dependency struct {
 // ValuesData represents the structure of values.yaml
 type ValuesData map[string]interface{}
 
-func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) {
+func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) { //nolint:gocyclo // complex helm linter with many validation branches
 	result := &Result{Passed: true}
 
 	// Only process Chart.yaml files
@@ -388,7 +388,7 @@ func (l *HelmLinter) validateGoTemplateSyntax(templatePath, content string) erro
 }
 
 // validateTemplateIssues checks for common template issues
-func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, content string) {
+func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, content string) { //nolint:gocyclo // complex template validator with many pattern checks
 	// Check for potentially unsafe default values (nil)
 	if strings.Contains(content, "default .Values") {
 		result.Issues = append(result.Issues, Issue{

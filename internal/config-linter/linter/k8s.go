@@ -70,7 +70,7 @@ func (l *KubernetesLinter) Lint(ctx context.Context, path string) (*Result, erro
 	return result, nil
 }
 
-func (l *KubernetesLinter) checkPodSpec(result *Result, spec *corev1.PodSpec, path, kind, name string) {
+func (l *KubernetesLinter) checkPodSpec(result *Result, spec *corev1.PodSpec, path, kind, name string) { //nolint:gocyclo // complex pod spec checker with many security condition branches
 	// Security Checks
 	if spec.HostNetwork {
 		result.Issues = append(result.Issues, Issue{

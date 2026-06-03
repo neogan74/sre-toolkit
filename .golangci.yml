@@ -66,6 +66,7 @@ linters:
         - style
       disabled-checks:
         - rangeValCopy  # Often unavoidable with Kubernetes types
+        - hugeParam     # Large structs are common in Kubernetes/operator code
 
     revive:
       rules:
@@ -125,3 +126,9 @@ linters:
       - linters:
           - typecheck
         text: ".On undefined"
+
+      # Exclude revive var-naming false positives for test packages sharing stdlib names
+      - path: "_test\\.go"
+        linters:
+          - revive
+        text: "avoid package names that conflict"

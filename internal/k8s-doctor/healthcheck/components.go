@@ -62,7 +62,7 @@ func CheckComponents(ctx context.Context, clientset kubernetes.Interface) ([]Com
 }
 
 // checkComponentPods checks component health via system pods
-func checkComponentPods(ctx context.Context, clientset kubernetes.Interface, apiServerVersion string) ([]ComponentStatus, error) {
+func checkComponentPods(ctx context.Context, clientset kubernetes.Interface, apiServerVersion string) ([]ComponentStatus, error) { //nolint:gocyclo // complex component checker with many pod condition branches
 	// Check kube-system namespace for control plane components
 	pods, err := clientset.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{})
 	if err != nil {

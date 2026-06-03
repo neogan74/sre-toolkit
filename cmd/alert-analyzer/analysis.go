@@ -127,7 +127,7 @@ func performAnalysis(opts analysisOptions, logger zerolog.Logger) (*analysisResu
 		}
 	}
 
-	if aggregatedHistory == nil || (aggregatedHistory.CountAlerts() == 0 && !(opts.showRecommendations && len(allRules) > 0)) {
+	if aggregatedHistory == nil || (aggregatedHistory.CountAlerts() == 0 && (!opts.showRecommendations || len(allRules) == 0)) {
 		return nil, fmt.Errorf("failed to collect alert data from any of the provided Prometheus sources")
 	}
 

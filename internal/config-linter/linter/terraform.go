@@ -60,7 +60,7 @@ type blockContext struct {
 	hasOpenCIDR bool
 }
 
-func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) {
+func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) { //nolint:gocyclo // complex terraform linter with many rule branches
 	result := &Result{Passed: true}
 
 	file, err := os.Open(path)

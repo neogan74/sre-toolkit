@@ -150,7 +150,7 @@ func RunAudit(ctx context.Context, clientset kubernetes.Interface, namespace str
 	return result, nil
 }
 
-func calculateSummary(result *Result) Summary {
+func calculateSummary(result *Result) Summary { //nolint:gocyclo // complex summary calculator with many issue type branches
 	summary := Summary{}
 
 	for _, issue := range result.ResourceIssues {
@@ -253,7 +253,7 @@ func auditResourceQuotas(ctx context.Context, clientset kubernetes.Interface, na
 	return issues, nil
 }
 
-func auditRBAC(ctx context.Context, clientset kubernetes.Interface, namespace string) ([]RBACIssue, error) {
+func auditRBAC(ctx context.Context, clientset kubernetes.Interface, namespace string) ([]RBACIssue, error) { //nolint:gocyclo // complex RBAC auditor with many permission check branches
 	issues := []RBACIssue{}
 
 	if namespace == "" {

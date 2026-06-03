@@ -46,7 +46,7 @@ type LintReport struct {
 	Issues      []linter.Issue `json:"issues,omitempty"`
 }
 
-func runLint(cmd *cobra.Command, args []string) error {
+func runLint(cmd *cobra.Command, args []string) error { //nolint:gocyclo // complex lint runner with many file type branches
 	path, err := cmd.Flags().GetString("path")
 	if err != nil {
 		return fmt.Errorf("failed to get path flag: %w", err)
