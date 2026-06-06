@@ -50,6 +50,7 @@ var (
 		[]string{"command", "error_type"},
 	)
 
+	// AlertAnalyzerLastRun tracks the last run time of the alert analyzer.
 	AlertAnalyzerLastRun = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_last_run_timestamp_seconds",
@@ -57,6 +58,7 @@ var (
 		},
 	)
 
+	// AlertAnalyzerSummary tracks summary metrics from the latest alert-analyzer run.
 	AlertAnalyzerSummary = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_summary",

@@ -10,6 +10,7 @@ import (
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/collector"
 )
 
+// Recommendation priority and category constants.
 const (
 	RecommendationPriorityCritical = "critical"
 	RecommendationPriorityHigh     = "high"
@@ -166,7 +167,7 @@ func shouldPrioritizeReview(freq FrequencyResult, flap FlappingResult) bool {
 	return freq.FiringCount >= defaultPriorityReviewMinFirings*2
 }
 
-func recommendationPriorityForSeverity(severity string, fallback string) string {
+func recommendationPriorityForSeverity(severity, fallback string) string {
 	if severity == RecommendationPriorityCritical {
 		return RecommendationPriorityCritical
 	}

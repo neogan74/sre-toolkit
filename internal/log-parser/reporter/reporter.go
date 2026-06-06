@@ -15,6 +15,7 @@ import (
 // Format represents output format.
 type Format string
 
+// Supported output formats.
 const (
 	FormatTable Format = "table"
 	FormatJSON  Format = "json"

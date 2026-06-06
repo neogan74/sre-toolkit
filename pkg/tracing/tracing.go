@@ -1,3 +1,4 @@
+// Package tracing provides OpenTelemetry tracing utilities.
 package tracing
 
 import (
@@ -37,7 +38,7 @@ func InitTracer(serviceName string, config Config) (func(context.Context) error,
 		return func(context.Context) error { return nil }, nil
 	}
 
-	exporter, err := newExporter(config)
+	exporter, err := newExporter()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tracing exporter: %w", err)
 	}
@@ -53,7 +54,7 @@ func InitTracer(serviceName string, config Config) (func(context.Context) error,
 	return tp.Shutdown, nil
 }
 
-func newExporter(config Config) (sdktrace.SpanExporter, error) {
+func newExporter() (sdktrace.SpanExporter, error) {
 	// Currently only supporting stdout exporter for development/debug
 	// Logic can be expanded here to support OTLP exporters based on config.Exporter
 	return stdouttrace.New(stdouttrace.WithPrettyPrint())

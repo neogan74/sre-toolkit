@@ -14,10 +14,12 @@ import (
 // KubernetesLinter implements Linter for K8s YAMLs
 type KubernetesLinter struct{}
 
+// NewKubernetesLinter creates a new KubernetesLinter.
 func NewKubernetesLinter() *KubernetesLinter {
 	return &KubernetesLinter{}
 }
 
+// Lint runs Kubernetes manifest linting on the given path.
 func (l *KubernetesLinter) Lint(ctx context.Context, path string) (*Result, error) {
 	result := &Result{Passed: true}
 

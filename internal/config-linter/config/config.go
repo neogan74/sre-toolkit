@@ -1,3 +1,4 @@
+// Package config provides configuration types for the config-linter.
 package config
 
 import (

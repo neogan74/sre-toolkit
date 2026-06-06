@@ -13,6 +13,7 @@ import (
 // Status represents overall health status.
 type Status string
 
+// Database health status values.
 const (
 	StatusOK       Status = "OK"
 	StatusWarning  Status = "WARNING"
@@ -97,14 +98,14 @@ func postgresChecks(ctx context.Context, db *sql.DB) []Check {
 	}
 
 	// Active connections
-	var active, max int
+	var active, maxConn int
 	err := db.QueryRowContext(ctx,
 		"SELECT count(*), (SELECT setting::int FROM pg_settings WHERE name='max_connections') FROM pg_stat_activity WHERE state='active'",
-	).Scan(&active, &max)
+	).Scan(&active, &maxConn)
 	if err == nil {
-		pct := float64(active) / float64(max) * 100
+		pct := float64(active) / float64(maxConn) * 100
 		s := StatusOK
-		msg := fmt.Sprintf("%d/%d (%.0f%%)", active, max, pct)
+		msg := fmt.Sprintf("%d/%d (%.0f%%)", active, maxConn, pct)
 		if pct > 90 {
 			s = StatusCritical
 		} else if pct > 75 {
@@ -123,11 +124,11 @@ func postgresChecks(ctx context.Context, db *sql.DB) []Check {
 
 	// Replication lag (if replica)
 	var isReplica bool
-	//nolint:errcheck
+	//nolint:errcheck // best-effort check; non-replica simply leaves isReplica false
 	_ = db.QueryRowContext(ctx, "SELECT pg_is_in_recovery()").Scan(&isReplica)
 	if isReplica {
 		var lagSeconds sql.NullFloat64
-		//nolint:errcheck
+		//nolint:errcheck // best-effort check; invalid result is handled via lagSeconds.Valid
 		_ = db.QueryRowContext(ctx,
 			"SELECT EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))").Scan(&lagSeconds)
 		if lagSeconds.Valid {

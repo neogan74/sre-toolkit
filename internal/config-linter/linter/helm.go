@@ -15,6 +15,7 @@ import (
 // HelmLinter implements Linter for Helm Charts
 type HelmLinter struct{}
 
+// NewHelmLinter creates a new HelmLinter.
 func NewHelmLinter() *HelmLinter {
 	return &HelmLinter{}
 }
@@ -97,16 +98,14 @@ func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) { /
 			Message:  "Chart.yaml missing 'version'",
 			File:     path,
 		})
-	} else {
+	} else if !strings.Contains(metadata.Version, ".") {
 		// Basic SemVer check (could use a library, but keeping deps minimal)
 		// Just ensure it's not empty and has dots
-		if !strings.Contains(metadata.Version, ".") {
-			result.Issues = append(result.Issues, Issue{
-				Severity: "Warning",
-				Message:  fmt.Sprintf("Chart version '%s' does not look like SemVer (x.y.z)", metadata.Version),
-				File:     path,
-			})
-		}
+		result.Issues = append(result.Issues, Issue{
+			Severity: "Warning",
+			Message:  fmt.Sprintf("Chart version '%s' does not look like SemVer (x.y.z)", metadata.Version),
+			File:     path,
+		})
 	}
 
 	// Check best practices
@@ -442,7 +441,7 @@ func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, conten
 		}
 
 		// Check for trailing whitespace
-		if len(line) > 0 && line[len(line)-1] == ' ' {
+		if line != "" && line[len(line)-1] == ' ' {
 			result.Issues = append(result.Issues, Issue{
 				Severity: "Low",
 				Message:  fmt.Sprintf("Line %d has trailing whitespace", i+1),

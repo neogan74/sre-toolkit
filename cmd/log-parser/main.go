@@ -361,8 +361,8 @@ var levelOrder = map[formats.Level]int{
 	formats.LevelUnknown: -1,
 }
 
-func levelAtLeast(got, min formats.Level) bool {
-	return levelOrder[got] >= levelOrder[min]
+func levelAtLeast(got, minLevel formats.Level) bool {
+	return levelOrder[got] >= levelOrder[minLevel]
 }
 
 func levelColor(lvl formats.Level) string {

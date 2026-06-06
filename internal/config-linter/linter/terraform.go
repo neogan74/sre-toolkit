@@ -14,6 +14,7 @@ import (
 // work correctly (e.g. "open ingress" requires both port AND cidr in the same block).
 type TerraformLinter struct{}
 
+// NewTerraformLinter creates a new TerraformLinter.
 func NewTerraformLinter() *TerraformLinter {
 	return &TerraformLinter{}
 }
@@ -60,6 +61,7 @@ type blockContext struct {
 	hasOpenCIDR bool
 }
 
+// Lint runs Terraform file linting on the given path.
 func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) { //nolint:gocyclo // complex terraform linter with many rule branches
 	result := &Result{Passed: true}
 

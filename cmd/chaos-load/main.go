@@ -22,8 +22,7 @@ func main() {
 	shutdownTracer, err := tracing.InitTracer("chaos-load", *cfg.Tracing)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to initialize tracing")
-	} else {
-		defer shutdownTracer(context.Background())
+		shutdownTracer = func(context.Context) error { return nil }
 	}
 
 	// Create root command
@@ -41,6 +40,8 @@ in comprehensive tests. It helps verify system resilience and capability.`
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
 		logger.Error().Err(err).Msg("Command execution failed")
+		shutdownTracer(context.Background()) //nolint:errcheck
 		os.Exit(1)
 	}
+	shutdownTracer(context.Background()) //nolint:errcheck
 }

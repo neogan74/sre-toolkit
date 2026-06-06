@@ -14,6 +14,7 @@ import (
 // Format represents the output format.
 type Format string
 
+// Supported output formats.
 const (
 	FormatTable Format = "table"
 	FormatJSON  Format = "json"
@@ -40,8 +41,7 @@ func (r *Reporter) ReportURLScan(results []*scanner.CertInfo) error {
 	}
 }
 
-// ReportSecretScan writes K8s secret scan results.
-// It accepts []interface{} but callers should pass []*k8ssecrets.SecretCertInfo via the adapter.
+// ReportCertList writes certificate list results.
 func (r *Reporter) ReportCertList(results []CertRow) error {
 	switch r.format {
 	case FormatJSON:

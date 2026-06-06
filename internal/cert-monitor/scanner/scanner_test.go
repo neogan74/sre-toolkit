@@ -37,8 +37,7 @@ func TestParseTarget(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			host, port, err := parseTarget(tt.input)
-			require.NoError(t, err)
+			host, port := parseTarget(tt.input)
 			assert.Equal(t, tt.wantHost, host)
 			assert.Equal(t, tt.wantPort, port)
 		})

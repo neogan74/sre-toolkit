@@ -195,7 +195,7 @@ func runLint(cmd *cobra.Command, args []string) error { //nolint:gocyclo // comp
 	return nil
 }
 
-func processResult(result *linter.Result, passed *int, failed *int, issues *[]linter.Issue) {
+func processResult(result *linter.Result, passed, failed *int, issues *[]linter.Issue) {
 	if result == nil {
 		return
 	}

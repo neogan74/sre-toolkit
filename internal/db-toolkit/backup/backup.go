@@ -32,7 +32,7 @@ type Result struct {
 
 // Run creates a database backup using the appropriate tool (pg_dump / mysqldump).
 func Run(ctx context.Context, dbCfg *connector.Config, bkpCfg *Config) (*Result, error) {
-	if err := os.MkdirAll(bkpCfg.OutputDir, 0750); err != nil {
+	if err := os.MkdirAll(bkpCfg.OutputDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create output dir: %w", err)
 	}
 

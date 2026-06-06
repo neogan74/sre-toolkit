@@ -12,11 +12,11 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func runningPod(namespace, name string, labels map[string]string) *corev1.Pod {
+func runningPod(name string, labels map[string]string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "default",
 			Labels:    labels,
 		},
 		Status: corev1.PodStatus{Phase: corev1.PodRunning},
@@ -25,8 +25,8 @@ func runningPod(namespace, name string, labels map[string]string) *corev1.Pod {
 
 func TestPodKiller_KillsOneRandomPod(t *testing.T) {
 	client := fake.NewSimpleClientset(
-		runningPod("default", "pod-a", map[string]string{"app": "web"}),
-		runningPod("default", "pod-b", map[string]string{"app": "web"}),
+		runningPod("pod-a", map[string]string{"app": "web"}),
+		runningPod("pod-b", map[string]string{"app": "web"}),
 	)
 
 	killer := NewPodKiller(client, KillerConfig{
@@ -46,7 +46,7 @@ func TestPodKiller_KillsOneRandomPod(t *testing.T) {
 
 func TestPodKiller_ForceKill(t *testing.T) {
 	client := fake.NewSimpleClientset(
-		runningPod("default", "pod-a", nil),
+		runningPod("pod-a", nil),
 	)
 
 	killer := NewPodKiller(client, KillerConfig{
@@ -64,7 +64,7 @@ func TestPodKiller_ForceKill(t *testing.T) {
 
 func TestPodKiller_DryRun(t *testing.T) {
 	client := fake.NewSimpleClientset(
-		runningPod("default", "pod-a", nil),
+		runningPod("pod-a", nil),
 	)
 
 	killer := NewPodKiller(client, KillerConfig{
@@ -94,7 +94,7 @@ func TestPodKiller_NoPodsReturnsError(t *testing.T) {
 }
 
 func TestPodKiller_SkipsNonRunningPods(t *testing.T) {
-	pending := runningPod("default", "pending-pod", nil)
+	pending := runningPod("pending-pod", nil)
 	pending.Status.Phase = corev1.PodPending
 
 	client := fake.NewSimpleClientset(pending)
@@ -110,9 +110,9 @@ func TestPodKiller_SkipsNonRunningPods(t *testing.T) {
 
 func TestPodKiller_MultipleIterations(t *testing.T) {
 	client := fake.NewSimpleClientset(
-		runningPod("default", "pod-1", nil),
-		runningPod("default", "pod-2", nil),
-		runningPod("default", "pod-3", nil),
+		runningPod("pod-1", nil),
+		runningPod("pod-2", nil),
+		runningPod("pod-3", nil),
 	)
 
 	killer := NewPodKiller(client, KillerConfig{

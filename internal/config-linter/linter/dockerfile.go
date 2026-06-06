@@ -1,3 +1,4 @@
+// Package linter provides linters for various configuration file formats.
 package linter
 
 import (
@@ -13,6 +14,7 @@ import (
 // DockerfileLinter implements Linter for Dockerfiles
 type DockerfileLinter struct{}
 
+// NewDockerfileLinter creates a new DockerfileLinter.
 func NewDockerfileLinter() *DockerfileLinter {
 	return &DockerfileLinter{}
 }
@@ -104,8 +106,8 @@ func (l *DockerfileLinter) Lint(ctx context.Context, path string) (*Result, erro
 		case "ADD":
 			// Suggest COPY
 			isTar := strings.HasSuffix(line, ".tar") || strings.HasSuffix(line, ".tar.gz") || strings.HasSuffix(line, ".tgz")
-			isUrl := strings.Contains(line, "http://") || strings.Contains(line, "https://")
-			if !isTar && !isUrl {
+			isURL := strings.Contains(line, "http://") || strings.Contains(line, "https://")
+			if !isTar && !isURL {
 				result.Issues = append(result.Issues, Issue{
 					Severity: "Low",
 					Message:  "Prefer COPY over ADD unless extracting archives or downloading URLs.",
