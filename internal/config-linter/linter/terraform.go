@@ -65,7 +65,7 @@ type blockContext struct {
 func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) { //nolint:gocyclo // complex terraform linter with many rule branches
 	result := &Result{Passed: true}
 
-	file, err := os.Open(path)
+	file, err := os.Open(path) //nolint:gosec // path is the linter input file
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}

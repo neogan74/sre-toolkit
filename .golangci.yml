@@ -129,8 +129,8 @@ linters:
           - typecheck
         text: ".On undefined"
 
-      # Exclude revive var-naming false positives for test packages sharing stdlib names
-      - path: "_test\\.go"
+      # Exclude revive var-naming false positives for packages sharing stdlib names
+      - path: "(_test\\.go|pkg/metrics/)"
         linters:
           - revive
         text: "avoid package names that conflict"

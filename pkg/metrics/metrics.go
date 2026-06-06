@@ -76,6 +76,7 @@ var (
 		[]string{"alert_name", "severity"},
 	)
 
+	// AlertAnalyzerFlappingScore tracks the flapping scores from the latest alert-analyzer run.
 	AlertAnalyzerFlappingScore = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_flapping_score",
@@ -84,6 +85,7 @@ var (
 		[]string{"alert_name", "severity", "is_flapping"},
 	)
 
+	// AlertAnalyzerCorrelationScore tracks the correlation scores from the latest alert-analyzer run.
 	AlertAnalyzerCorrelationScore = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_correlation_score",
@@ -92,6 +94,7 @@ var (
 		[]string{"alert_a", "alert_b"},
 	)
 
+	// AlertAnalyzerTemporalBusinessHoursRatio tracks the business-hours firing ratio from the latest run.
 	AlertAnalyzerTemporalBusinessHoursRatio = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_temporal_business_hours_ratio",

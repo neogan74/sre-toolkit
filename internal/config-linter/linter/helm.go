@@ -336,7 +336,7 @@ func (l *HelmLinter) validateTemplates(result *Result, templatesPath string) {
 		}
 
 		templatePath := filepath.Join(templatesPath, tf.Name())
-		content, err := os.ReadFile(templatePath)
+		content, err := os.ReadFile(templatePath) //nolint:gosec // path derived from linter input
 		if err != nil {
 			result.Issues = append(result.Issues, Issue{
 				Severity: "Error",

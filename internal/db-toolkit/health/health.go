@@ -145,7 +145,7 @@ func postgresChecks(ctx context.Context, db *sql.DB) []Check {
 
 	// Long-running queries (> 5 min)
 	var longQueries int
-	//nolint:errcheck
+	//nolint:errcheck // long-query count is best-effort; scan failure defaults to zero
 	_ = db.QueryRowContext(ctx,
 		"SELECT count(*) FROM pg_stat_activity WHERE state='active' AND now()-query_start > interval '5 minutes'",
 	).Scan(&longQueries)

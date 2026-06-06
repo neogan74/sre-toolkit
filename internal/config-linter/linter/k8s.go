@@ -23,7 +23,7 @@ func NewKubernetesLinter() *KubernetesLinter {
 func (l *KubernetesLinter) Lint(ctx context.Context, path string) (*Result, error) {
 	result := &Result{Passed: true}
 
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) //nolint:gosec // path is the linter input file
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
