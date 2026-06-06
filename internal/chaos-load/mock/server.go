@@ -1,3 +1,4 @@
+// Package mock provides a configurable HTTP mock server for chaos load testing.
 package mock
 
 import (
@@ -139,9 +140,9 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(statusCode)
 	if statusCode == http.StatusOK {
-		w.Write([]byte("OK")) //nolint:errcheck
+		w.Write([]byte("OK")) //nolint:errcheck // http.ResponseWriter.Write errors are non-actionable in handlers
 	} else {
-		w.Write([]byte("Internal Server Error")) //nolint:errcheck
+		w.Write([]byte("Internal Server Error")) //nolint:errcheck // http.ResponseWriter.Write errors are non-actionable in handlers
 	}
 
 	logger.Info().

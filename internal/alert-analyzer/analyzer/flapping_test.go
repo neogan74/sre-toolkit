@@ -67,7 +67,7 @@ func TestFlappingAnalyzer_Analyze(t *testing.T) {
 		{
 			name: "stable alert - no flapping",
 			alerts: []collector.Alert{
-				makeTestAlert("StableAlert", now.Add(-30*time.Minute), "firing"),
+				makeTestAlert("\1", \2),
 			},
 			startTime:    now.Add(-time.Hour),
 			endTime:      now,
@@ -93,7 +93,7 @@ func TestFlappingAnalyzer_Analyze(t *testing.T) {
 			name: "multiple alerts - mixed flapping",
 			alerts: []collector.Alert{
 				// StableAlert - only 1 firing
-				makeTestAlert("StableAlert", now.Add(-30*time.Minute), "firing"),
+				makeTestAlert("\1", \2),
 				// FlappingAlert - multiple transitions
 				makeTestAlertWithResolved("FlappingAlert", now.Add(-50*time.Minute), now.Add(-45*time.Minute)),
 				makeTestAlertWithResolved("FlappingAlert", now.Add(-40*time.Minute), now.Add(-35*time.Minute)),
@@ -190,7 +190,7 @@ func TestFlappingAnalyzer_GetFlappingAlerts(t *testing.T) {
 		{
 			name: "no flapping alerts",
 			alerts: []collector.Alert{
-				makeTestAlert("Stable", now.Add(-30*time.Minute), "firing"),
+				makeTestAlert("\1", \2),
 			},
 			threshold:    3.0,
 			wantFlapping: 0,
@@ -249,7 +249,7 @@ func TestFlappingAnalyzer_GetSummary(t *testing.T) {
 		{
 			name: "with flapping alert",
 			alerts: []collector.Alert{
-				makeTestAlert("Stable", now.Add(-30*time.Minute), "firing"),
+				makeTestAlert("\1", \2),
 				makeTestAlertWithResolved("Flapping", now.Add(-50*time.Minute), now.Add(-45*time.Minute)),
 				makeTestAlertWithResolved("Flapping", now.Add(-40*time.Minute), now.Add(-35*time.Minute)),
 				makeTestAlertWithResolved("Flapping", now.Add(-30*time.Minute), now.Add(-25*time.Minute)),
@@ -306,7 +306,7 @@ func TestDetectStateTransitions(t *testing.T) {
 		{
 			name: "single firing - one transition",
 			alerts: []collector.Alert{
-				makeTestAlert("Alert1", now.Add(-30*time.Minute), "firing"),
+				makeTestAlert("\1", \2),
 			},
 			wantTransCount: 1, // inactive -> firing
 		},
@@ -347,11 +347,11 @@ func TestDetectStateTransitions(t *testing.T) {
 
 // Helper functions for creating test alerts
 
-func makeTestAlert(name string, firedAt time.Time, state string) collector.Alert {
+func makeTestAlert(name string, firedAt time.Time) collector.Alert {
 	return collector.Alert{
 		Name:       name,
 		Labels:     map[string]string{"severity": "warning"},
-		State:      state,
+		State:      "firing",
 		FiredAt:    firedAt,
 		ResolvedAt: nil,
 	}

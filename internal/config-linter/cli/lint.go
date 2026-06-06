@@ -1,3 +1,4 @@
+// Package cli provides the CLI commands for the config-linter tool.
 package cli
 
 import (

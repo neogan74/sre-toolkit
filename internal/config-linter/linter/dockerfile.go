@@ -19,6 +19,7 @@ func NewDockerfileLinter() *DockerfileLinter {
 	return &DockerfileLinter{}
 }
 
+// Lint runs Dockerfile linting on the given path.
 func (l *DockerfileLinter) Lint(ctx context.Context, path string) (*Result, error) { //nolint:gocyclo // complex linter with many instruction-type branches
 	result := &Result{Passed: true}
 

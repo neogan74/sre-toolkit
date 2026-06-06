@@ -304,7 +304,7 @@ func openInput(files []string) (io.Reader, func(), error) {
 	readers := make([]io.Reader, 0, len(files))
 	closers := make([]io.Closer, 0, len(files))
 	for _, name := range files {
-		f, err := os.Open(name)
+		f, err := os.Open(name) //nolint:gosec // file path is provided by user via CLI argument
 		if err != nil {
 			for _, c := range closers {
 				c.Close()

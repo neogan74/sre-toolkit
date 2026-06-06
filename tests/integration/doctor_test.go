@@ -94,12 +94,12 @@ func deleteCluster() error {
 	cmd := exec.Command("kind", "delete", "cluster", "--name", clusterName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to delete kind cluster: %v, output: %s", err, output)
+		return fmt.Errorf("failed to delete kind cluster: %w, output: %s", err, output)
 	}
 
 	// Remove kubeconfig file
 	if err := os.Remove(kubeconfigPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove kubeconfig file: %v", err)
+		return fmt.Errorf("failed to remove kubeconfig file: %w", err)
 	}
 
 	return nil

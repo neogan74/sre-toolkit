@@ -83,6 +83,7 @@ linters:
     gosec:
       excludes:
         - G104 # Audit errors not checked - covered by errcheck
+        - G117 # Exported field names matching secret pattern - legitimate config field names
 
   exclusions:
     rules:
@@ -94,6 +95,7 @@ linters:
           - dupl
           - gosec
           - gocritic
+          - noctx
 
       # Exclude weak cryptographic primitive warnings
       - text: "weak cryptographic primitive"

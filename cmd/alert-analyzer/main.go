@@ -329,9 +329,9 @@ func runMonitor(opts analysisOptions, intervalStr, metricsAddress, metricsPath s
 	}
 }
 
-func collectAlertmanagerData(ctx context.Context, url string, timeout time.Duration, insecure bool, logger zerolog.Logger) error {
+func collectAlertmanagerData(ctx context.Context, alertURL string, timeout time.Duration, insecure bool, logger zerolog.Logger) error {
 	amClient, err := alertmanager.NewClient(&alertmanager.Config{
-		URL:      url,
+		URL:      alertURL,
 		Timeout:  timeout,
 		Insecure: insecure,
 	}, &logger)

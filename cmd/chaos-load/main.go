@@ -40,8 +40,8 @@ in comprehensive tests. It helps verify system resilience and capability.`
 	// Execute
 	if err := rootCmd.Execute(); err != nil {
 		logger.Error().Err(err).Msg("Command execution failed")
-		shutdownTracer(context.Background()) //nolint:errcheck
+		shutdownTracer(context.Background()) //nolint:errcheck // tracer shutdown errors are non-actionable at exit
 		os.Exit(1)
 	}
-	shutdownTracer(context.Background()) //nolint:errcheck
+	shutdownTracer(context.Background()) //nolint:errcheck // tracer shutdown errors are non-actionable at exit
 }

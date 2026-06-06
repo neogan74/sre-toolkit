@@ -67,6 +67,7 @@ var (
 		[]string{"metric"},
 	)
 
+	// AlertAnalyzerTopAlertFirings tracks the top alert firing counts from the latest run.
 	AlertAnalyzerTopAlertFirings = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_top_alert_firings",

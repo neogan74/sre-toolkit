@@ -119,7 +119,7 @@ func (n *WebhookNotifier) send(ctx context.Context, payload WebhookPayload) erro
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := n.client.Do(req)
+	resp, err := n.client.Do(req) //nolint:gosec // webhook URL is user-configured, SSRF is acceptable
 	if err != nil {
 		return fmt.Errorf("sending webhook: %w", err)
 	}

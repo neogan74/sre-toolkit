@@ -49,6 +49,7 @@ type Dependency struct {
 // ValuesData represents the structure of values.yaml
 type ValuesData map[string]interface{}
 
+// Lint runs Helm chart linting on the given path.
 func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) { //nolint:gocyclo // complex helm linter with many validation branches
 	result := &Result{Passed: true}
 
@@ -60,7 +61,7 @@ func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) { /
 	chartDir := filepath.Dir(path)
 
 	// 1. Validate Chart.yaml Content
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) //nolint:gosec // path is the linter input file
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Chart.yaml: %w", err)
 	}
@@ -145,7 +146,7 @@ func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) { /
 
 	// Check for values.yaml
 	valuesPath := filepath.Join(chartDir, "values.yaml")
-	valuesContent, err := os.ReadFile(valuesPath)
+	valuesContent, err := os.ReadFile(valuesPath) //nolint:gosec // path derived from linter input
 	if err != nil {
 		if os.IsNotExist(err) {
 			result.Issues = append(result.Issues, Issue{
