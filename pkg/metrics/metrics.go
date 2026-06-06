@@ -103,6 +103,7 @@ var (
 		[]string{"alert_name", "severity", "peak_weekday", "peak_hour"},
 	)
 
+	// AlertAnalyzerRecommendationTotal tracks recommendation counts from the latest alert-analyzer run.
 	AlertAnalyzerRecommendationTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_recommendations_total",
@@ -113,6 +114,7 @@ var (
 
 	// cert-monitor metrics
 
+	// CertMonitorDaysLeft tracks the days remaining until each certificate expires.
 	CertMonitorDaysLeft = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_cert_days_left",
@@ -121,6 +123,7 @@ var (
 		[]string{"host", "subject", "issuer"},
 	)
 
+	// CertMonitorCertStatus tracks the status of each certificate by host.
 	CertMonitorCertStatus = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_cert_status",
@@ -129,6 +132,7 @@ var (
 		[]string{"host", "status"},
 	)
 
+	// CertMonitorTotal tracks the total number of certificates by status after the last scan.
 	CertMonitorTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_certs_total",
@@ -137,6 +141,7 @@ var (
 		[]string{"status"},
 	)
 
+	// CertMonitorLastScan tracks the timestamp of the last completed certificate scan.
 	CertMonitorLastScan = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_last_scan_timestamp_seconds",
@@ -144,6 +149,7 @@ var (
 		},
 	)
 
+	// CertMonitorScanDuration tracks the duration of each certificate scan.
 	CertMonitorScanDuration = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "cert_monitor_scan_duration_seconds",
