@@ -207,4 +207,3 @@ func processResult(result *linter.Result, passed, failed *int, issues *[]linter.
 		*issues = append(*issues, result.Issues...)
 	}
 }
-

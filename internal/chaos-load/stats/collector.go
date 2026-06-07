@@ -39,6 +39,41 @@ func (c *Collector) Add(r Result) {
 	c.results = append(c.results, r)
 }
 
+// SnapshotStats contains a snapshot of the current metrics
+type SnapshotStats struct {
+	TotalRequests int
+	Errors        int
+	Elapsed       time.Duration
+	RPS           float64
+	StatusCodes   map[int]int
+}
+
+// Snapshot returns the current aggregated metrics
+func (c *Collector) Snapshot() SnapshotStats {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	stats := SnapshotStats{
+		TotalRequests: len(c.results),
+		Elapsed:       time.Since(c.start),
+		StatusCodes:   make(map[int]int),
+	}
+
+	for _, r := range c.results {
+		if r.Error != nil {
+			stats.Errors++
+		} else {
+			stats.StatusCodes[r.StatusCode]++
+		}
+	}
+
+	if stats.Elapsed.Seconds() > 0 {
+		stats.RPS = float64(stats.TotalRequests) / stats.Elapsed.Seconds()
+	}
+
+	return stats
+}
+
 // Report prints a summary report to stdout
 func (c *Collector) Report() {
 	c.FprintReport(os.Stdout)

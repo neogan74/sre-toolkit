@@ -20,6 +20,7 @@ func newHTTPCmd() *cobra.Command {
 		concurrency   int
 		duration      time.Duration
 		requests      int
+		uiEnabled     bool
 	)
 
 	cmd := &cobra.Command{
@@ -41,6 +42,7 @@ func newHTTPCmd() *cobra.Command {
 				Concurrency:   concurrency,
 				Duration:      duration,
 				Requests:      requests,
+				UI:            uiEnabled,
 			}
 			if err := cfg.Validate(); err != nil {
 				return err
@@ -66,6 +68,7 @@ func newHTTPCmd() *cobra.Command {
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent workers")
 	cmd.Flags().DurationVar(&duration, "duration", 30*time.Second, "Duration of the test")
 	cmd.Flags().IntVar(&requests, "requests", 0, "Total number of requests (0 for unlimited)")
+	cmd.Flags().BoolVar(&uiEnabled, "ui", false, "Enable real-time dashboard UI")
 
 	cmd.MarkFlagRequired("url")
 

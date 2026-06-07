@@ -17,6 +17,48 @@ func newK8sCmd() *cobra.Command {
 
 	cmd.AddCommand(newPodKillCmd())
 	cmd.AddCommand(newNodeDrainCmd())
+	cmd.AddCommand(newNetworkPartitionCmd())
+
+	return cmd
+}
+
+func newNetworkPartitionCmd() *cobra.Command {
+	var (
+		kubeconfig    string
+		namespace     string
+		labelSelector string
+		duration      time.Duration
+		dryRun        bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "network-partition",
+		Short: "Isolate pods by creating a default-deny NetworkPolicy",
+		Long: `Simulates a network partition by applying a default-deny NetworkPolicy to 
+the targeted namespace or specific pods matching the label selector.
+Traffic is dropped for the specified duration, after which the policy is deleted.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			client, err := k8s.NewClient(&k8s.Config{Kubeconfig: kubeconfig})
+			if err != nil {
+				return err
+			}
+
+			partition := k8schaos.NewNetworkPartition(client.Clientset(), k8schaos.NetworkPartitionConfig{
+				Namespace:     namespace,
+				LabelSelector: labelSelector,
+				Duration:      duration,
+				DryRun:        dryRun,
+			})
+
+			return partition.Run(cmd.Context())
+		},
+	}
+
+	cmd.Flags().StringVar(&kubeconfig, "kubeconfig", "", "Path to kubeconfig file")
+	cmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "Namespace to target")
+	cmd.Flags().StringVarP(&labelSelector, "selector", "l", "", "Label selector (e.g. app=web)")
+	cmd.Flags().DurationVarP(&duration, "duration", "d", 30*time.Second, "Duration of the network partition")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Print what would be done without actually creating the policy")
 
 	return cmd
 }

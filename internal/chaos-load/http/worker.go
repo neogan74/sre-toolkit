@@ -24,6 +24,7 @@ type PoolConfig struct {
 	Concurrency   int
 	Duration      time.Duration
 	Requests      int // Optional limit on total requests
+	UI            bool
 }
 
 // Pool manages a pool of HTTP workers
@@ -103,6 +104,15 @@ func (p *Pool) Run() error {
 		Dur("duration", p.config.Duration).
 		Msg("Starting workers")
 
+	var uiCtx context.Context
+	var uiCancel context.CancelFunc
+	if p.config.UI {
+		uiCtx, uiCancel = context.WithCancel(context.Background())
+		defer uiCancel()
+		ui := stats.NewUI(p.collector, time.Second)
+		go ui.Run(uiCtx)
+	}
+
 	for i := 0; i < p.config.Concurrency; i++ {
 		wg.Add(1)
 		go func(id int) {
@@ -113,7 +123,14 @@ func (p *Pool) Run() error {
 
 	// Wait for completion
 	wg.Wait()
-	logger.Info().Msg("Load test completed")
+
+	if p.config.UI {
+		uiCancel() // explicit call to cancel early before sleep
+		// Give UI a moment to print its final render
+		time.Sleep(100 * time.Millisecond)
+	} else {
+		logger.Info().Msg("Load test completed")
+	}
 
 	// Report results
 	p.collector.Report()
