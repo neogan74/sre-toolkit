@@ -50,6 +50,7 @@ var (
 		[]string{"command", "error_type"},
 	)
 
+	// AlertAnalyzerLastRun tracks the last run time of the alert analyzer.
 	AlertAnalyzerLastRun = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_last_run_timestamp_seconds",
@@ -57,6 +58,7 @@ var (
 		},
 	)
 
+	// AlertAnalyzerSummary tracks summary metrics from the latest alert-analyzer run.
 	AlertAnalyzerSummary = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_summary",
@@ -65,6 +67,7 @@ var (
 		[]string{"metric"},
 	)
 
+	// AlertAnalyzerTopAlertFirings tracks the top alert firing counts from the latest run.
 	AlertAnalyzerTopAlertFirings = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_top_alert_firings",
@@ -73,6 +76,7 @@ var (
 		[]string{"alert_name", "severity"},
 	)
 
+	// AlertAnalyzerFlappingScore tracks the flapping scores from the latest alert-analyzer run.
 	AlertAnalyzerFlappingScore = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_flapping_score",
@@ -81,6 +85,7 @@ var (
 		[]string{"alert_name", "severity", "is_flapping"},
 	)
 
+	// AlertAnalyzerCorrelationScore tracks the correlation scores from the latest alert-analyzer run.
 	AlertAnalyzerCorrelationScore = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_correlation_score",
@@ -89,6 +94,7 @@ var (
 		[]string{"alert_a", "alert_b"},
 	)
 
+	// AlertAnalyzerTemporalBusinessHoursRatio tracks the business-hours firing ratio from the latest run.
 	AlertAnalyzerTemporalBusinessHoursRatio = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_temporal_business_hours_ratio",
@@ -97,6 +103,7 @@ var (
 		[]string{"alert_name", "severity", "peak_weekday", "peak_hour"},
 	)
 
+	// AlertAnalyzerRecommendationTotal tracks recommendation counts from the latest alert-analyzer run.
 	AlertAnalyzerRecommendationTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "sre_toolkit_alert_analyzer_recommendations_total",
@@ -107,6 +114,7 @@ var (
 
 	// cert-monitor metrics
 
+	// CertMonitorDaysLeft tracks the days remaining until each certificate expires.
 	CertMonitorDaysLeft = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_cert_days_left",
@@ -115,6 +123,7 @@ var (
 		[]string{"host", "subject", "issuer"},
 	)
 
+	// CertMonitorCertStatus tracks the status of each certificate by host.
 	CertMonitorCertStatus = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_cert_status",
@@ -123,6 +132,7 @@ var (
 		[]string{"host", "status"},
 	)
 
+	// CertMonitorTotal tracks the total number of certificates by status after the last scan.
 	CertMonitorTotal = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_certs_total",
@@ -131,6 +141,7 @@ var (
 		[]string{"status"},
 	)
 
+	// CertMonitorLastScan tracks the timestamp of the last completed certificate scan.
 	CertMonitorLastScan = promauto.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "cert_monitor_last_scan_timestamp_seconds",
@@ -138,6 +149,7 @@ var (
 		},
 	)
 
+	// CertMonitorScanDuration tracks the duration of each certificate scan.
 	CertMonitorScanDuration = promauto.NewHistogram(
 		prometheus.HistogramOpts{
 			Name:    "cert_monitor_scan_duration_seconds",

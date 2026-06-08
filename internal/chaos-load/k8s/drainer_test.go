@@ -12,25 +12,25 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func testNode(name string, unschedulable bool) *corev1.Node {
+func testNode(unschedulable bool) *corev1.Node {
 	return &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{Name: "node-1"},
 		Spec:       corev1.NodeSpec{Unschedulable: unschedulable},
 	}
 }
 
-func podOnNode(namespace, name, nodeName string) *corev1.Pod {
+func podOnNode(namespace, name string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-		Spec:       corev1.PodSpec{NodeName: nodeName},
+		Spec:       corev1.PodSpec{NodeName: "node-1"},
 		Status:     corev1.PodStatus{Phase: corev1.PodRunning},
 	}
 }
 
 func TestNodeDrainer_DryRun(t *testing.T) {
 	client := fake.NewSimpleClientset(
-		testNode("node-1", false),
-		podOnNode("default", "pod-a", "node-1"),
+		testNode(false),
+		podOnNode("default", "pod-a"),
 	)
 
 	drainer := NewNodeDrainer(client, DrainerConfig{
@@ -48,7 +48,7 @@ func TestNodeDrainer_DryRun(t *testing.T) {
 }
 
 func TestNodeDrainer_CordonsNode(t *testing.T) {
-	client := fake.NewSimpleClientset(testNode("node-1", false))
+	client := fake.NewSimpleClientset(testNode(false))
 
 	drainer := NewNodeDrainer(client, DrainerConfig{
 		NodeName:           "node-1",
@@ -65,7 +65,7 @@ func TestNodeDrainer_CordonsNode(t *testing.T) {
 }
 
 func TestNodeDrainer_AlreadyCordoned(t *testing.T) {
-	client := fake.NewSimpleClientset(testNode("node-1", true))
+	client := fake.NewSimpleClientset(testNode(true))
 
 	drainer := NewNodeDrainer(client, DrainerConfig{
 		NodeName:           "node-1",
@@ -78,11 +78,11 @@ func TestNodeDrainer_AlreadyCordoned(t *testing.T) {
 }
 
 func TestNodeDrainer_SkipsDaemonSetPods(t *testing.T) {
-	ds := podOnNode("kube-system", "ds-pod", "node-1")
+	ds := podOnNode("kube-system", "ds-pod")
 	ds.OwnerReferences = []metav1.OwnerReference{{Kind: "DaemonSet", Name: "fluentd"}}
 
 	client := fake.NewSimpleClientset(
-		testNode("node-1", false),
+		testNode(false),
 		ds,
 	)
 
@@ -97,11 +97,11 @@ func TestNodeDrainer_SkipsDaemonSetPods(t *testing.T) {
 }
 
 func TestNodeDrainer_SkipsMirrorPods(t *testing.T) {
-	mirror := podOnNode("kube-system", "etcd-node-1", "node-1")
+	mirror := podOnNode("kube-system", "etcd-node-1")
 	mirror.Annotations = map[string]string{corev1.MirrorPodAnnotationKey: "true"}
 
 	client := fake.NewSimpleClientset(
-		testNode("node-1", false),
+		testNode(false),
 		mirror,
 	)
 
@@ -116,13 +116,13 @@ func TestNodeDrainer_SkipsMirrorPods(t *testing.T) {
 }
 
 func TestNodeDrainer_SkipsEmptyDirPodsWhenNotConfigured(t *testing.T) {
-	pod := podOnNode("default", "stateful-pod", "node-1")
+	pod := podOnNode("default", "stateful-pod")
 	pod.Spec.Volumes = []corev1.Volume{
 		{Name: "cache", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 	}
 
 	client := fake.NewSimpleClientset(
-		testNode("node-1", false),
+		testNode(false),
 		pod,
 	)
 

@@ -15,6 +15,7 @@ import (
 // HelmLinter implements Linter for Helm Charts
 type HelmLinter struct{}
 
+// NewHelmLinter creates a new HelmLinter.
 func NewHelmLinter() *HelmLinter {
 	return &HelmLinter{}
 }
@@ -48,7 +49,8 @@ type Dependency struct {
 // ValuesData represents the structure of values.yaml
 type ValuesData map[string]interface{}
 
-func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) {
+// Lint runs Helm chart linting on the given path.
+func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) { //nolint:gocyclo // complex helm linter with many validation branches
 	result := &Result{Passed: true}
 
 	// Only process Chart.yaml files
@@ -59,7 +61,7 @@ func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) {
 	chartDir := filepath.Dir(path)
 
 	// 1. Validate Chart.yaml Content
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(path) //nolint:gosec // path is the linter input file
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Chart.yaml: %w", err)
 	}
@@ -97,16 +99,14 @@ func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) {
 			Message:  "Chart.yaml missing 'version'",
 			File:     path,
 		})
-	} else {
+	} else if !strings.Contains(metadata.Version, ".") {
 		// Basic SemVer check (could use a library, but keeping deps minimal)
 		// Just ensure it's not empty and has dots
-		if !strings.Contains(metadata.Version, ".") {
-			result.Issues = append(result.Issues, Issue{
-				Severity: "Warning",
-				Message:  fmt.Sprintf("Chart version '%s' does not look like SemVer (x.y.z)", metadata.Version),
-				File:     path,
-			})
-		}
+		result.Issues = append(result.Issues, Issue{
+			Severity: "Warning",
+			Message:  fmt.Sprintf("Chart version '%s' does not look like SemVer (x.y.z)", metadata.Version),
+			File:     path,
+		})
 	}
 
 	// Check best practices
@@ -146,7 +146,7 @@ func (l *HelmLinter) Lint(ctx context.Context, path string) (*Result, error) {
 
 	// Check for values.yaml
 	valuesPath := filepath.Join(chartDir, "values.yaml")
-	valuesContent, err := os.ReadFile(valuesPath)
+	valuesContent, err := os.ReadFile(valuesPath) //nolint:gosec // path derived from linter input
 	if err != nil {
 		if os.IsNotExist(err) {
 			result.Issues = append(result.Issues, Issue{
@@ -314,10 +314,7 @@ func (l *HelmLinter) validateValues(result *Result, valuesPath string, content [
 	}
 
 	// Check for duplicate keys at top level
-	if len(values) > 0 {
-		// yaml.v3 doesn't have built-in duplicate key detection, so we warn about potential issues
-		// In production, consider using a YAML parser that reports duplicates
-	}
+	// yaml.v3 doesn't have built-in duplicate key detection; a dedicated YAML parser would be needed for this.
 }
 
 // validateTemplates checks Go template syntax and common issues
@@ -339,7 +336,7 @@ func (l *HelmLinter) validateTemplates(result *Result, templatesPath string) {
 		}
 
 		templatePath := filepath.Join(templatesPath, tf.Name())
-		content, err := os.ReadFile(templatePath)
+		content, err := os.ReadFile(templatePath) //nolint:gosec // path derived from linter input
 		if err != nil {
 			result.Issues = append(result.Issues, Issue{
 				Severity: "Error",
@@ -375,7 +372,7 @@ func (l *HelmLinter) validateGoTemplateSyntax(templatePath, content string) erro
 	if err != nil {
 		// Try to provide a more helpful error message
 		if strings.Contains(err.Error(), "unexpected") || strings.Contains(err.Error(), "unclosed") {
-			return fmt.Errorf("syntax error: %v", err)
+			return fmt.Errorf("syntax error: %w", err)
 		}
 		return err
 	}
@@ -391,7 +388,7 @@ func (l *HelmLinter) validateGoTemplateSyntax(templatePath, content string) erro
 }
 
 // validateTemplateIssues checks for common template issues
-func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, content string) {
+func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, content string) { //nolint:gocyclo // complex template validator with many pattern checks
 	// Check for potentially unsafe default values (nil)
 	if strings.Contains(content, "default .Values") {
 		result.Issues = append(result.Issues, Issue{
@@ -401,14 +398,7 @@ func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, conten
 		})
 	}
 
-	// Check for deprecated template functions
-	deprecatedFuncs := []string{"include", "required"}
-	for _, funcName := range deprecatedFuncs {
-		if strings.Contains(content, funcName) {
-			// Note: These are actually commonly used in Helm, not deprecated
-			// This is just an example of what we could check
-		}
-	}
+	// Note: "include" and "required" are commonly used Helm functions, not actually deprecated.
 
 	// Check for potential XSS vulnerabilities in templates
 	if strings.Contains(content, " | nindent ") && strings.Contains(content, "HTML") {
@@ -448,14 +438,11 @@ func (l *HelmLinter) validateTemplateIssues(result *Result, templatePath, conten
 			if strings.HasPrefix(strings.TrimSpace(line), "{{") && !strings.Contains(line, ":") {
 				continue // It's probably fine
 			}
-			// Check for common indentation issues
-			if strings.Contains(line, "{{") && !strings.Contains(line, "  {{") {
-				// Might need proper indentation
-			}
+			// Check for common indentation issues: lines with "{{" but no leading spaces may need indentation.
 		}
 
 		// Check for trailing whitespace
-		if len(line) > 0 && line[len(line)-1] == ' ' {
+		if line != "" && line[len(line)-1] == ' ' {
 			result.Issues = append(result.Issues, Issue{
 				Severity: "Low",
 				Message:  fmt.Sprintf("Line %d has trailing whitespace", i+1),

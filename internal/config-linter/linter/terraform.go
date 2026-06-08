@@ -14,27 +14,27 @@ import (
 // work correctly (e.g. "open ingress" requires both port AND cidr in the same block).
 type TerraformLinter struct{}
 
+// NewTerraformLinter creates a new TerraformLinter.
 func NewTerraformLinter() *TerraformLinter {
 	return &TerraformLinter{}
 }
 
 var (
-	reHardcodedAWSKey  = regexp.MustCompile(`(?i)(access_key|aws_access_key_id)\s*=\s*"AKIA[A-Z0-9]{16}"`)
-	reHardcodedSecret  = regexp.MustCompile(`(?i)(secret_key|aws_secret_access_key|password|private_key)\s*=\s*"[^$][^"]{7,}"`)
-	reHardcodedToken   = regexp.MustCompile(`(?i)(token|api_key|auth_token|client_secret)\s*=\s*"[^$][^"]{7,}"`)
-	reOpenCIDRv4       = regexp.MustCompile(`"0\.0\.0\.0/0"`)
-	reOpenCIDRv6       = regexp.MustCompile(`"::/0"`)
-	rePublicACL        = regexp.MustCompile(`(?i)acl\s*=\s*"(public-read|public-read-write|authenticated-read)"`)
-	reProviderSource   = regexp.MustCompile(`^\s*source\s*=\s*"`)
-	reProviderVersion  = regexp.MustCompile(`^\s*version\s*=`)
-	reBackendLocal     = regexp.MustCompile(`^\s*backend\s+"local"`)
-	reEncryptedFalse   = regexp.MustCompile(`(?i)\bencrypted\s*=\s*false`)
-	reStorageEncFalse  = regexp.MustCompile(`(?i)storage_encrypted\s*=\s*false`)
-	reFromPort         = regexp.MustCompile(`from_port\s*=\s*(\d+)`)
-	reToPort           = regexp.MustCompile(`to_port\s*=\s*(\d+)`)
-	reProtocol         = regexp.MustCompile(`protocol\s*=\s*"([^"]+)"`)
-	reSourceRanges     = regexp.MustCompile(`source_ranges\s*=\s*\[`)
-	reProviderName     = regexp.MustCompile(`^\s*([a-zA-Z0-9_/-]+)\s*=\s*\{`)
+	reHardcodedAWSKey = regexp.MustCompile(`(?i)(access_key|aws_access_key_id)\s*=\s*"AKIA[A-Z0-9]{16}"`)
+	reHardcodedSecret = regexp.MustCompile(`(?i)(secret_key|aws_secret_access_key|password|private_key)\s*=\s*"[^$][^"]{7,}"`)
+	reHardcodedToken  = regexp.MustCompile(`(?i)(token|api_key|auth_token|client_secret)\s*=\s*"[^$][^"]{7,}"`)
+	reOpenCIDRv4      = regexp.MustCompile(`"0\.0\.0\.0/0"`)
+	reOpenCIDRv6      = regexp.MustCompile(`"::/0"`)
+	rePublicACL       = regexp.MustCompile(`(?i)acl\s*=\s*"(public-read|public-read-write|authenticated-read)"`)
+	reProviderVersion = regexp.MustCompile(`^\s*version\s*=`)
+	reBackendLocal    = regexp.MustCompile(`^\s*backend\s+"local"`)
+	reEncryptedFalse  = regexp.MustCompile(`(?i)\bencrypted\s*=\s*false`)
+	reStorageEncFalse = regexp.MustCompile(`(?i)storage_encrypted\s*=\s*false`)
+	reFromPort        = regexp.MustCompile(`from_port\s*=\s*(\d+)`)
+	reToPort          = regexp.MustCompile(`to_port\s*=\s*(\d+)`)
+	reProtocol        = regexp.MustCompile(`protocol\s*=\s*"([^"]+)"`)
+	reSourceRanges    = regexp.MustCompile(`source_ranges\s*=\s*\[`)
+	reProviderName    = regexp.MustCompile(`^\s*([a-zA-Z0-9_/-]+)\s*=\s*\{`)
 
 	sensitivePortNums = map[string]string{
 		"22":    "SSH",
@@ -61,10 +61,11 @@ type blockContext struct {
 	hasOpenCIDR bool
 }
 
-func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) {
+// Lint runs Terraform file linting on the given path.
+func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) { //nolint:gocyclo // complex terraform linter with many rule branches
 	result := &Result{Passed: true}
 
-	file, err := os.Open(path)
+	file, err := os.Open(path) //nolint:gosec // path is the linter input file
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
@@ -76,7 +77,7 @@ func (l *TerraformLinter) Lint(_ context.Context, path string) (*Result, error) 
 	var stack []*blockContext
 
 	// provider version tracking (populated inside required_providers)
-	providerVersions := map[string]bool{}  // name → has version
+	providerVersions := map[string]bool{} // name → has version
 	inRequiredProviders := false
 	curProviderName := ""
 	curProviderHasVersion := false

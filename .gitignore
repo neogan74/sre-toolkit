@@ -49,3 +49,4 @@ AGENTS.md
 /log-parser
 /db-toolkit
 /k8s-doctor
+.claude/

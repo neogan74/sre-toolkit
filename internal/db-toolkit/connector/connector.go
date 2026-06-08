@@ -2,6 +2,7 @@
 package connector
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -14,6 +15,7 @@ import (
 // DBType represents the type of database.
 type DBType string
 
+// Supported database types.
 const (
 	PostgreSQL DBType = "postgres"
 	MySQL      DBType = "mysql"
@@ -25,7 +27,7 @@ type Config struct {
 	Host     string
 	Port     int
 	User     string
-	Password string
+	Password string //nolint:gosec // Password is a configuration field for DB connection
 	Database string
 	SSLMode  string // postgres only: disable, require, verify-full
 
@@ -62,7 +64,7 @@ func Connect(cfg *Config) (*sql.DB, error) {
 	db.SetMaxIdleConns(cfg.MaxIdleConns)
 	db.SetConnMaxLifetime(cfg.ConnMaxLifetime)
 
-	if err := db.Ping(); err != nil {
+	if err := db.PingContext(context.Background()); err != nil {
 		if closeErr := db.Close(); closeErr != nil {
 			// Log but don't override the original error
 			logger := logging.GetLogger()

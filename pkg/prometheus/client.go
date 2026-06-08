@@ -18,7 +18,7 @@ import (
 type Config struct {
 	URL      string        // Prometheus server URL
 	Username string        // Basic auth username (optional)
-	Password string        // Basic auth password (optional)
+	Password string        // Basic auth password (optional) //nolint:gosec // Password is a configuration field for Prometheus basic auth
 	Timeout  time.Duration // Request timeout
 	Insecure bool          // Skip TLS verification
 }

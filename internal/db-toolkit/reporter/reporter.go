@@ -17,6 +17,7 @@ import (
 // Format is the output format.
 type Format string
 
+// Supported output formats.
 const (
 	FormatTable Format = "table"
 	FormatJSON  Format = "json"
@@ -69,7 +70,9 @@ func PrintAnalysisReport(w io.Writer, r *analyzer.Report, format Format) {
 	if format == FormatJSON {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		_ = enc.Encode(r)
+		if err := enc.Encode(r); err != nil {
+			fmt.Fprintf(w, "error encoding JSON: %v\n", err)
+		}
 		return
 	}
 
@@ -137,7 +140,9 @@ func PrintBackupResult(w io.Writer, r *backup.Result, format Format) {
 	if format == FormatJSON {
 		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
-		_ = enc.Encode(r)
+		if err := enc.Encode(r); err != nil {
+			fmt.Fprintf(w, "error encoding JSON: %v\n", err)
+		}
 		return
 	}
 

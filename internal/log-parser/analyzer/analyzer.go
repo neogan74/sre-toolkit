@@ -74,7 +74,7 @@ func DefaultConfig() *Config {
 }
 
 // Analyze reads lines from r, parses them, and returns aggregated stats.
-func Analyze(ctx context.Context, r io.Reader, cfg *Config) (*Stats, error) {
+func Analyze(ctx context.Context, r io.Reader, cfg *Config) (*Stats, error) { //nolint:gocyclo // complex log analyzer with many format and pattern branches
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}

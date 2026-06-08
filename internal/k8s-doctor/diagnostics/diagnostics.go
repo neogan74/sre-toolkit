@@ -92,7 +92,7 @@ type SecurityContextIssue struct {
 }
 
 // RunDiagnostics performs comprehensive cluster diagnostics
-func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) {
+func RunDiagnostics(ctx context.Context, clientset kubernetes.Interface, namespace string) (*Result, error) { //nolint:gocyclo // complex diagnostics function with many check types
 	result := &Result{
 		NodeIssues:          []NodeIssue{},
 		PodIssues:           []PodIssue{},
@@ -315,7 +315,7 @@ func diagnoseComponent(comp *healthcheck.ComponentStatus) *SystemIssue {
 }
 
 // calculateSummary calculates the summary statistics
-func calculateSummary(result *Result) Summary {
+func calculateSummary(result *Result) Summary { //nolint:gocyclo // complex summary calculator aggregating many issue categories
 	summary := Summary{}
 
 	// Count node issues

@@ -36,8 +36,11 @@ func TestTableStatFields(t *testing.T) {
 		TableSize: "1.0 GB",
 	}
 	assert.Equal(t, "public", ts.Schema)
+	assert.Equal(t, "orders", ts.Table)
 	assert.Equal(t, int64(1_000_000), ts.Rows)
 	assert.Equal(t, "1.2 GB", ts.TotalSize)
+	assert.Equal(t, "200 MB", ts.IndexSize)
+	assert.Equal(t, "1.0 GB", ts.TableSize)
 }
 
 func TestIndexStatFields(t *testing.T) {
@@ -49,6 +52,10 @@ func TestIndexStatFields(t *testing.T) {
 		Size:   "8 MB",
 		Unused: true,
 	}
+	assert.Equal(t, "public", idx.Schema)
+	assert.Equal(t, "orders", idx.Table)
+	assert.Equal(t, "orders_pkey", idx.Index)
 	assert.True(t, idx.Unused)
 	assert.Equal(t, int64(0), idx.Scans)
+	assert.Equal(t, "8 MB", idx.Size)
 }

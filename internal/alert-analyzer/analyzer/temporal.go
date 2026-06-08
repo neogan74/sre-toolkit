@@ -124,7 +124,7 @@ func (a *TemporalAnalyzer) analyzeAlertGroup(alertName string, alerts []collecto
 	}
 }
 
-func maxBucket(values []int) (index int, count int) {
+func maxBucket(values []int) (index, count int) {
 	for i, value := range values {
 		if value > count {
 			index = i

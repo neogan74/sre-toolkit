@@ -7,7 +7,7 @@ run:
 
 linters:
   enable:
-    - errcheck      # Check for unchecked errors
+    - errcheck      # Check for unchecked errors 
     - govet         # Reports suspicious constructs
     - ineffassign   # Detects ineffectual assignments
     - staticcheck   # Advanced go vet
@@ -66,6 +66,7 @@ linters:
         - style
       disabled-checks:
         - rangeValCopy  # Often unavoidable with Kubernetes types
+        - hugeParam     # Large structs are common in Kubernetes/operator code
 
     revive:
       rules:
@@ -82,6 +83,7 @@ linters:
     gosec:
       excludes:
         - G104 # Audit errors not checked - covered by errcheck
+        - G117 # Exported field names matching secret pattern - legitimate config field names
 
   exclusions:
     rules:
@@ -93,6 +95,7 @@ linters:
           - dupl
           - gosec
           - gocritic
+          - noctx
 
       # Exclude weak cryptographic primitive warnings
       - text: "weak cryptographic primitive"
@@ -104,27 +107,30 @@ linters:
         linters:
           - errcheck
 
-issues:
-  exclude-dirs-use-default: false
-  exclude-rules:
-    - linters:
-        - typecheck
-      text: "undefined: yaml"
-    - linters:
-        - typecheck
-      text: "missing type in composite literal"
-    - linters:
-        - typecheck
-      text: "declared and not used"
-    - linters:
-        - typecheck
-      text: "undefined .*field or method"
-    - linters:
-        - typecheck
-      text: "could not import sync/atomic"
-    - linters:
-        - typecheck
-      text: "Called undefined"
-    - linters:
-        - typecheck
-      text: ".On undefined"
+      - linters:
+          - typecheck
+        text: "undefined: yaml"
+      - linters:
+          - typecheck
+        text: "missing type in composite literal"
+      - linters:
+          - typecheck
+        text: "declared and not used"
+      - linters:
+          - typecheck
+        text: "undefined .*field or method"
+      - linters:
+          - typecheck
+        text: "could not import sync/atomic"
+      - linters:
+          - typecheck
+        text: "Called undefined"
+      - linters:
+          - typecheck
+        text: ".On undefined"
+
+      # Exclude revive var-naming false positives for packages sharing stdlib names
+      - path: "(_test\\.go|pkg/metrics/)"
+        linters:
+          - revive
+        text: "avoid package names that conflict"

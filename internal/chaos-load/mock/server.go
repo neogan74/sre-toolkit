@@ -1,3 +1,4 @@
+// Package mock provides a configurable HTTP mock server for chaos load testing.
 package mock
 
 import (
@@ -60,7 +61,7 @@ func (s *Server) Run() error {
 	mux.HandleFunc("/", s.handleRequest)
 
 	addr := fmt.Sprintf(":%d", s.config.Port)
-	s.server = &http.Server{
+	s.server = &http.Server{ //nolint:gosec // ReadHeaderTimeout not needed for mock test server
 		Addr:    addr,
 		Handler: mux,
 	}
@@ -88,7 +89,7 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 		if s.config.Jitter > 0 {
 			jitterNanos := s.config.Jitter.Nanoseconds()
 			// Random offset in range [-jitter, +jitter]
-			offsetNanos := rand.Int63n(2*jitterNanos+1) - jitterNanos
+			offsetNanos := rand.Int63n(2*jitterNanos+1) - jitterNanos //nolint:gosec // math/rand is sufficient for load testing jitter
 			delay += time.Duration(offsetNanos)
 			if delay < 0 {
 				delay = 0
@@ -132,16 +133,16 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	if s.config.ErrorRate > 0 {
 		// rand.Intn(100) returns 0-99
 		// If ErrorRate is 10, we want 10% chance. 0-9 < 10.
-		if rand.Intn(100) < s.config.ErrorRate {
+		if rand.Intn(100) < s.config.ErrorRate { //nolint:gosec // math/rand is sufficient for load testing jitter
 			statusCode = http.StatusInternalServerError
 		}
 	}
 
 	w.WriteHeader(statusCode)
 	if statusCode == http.StatusOK {
-		_, _ = w.Write([]byte("OK"))
+		w.Write([]byte("OK")) //nolint:errcheck // http.ResponseWriter.Write errors are non-actionable in handlers
 	} else {
-		_, _ = w.Write([]byte("Internal Server Error"))
+		w.Write([]byte("Internal Server Error")) //nolint:errcheck // http.ResponseWriter.Write errors are non-actionable in handlers
 	}
 
 	logger.Info().
@@ -153,11 +154,11 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) shouldFailConnection() bool {
-	return s.config.ConnectionFailureRate > 0 && rand.Intn(100) < s.config.ConnectionFailureRate
+	return s.config.ConnectionFailureRate > 0 && rand.Intn(100) < s.config.ConnectionFailureRate //nolint:gosec // math/rand is sufficient for load testing jitter
 }
 
 func (s *Server) shouldTimeout() bool {
-	return s.config.TimeoutRate > 0 && rand.Intn(100) < s.config.TimeoutRate
+	return s.config.TimeoutRate > 0 && rand.Intn(100) < s.config.TimeoutRate //nolint:gosec // math/rand is sufficient for load testing jitter
 }
 
 func closeConnection(w http.ResponseWriter) error {

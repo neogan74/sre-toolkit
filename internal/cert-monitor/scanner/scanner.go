@@ -14,6 +14,7 @@ import (
 // Status represents the health status of a certificate.
 type Status string
 
+// Certificate status values.
 const (
 	StatusOK       Status = "OK"
 	StatusWarning  Status = "WARNING"
@@ -64,15 +65,7 @@ func ScanURL(ctx context.Context, target string, cfg *Config) *CertInfo {
 		cfg = DefaultConfig()
 	}
 
-	host, port, err := parseTarget(target)
-	if err != nil {
-		return &CertInfo{
-			Host:   target,
-			Port:   "443",
-			Status: StatusError,
-			Error:  fmt.Sprintf("invalid target: %v", err),
-		}
-	}
+	host, port := parseTarget(target)
 
 	info := &CertInfo{
 		Host: host,
@@ -84,7 +77,7 @@ func ScanURL(ctx context.Context, target string, cfg *Config) *CertInfo {
 			Timeout: cfg.Timeout,
 		},
 		Config: &tls.Config{
-			InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec
+			InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec // InsecureSkipVerify is controlled by user configuration
 			ServerName:         host,
 		},
 	}
@@ -180,7 +173,7 @@ func fillCertInfo(info *CertInfo, cert *x509.Certificate, cfg *Config) {
 
 // parseTarget splits a target into host and port.
 // Accepts: "example.com", "example.com:8443", "https://example.com"
-func parseTarget(target string) (host, port string, err error) {
+func parseTarget(target string) (host, port string) {
 	// Strip scheme
 	stripped := target
 	for _, scheme := range []string{"https://", "http://"} {
@@ -198,8 +191,8 @@ func parseTarget(target string) (host, port string, err error) {
 	}
 
 	if h, p, e := net.SplitHostPort(stripped); e == nil {
-		return h, p, nil
+		return h, p
 	}
 	// Default to 443
-	return stripped, "443", nil
+	return stripped, "443"
 }

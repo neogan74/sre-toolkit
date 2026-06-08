@@ -17,7 +17,7 @@ import (
 type Config struct {
 	URL      string        // Alertmanager server URL
 	Username string        // Basic auth username (optional)
-	Password string        // Basic auth password (optional)
+	Password string        // Basic auth password (optional) //nolint:gosec // Password is a configuration field for Alertmanager basic auth
 	Timeout  time.Duration // Request timeout
 	Insecure bool          // Skip TLS verification
 }
@@ -80,7 +80,7 @@ func (c *Client) Ping(ctx context.Context) error {
 		req.SetBasicAuth(c.config.Username, c.config.Password)
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) //nolint:gosec // URL is provided by operator configuration, SSRF is acceptable
 	if err != nil {
 		return fmt.Errorf("failed to connect to alertmanager: %w", err)
 	}
@@ -133,7 +133,7 @@ func (c *Client) ListAlerts(ctx context.Context, filter []string) ([]Alert, erro
 		req.SetBasicAuth(c.config.Username, c.config.Password)
 	}
 
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) //nolint:gosec // URL is provided by operator configuration, SSRF is acceptable
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}

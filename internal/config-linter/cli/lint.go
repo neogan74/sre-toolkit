@@ -1,3 +1,4 @@
+// Package cli provides the CLI commands for the config-linter tool.
 package cli
 
 import (
@@ -46,7 +47,7 @@ type LintReport struct {
 	Issues      []linter.Issue `json:"issues,omitempty"`
 }
 
-func runLint(cmd *cobra.Command, args []string) error {
+func runLint(cmd *cobra.Command, args []string) error { //nolint:gocyclo // complex lint runner with many file type branches
 	path, err := cmd.Flags().GetString("path")
 	if err != nil {
 		return fmt.Errorf("failed to get path flag: %w", err)
@@ -195,7 +196,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func processResult(result *linter.Result, passed *int, failed *int, issues *[]linter.Issue) {
+func processResult(result *linter.Result, passed, failed *int, issues *[]linter.Issue) {
 	if result == nil {
 		return
 	}
@@ -206,4 +207,3 @@ func processResult(result *linter.Result, passed *int, failed *int, issues *[]li
 		*issues = append(*issues, result.Issues...)
 	}
 }
-

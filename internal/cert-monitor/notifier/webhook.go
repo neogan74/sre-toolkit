@@ -61,7 +61,7 @@ func NewWebhookNotifier(url string, timeout time.Duration) *WebhookNotifier {
 // Notify sends certificate alerts for any non-OK results.
 // Returns nil if there are no alerts to send.
 func (n *WebhookNotifier) Notify(ctx context.Context, results []*scanner.CertInfo) error {
-	var alerts []CertAlert
+	alerts := make([]CertAlert, 0, len(results))
 	summary := AlertSummary{}
 
 	for _, info := range results {
@@ -119,7 +119,7 @@ func (n *WebhookNotifier) send(ctx context.Context, payload WebhookPayload) erro
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := n.client.Do(req)
+	resp, err := n.client.Do(req) //nolint:gosec // webhook URL is user-configured, SSRF is acceptable
 	if err != nil {
 		return fmt.Errorf("sending webhook: %w", err)
 	}

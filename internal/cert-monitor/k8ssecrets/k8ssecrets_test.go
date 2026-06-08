@@ -29,7 +29,7 @@ func TestScanSecrets_Empty(t *testing.T) {
 }
 
 func TestScanSecrets_ValidCert(t *testing.T) {
-	certPEM, _ := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(60*24*time.Hour))
+	certPEM := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(60*24*time.Hour))
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -56,7 +56,7 @@ func TestScanSecrets_ValidCert(t *testing.T) {
 }
 
 func TestScanSecrets_ExpiredCert(t *testing.T) {
-	certPEM, _ := generateCertPEM(t, time.Now().Add(-48*time.Hour), time.Now().Add(-time.Hour))
+	certPEM := generateCertPEM(t, time.Now().Add(-48*time.Hour), time.Now().Add(-time.Hour))
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -79,7 +79,7 @@ func TestScanSecrets_ExpiredCert(t *testing.T) {
 }
 
 func TestScanSecrets_CriticalCert(t *testing.T) {
-	certPEM, _ := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(3*24*time.Hour))
+	certPEM := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(3*24*time.Hour))
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -142,8 +142,8 @@ func TestScanSecrets_MissingTLSCrt(t *testing.T) {
 }
 
 func TestScanSecrets_MultipleNamespaces(t *testing.T) {
-	certPEM1, _ := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
-	certPEM2, _ := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(5*24*time.Hour))
+	certPEM1 := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
+	certPEM2 := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(5*24*time.Hour))
 
 	secrets := []*corev1.Secret{
 		{
@@ -177,7 +177,7 @@ func TestScanSecrets_MultipleNamespaces(t *testing.T) {
 }
 
 func TestParseCertificates(t *testing.T) {
-	certPEM, _ := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
+	certPEM := generateCertPEM(t, time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
 
 	certs, err := parseCertificates(certPEM)
 	require.NoError(t, err)
@@ -190,7 +190,7 @@ func TestParseCertificates_Invalid(t *testing.T) {
 }
 
 // generateCertPEM creates a self-signed certificate PEM for testing.
-func generateCertPEM(t *testing.T, notBefore, notAfter time.Time) ([]byte, []byte) {
+func generateCertPEM(t *testing.T, notBefore, notAfter time.Time) []byte {
 	t.Helper()
 
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -208,11 +208,5 @@ func generateCertPEM(t *testing.T, notBefore, notAfter time.Time) ([]byte, []byt
 	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	require.NoError(t, err)
 
-	keyDER, err := x509.MarshalECPrivateKey(key)
-	require.NoError(t, err)
-
-	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
-	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
-
-	return certPEM, keyPEM
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
 }

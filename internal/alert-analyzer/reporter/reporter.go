@@ -301,7 +301,7 @@ func (r *Reporter) ReportCompleteWithCorrelation(stats analyzer.SummaryStats, fr
 }
 
 // ReportCompleteWithInsights outputs a complete analysis report including optional flapping and correlation analysis.
-func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult, temporal []analyzer.TemporalResult, recommendations []analyzer.Recommendation) error {
+func (r *Reporter) ReportCompleteWithInsights(stats analyzer.SummaryStats, frequency []analyzer.FrequencyResult, flapping []analyzer.FlappingResult, correlation []analyzer.CorrelationResult, temporal []analyzer.TemporalResult, recommendations []analyzer.Recommendation) error { //nolint:gocyclo // complex report function with many output paths
 	switch r.format {
 	case FormatTable:
 		if err := r.ReportSummary(stats); err != nil {

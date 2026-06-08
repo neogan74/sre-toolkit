@@ -12,6 +12,7 @@ import (
 // Level represents log severity.
 type Level string
 
+// Log severity level constants.
 const (
 	LevelTrace   Level = "TRACE"
 	LevelDebug   Level = "DEBUG"
@@ -47,13 +48,16 @@ var jsonKeyRE = regexp.MustCompile(`"(\w+)"\s*:\s*"?([^",}\n]*)"?`)
 // JSONParser handles structured JSON log lines (zerolog, zap, logrus JSON).
 type JSONParser struct{}
 
+// Name returns the name of the JSON parser.
 func (p *JSONParser) Name() string { return "json" }
 
+// Detect reports whether the sample looks like a JSON log line.
 func (p *JSONParser) Detect(sample string) bool {
 	s := strings.TrimSpace(sample)
 	return strings.HasPrefix(s, "{") && strings.HasSuffix(s, "}")
 }
 
+// Parse parses a JSON log line into an Entry.
 func (p *JSONParser) Parse(line string) (*Entry, error) {
 	entry := &Entry{Raw: line, Fields: make(map[string]string)}
 
@@ -75,17 +79,20 @@ func (p *JSONParser) Parse(line string) (*Entry, error) {
 
 // --- Logfmt parser ---
 
-var logfmtPairRE = regexp.MustCompile(`(\w+)=("([^"]*)"|([\S]*))`)
+var logfmtPairRE = regexp.MustCompile(`(\w+)=("([^"]*)"|(\S*))`)
 
 // LogfmtParser handles key=value log lines.
 type LogfmtParser struct{}
 
+// Name returns the name of the logfmt parser.
 func (p *LogfmtParser) Name() string { return "logfmt" }
 
+// Detect reports whether the sample looks like a logfmt log line.
 func (p *LogfmtParser) Detect(sample string) bool {
 	return strings.Contains(sample, "=") && !strings.HasPrefix(strings.TrimSpace(sample), "{")
 }
 
+// Parse parses a logfmt log line into an Entry.
 func (p *LogfmtParser) Parse(line string) (*Entry, error) {
 	entry := &Entry{Raw: line, Fields: make(map[string]string)}
 
@@ -118,12 +125,15 @@ var combinedLogRE = regexp.MustCompile(
 // AccessLogParser handles Apache/nginx combined/common access log format.
 type AccessLogParser struct{}
 
+// Name returns the name of the access log parser.
 func (p *AccessLogParser) Name() string { return "access" }
 
+// Detect reports whether the sample matches the Apache/nginx combined log format.
 func (p *AccessLogParser) Detect(sample string) bool {
 	return combinedLogRE.MatchString(sample)
 }
 
+// Parse parses an Apache/nginx access log line into an Entry.
 func (p *AccessLogParser) Parse(line string) (*Entry, error) {
 	m := combinedLogRE.FindStringSubmatch(line)
 	if m == nil {
@@ -140,8 +150,14 @@ func (p *AccessLogParser) Parse(line string) (*Entry, error) {
 		"user_agent":  m[8],
 	}
 
-	ts, _ := time.Parse("02/Jan/2006:15:04:05 -0700", m[3])
-	status, _ := strconv.Atoi(m[5])
+	ts, err := time.Parse("02/Jan/2006:15:04:05 -0700", m[3])
+	if err != nil {
+		ts = time.Time{}
+	}
+	status, err := strconv.Atoi(m[5])
+	if err != nil {
+		status = 0
+	}
 
 	level := LevelInfo
 	if status >= 500 {
@@ -168,21 +184,27 @@ var syslogRE = regexp.MustCompile(
 // SyslogParser handles traditional syslog format.
 type SyslogParser struct{}
 
+// Name returns the name of the syslog parser.
 func (p *SyslogParser) Name() string { return "syslog" }
 
+// Detect reports whether the sample matches traditional syslog format.
 func (p *SyslogParser) Detect(sample string) bool {
 	return syslogRE.MatchString(sample)
 }
 
+// Parse parses a syslog line into an Entry.
 func (p *SyslogParser) Parse(line string) (*Entry, error) {
 	m := syslogRE.FindStringSubmatch(line)
 	if m == nil {
 		return nil, fmt.Errorf("line does not match syslog format")
 	}
 
-	ts, _ := time.Parse("Jan  2 15:04:05", m[1])
-	if ts.IsZero() {
-		ts, _ = time.Parse("Jan _2 15:04:05", m[1])
+	ts, err := time.Parse("Jan  2 15:04:05", m[1])
+	if err != nil || ts.IsZero() {
+		ts, err = time.Parse("Jan _2 15:04:05", m[1])
+		if err != nil {
+			ts = time.Time{}
+		}
 	}
 
 	fields := map[string]string{
@@ -209,12 +231,16 @@ var (
 	plainLevelRE     = regexp.MustCompile(`(?i)\b(TRACE|DEBUG|INFO|WARN(?:ING)?|ERROR|FATAL|CRITICAL)\b`)
 )
 
+// PlainParser is a fallback parser for unstructured log lines.
 type PlainParser struct{}
 
+// Name returns the name of the plain text parser.
 func (p *PlainParser) Name() string { return "plain" }
 
+// Detect always returns true as PlainParser is the fallback parser.
 func (p *PlainParser) Detect(_ string) bool { return true } // always matches as fallback
 
+// Parse parses an unstructured log line into an Entry.
 func (p *PlainParser) Parse(line string) (*Entry, error) {
 	entry := &Entry{Raw: line, Fields: make(map[string]string), Message: line}
 

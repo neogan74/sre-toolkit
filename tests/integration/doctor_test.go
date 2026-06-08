@@ -2,6 +2,7 @@ package integration
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -50,17 +51,17 @@ func TestMain(m *testing.M) {
 
 func createCluster() error {
 	fmt.Printf("Creating Kind cluster %s...\n", clusterName)
-	cmd := exec.Command("kind", "create", "cluster", "--name", clusterName, "--kubeconfig", kubeconfigPath)
+	cmd := exec.Command("kind", "create", "cluster", "--name", clusterName, "--kubeconfig", kubeconfigPath) //nolint:noctx // exec.Command used in integration test setup
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to create kind cluster: %v, output: %s", err, output)
+		return fmt.Errorf("failed to create kind cluster: %w, output: %s", err, output)
 	}
 
 	// Wait for nodes to be ready
 	fmt.Println("Waiting for nodes to be ready...")
 	// We need to retry waiting because API server might not be immediately available after create returns
 	for i := 0; i < connRetry; i++ {
-		cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=2m")
+		cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=2m") //nolint:noctx // exec.Command used in integration test setup
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			fmt.Println("Nodes are ready!")
@@ -68,14 +69,14 @@ func createCluster() error {
 		}
 		if i == connRetry-1 {
 			fmt.Printf("kubectl wait output: %s\n", output)
-			return fmt.Errorf("timeout waiting for nodes to be ready: %v", err)
+			return fmt.Errorf("timeout waiting for nodes to be ready: %w", err)
 		}
 		time.Sleep(connWait)
 	}
 
 	// Wait for pods to be ready (kube-system)
 	fmt.Println("Waiting for kube-system pods to be ready...")
-	cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "pods", "--all", "-n", "kube-system", "--timeout=2m")
+	cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "pods", "--all", "-n", "kube-system", "--timeout=2m") //nolint:noctx // exec.Command used in integration test setup
 	// We don't error here strictly because some pods might be tricky (like coredns needing network)
 	// but mostly if nodes are ready, CNI is ready.
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -93,12 +94,12 @@ func deleteCluster() error {
 	cmd := exec.Command("kind", "delete", "cluster", "--name", clusterName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to delete kind cluster: %v, output: %s", err, output)
+		return fmt.Errorf("failed to delete kind cluster: %w, output: %s", err, output)
 	}
 
 	// Remove kubeconfig file
 	if err := os.Remove(kubeconfigPath); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove kubeconfig file: %v", err)
+		return fmt.Errorf("failed to remove kubeconfig file: %w", err)
 	}
 
 	return nil
@@ -155,7 +156,8 @@ func TestDiagnosticsWithFailure(t *testing.T) {
 	// We expect err != nil if there are critical issues, as k8s-doctor exits with 1.
 	// We only fail the test if there was a problem running the command itself.
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
 			t.Fatalf("Diagnostics command failed to execute: %v\nOutput: %s", err, output)
 		}
 	}
@@ -185,7 +187,8 @@ func TestAudit(t *testing.T) {
 	output, err := cmd.CombinedOutput()
 	// Audit might return 1 if there are warnings (like missing network policies in default)
 	if err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
 			t.Fatalf("Audit command failed to execute: %v\nOutput: %s", err, output)
 		}
 	}

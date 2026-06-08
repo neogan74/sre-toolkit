@@ -408,7 +408,7 @@ func resolveWriter(output, outputFile string) (io.Writer, func(), error) {
 	if outputFile == "" {
 		return os.Stdout, nil, nil
 	}
-	f, err := os.Create(outputFile)
+	f, err := os.Create(outputFile) //nolint:gosec // output file path is provided by user via CLI flag
 	if err != nil {
 		return nil, nil, fmt.Errorf("open output file: %w", err)
 	}

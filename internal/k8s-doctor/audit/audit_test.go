@@ -32,7 +32,7 @@ func TestRunAudit(t *testing.T) {
 			objects: []runtime.Object{
 				makeNamespace("default"),
 				makeHealthyPod("app", "default"),
-				makeResourceQuota("default", "compute-quota"),
+				makeResourceQuota("default"),
 			},
 			wantResources:       0,
 			wantProbes:          0,
@@ -51,7 +51,7 @@ func TestRunAudit(t *testing.T) {
 				makeNamespace("other"),
 				makeBrokenPod("app", "default"),
 				makeBrokenPod("app", "other"),
-				makeResourceQuota("default", "compute-quota"),
+				makeResourceQuota("default"),
 			},
 			wantResources:       4,
 			wantProbes:          2,
@@ -67,8 +67,8 @@ func TestRunAudit(t *testing.T) {
 			objects: []runtime.Object{
 				makeNamespace("secure"),
 				makeHealthyPod("app", "secure"),
-				makeNetworkPolicy("default-deny", "secure"),
-				makeResourceQuota("secure", "compute-quota"),
+				makeNetworkPolicy("secure"),
+				makeResourceQuota("secure"),
 			},
 			wantResources:       0,
 			wantProbes:          0,
@@ -147,8 +147,8 @@ func TestRunAuditRBAC(t *testing.T) {
 			name:      "namespace scoped audit ignores out of scope bindings",
 			namespace: "default",
 			objects: []runtime.Object{
-				makeNetworkPolicy("default-deny", "default"),
-				makeResourceQuota("default", "compute-quota"),
+				makeNetworkPolicy("default"),
+				makeResourceQuota("default"),
 				makeRole("default", "secret-reader", []rbacv1.PolicyRule{
 					{Resources: []string{"secrets"}, Verbs: []string{"get", "list"}},
 				}),
@@ -174,8 +174,8 @@ func TestRunAuditRBAC(t *testing.T) {
 			name:      "cluster admin binding for namespace service account is detected",
 			namespace: "team-a",
 			objects: []runtime.Object{
-				makeNetworkPolicy("default-deny", "team-a"),
-				makeResourceQuota("team-a", "compute-quota"),
+				makeNetworkPolicy("team-a"),
+				makeResourceQuota("team-a"),
 				makeClusterRoleBinding("team-a-admin", "cluster-admin", rbacv1.Subject{
 					Kind:      "ServiceAccount",
 					Name:      "runner",
@@ -227,7 +227,7 @@ func TestRunAuditResourceQuotas(t *testing.T) {
 			name: "missing quota in target namespace produces warning",
 			objects: []runtime.Object{
 				makeNamespace("default"),
-				makeNetworkPolicy("default-deny", "default"),
+				makeNetworkPolicy("default"),
 			},
 			wantResourceQuotas: 1,
 			wantWarning:        1,
@@ -238,8 +238,8 @@ func TestRunAuditResourceQuotas(t *testing.T) {
 			objects: []runtime.Object{
 				makeNamespace("team-a"),
 				makeNamespace("team-b"),
-				makeNetworkPolicy("default-deny", "team-a"),
-				makeResourceQuota("team-b", "compute-quota"),
+				makeNetworkPolicy("team-a"),
+				makeResourceQuota("team-b"),
 			},
 			wantResourceQuotas: 1,
 			wantWarning:        1,
@@ -249,8 +249,8 @@ func TestRunAuditResourceQuotas(t *testing.T) {
 			objects: []runtime.Object{
 				makeNamespace("default"),
 				makeNamespace("kube-system"),
-				makeNetworkPolicy("default-deny", "default"),
-				makeResourceQuota("default", "compute-quota"),
+				makeNetworkPolicy("default"),
+				makeResourceQuota("default"),
 			},
 			wantResourceQuotas: 0,
 			wantWarning:        0,
@@ -282,19 +282,19 @@ func makeNamespace(name string) *corev1.Namespace {
 	}
 }
 
-func makeNetworkPolicy(name, namespace string) runtime.Object {
+func makeNetworkPolicy(namespace string) runtime.Object {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "default-deny",
 			Namespace: namespace,
 		},
 	}
 }
 
-func makeResourceQuota(namespace, name string) runtime.Object {
+func makeResourceQuota(namespace string) runtime.Object {
 	return &corev1.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "compute-quota",
 			Namespace: namespace,
 		},
 	}

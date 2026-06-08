@@ -58,8 +58,11 @@ func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStat
 		return nil, fmt.Errorf("failed to list nodes: %w", err)
 	}
 
-	// Try to get node metrics
-	metricsMap, _ := getNodeMetrics(ctx, clientset)
+	// Try to get node metrics (errors are non-fatal; metrics are best-effort)
+	metricsMap, err := getNodeMetrics(ctx, clientset)
+	if err != nil {
+		metricsMap = nil
+	}
 
 	statuses := make([]NodeStatus, 0, len(nodes.Items))
 	for _, node := range nodes.Items {
@@ -101,7 +104,7 @@ func getNodeMetrics(ctx context.Context, client kubernetes.Interface) (map[strin
 }
 
 // analyzeNode analyzes a single node and returns its status
-func analyzeNode(node *corev1.Node, apiServerVersion string, usage corev1.ResourceList) NodeStatus {
+func analyzeNode(node *corev1.Node, apiServerVersion string, usage corev1.ResourceList) NodeStatus { //nolint:gocyclo // complex node analyzer with many condition and version check branches
 	status := NodeStatus{
 		Name:        node.Name,
 		Status:      "Unknown",

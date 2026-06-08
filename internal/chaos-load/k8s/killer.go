@@ -97,7 +97,7 @@ func (k *PodKiller) pickRandomPod(ctx context.Context) (*corev1.Pod, error) {
 			k.config.Namespace, k.config.LabelSelector)
 	}
 
-	return &running[rand.Intn(len(running))], nil
+	return &running[rand.Intn(len(running))], nil //nolint:gosec // math/rand is sufficient for chaos load testing
 }
 
 func (k *PodKiller) killPod(ctx context.Context, pod *corev1.Pod) error {
