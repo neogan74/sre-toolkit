@@ -1,514 +1,398 @@
-# SRE Toolkit - Product Backlog
+# SRE Toolkit — Product Backlog
+
+> **Last reviewed:** 2026-06-10 — verified against source in `cmd/` and `internal/`.
+> **Current focus:** Harden the 7 existing tools to a coherent **v1.0** release.
 
 ## Project Goal
-Create a set of practical tools for SRE specialists, demonstrating deep understanding of infrastructure, programming, and operational work.
+A set of practical, production-grade tools for SRE specialists, demonstrating deep understanding of infrastructure, programming, and operational work.
+
+## How to read this file
+- `[x]` = implemented and present in the codebase.
+- `[ ]` = not yet implemented.
+- **Status** lines reflect verified code state, not aspiration.
+- Each tool ends with **v1.0 acceptance criteria** — the bar for calling it "done".
 
 ---
 
-## Tools for Development
+## Status at a glance
 
-### 1. k8s-doctor - CLI for Kubernetes Checks ✅ **MVP COMPLETE**
-**Priority:** HIGH
-**Complexity:** Medium
-**Status:** Phase 2 Complete (v0.1.0 ready)
+| Tool | Commands | Tests | Maturity | Biggest v1.0 gap |
+|------|----------|-------|----------|------------------|
+| k8s-doctor | healthcheck, diagnostics, audit, version | 12 files | **Beta** | Prometheus metrics export, benchmarks |
+| alert-analyzer | analyze, version | 12 files | **Beta** | Notifications (Slack/email), Jira |
+| config-linter | lint (k8s/tf/docker/helm), version | 4 files | **Beta** | CI/CD config linting, custom rules engine |
+| chaos-load | http, k8s (pod-kill/node-drain/network-partition), mock | 8 files | **Beta** | Prometheus export, real-time TUI, comparison reports |
+| cert-monitor | scan, watch, monitor, version | 3 files | **Alpha** | OCSP/CRL revocation, chain validation, more tests |
+| log-parser | tail, query, grep | 2 files | **Alpha** | Anomaly detection, exporters, more tests |
+| db-toolkit | health, backup | 4 files | **Alpha** | Replication lag, slow-query analyzer, more tests |
 
-#### Features:
-- [x] **Cluster Health Check** ✅ **COMPLETE**
-  - [x] API server availability check (Ping with timeout)
-  - [x] Node status check (Ready, NotReady, MemoryPressure, DiskPressure)
-  - [x] Critical components check (etcd, controller-manager, scheduler, coredns, kube-proxy)
-  - [x] Node role identification (control-plane, worker)
-  - [x] Version tracking per node
-  - [x] Component version compatibility validation ✅ **COMPLETE**
+Maturity legend: **Alpha** = works, thin tests / missing core features; **Beta** = feature-complete core + good tests; **GA/v1.0** = acceptance criteria below all met.
 
-- [x] **Problem Diagnostics** ✅ **MOSTLY COMPLETE**
-  - [x] Find pods in CrashLoopBackOff, ImagePullBackOff, Pending states
-  - [x] High restart count detection (>5 = warning, >10 = critical)
-  - [x] Container error detection (CreateContainerError, RunContainerError)
-  - [x] Severity classification (Critical/Warning/Info)
-  - [x] Resource pressure warnings (Memory/Disk/PID/Network)
-  - [x] Event analysis with Warning/Error filtering ✅ **COMPLETE**
-  - [x] Resource limits check (CPU/Memory requests/limits) ✅ **COMPLETE**
-  - [x] High-load node identification (CPU/memory usage metrics)
+---
 
-- [ ] **Best Practices Audit** ⏳ **PLANNED (Phase 3)**
-  - [x] Check for liveness/readiness probes
-  - [х] Security Context validation (runAsNonRoot, readOnlyRootFilesystem)
-  - [x] NetworkPolicies check
+## Tools
+
+### 1. k8s-doctor — Kubernetes health checker ✅ **Beta**
+**Priority:** HIGH · **Complexity:** Medium
+**Commands:** `healthcheck`, `diagnostics`, `audit`, `version`
+
+#### Cluster health check ✅
+- [x] API server availability check (ping with timeout)
+- [x] Node status (Ready, NotReady, MemoryPressure, DiskPressure)
+- [x] Critical components (etcd, controller-manager, scheduler, coredns, kube-proxy)
+- [x] Node role identification (control-plane, worker)
+- [x] Version tracking per node + component version compatibility validation
+
+#### Problem diagnostics ✅
+- [x] Pods in CrashLoopBackOff / ImagePullBackOff / Pending
+- [x] High restart-count detection (>5 warning, >10 critical)
+- [x] Container error detection (CreateContainerError, RunContainerError)
+- [x] Severity classification (Critical / Warning / Info)
+- [x] Resource-pressure warnings (Memory / Disk / PID / Network)
+- [x] Event analysis with Warning/Error filtering
+- [x] Resource limits check (CPU/Memory requests/limits)
+- [x] High-load node identification (CPU/memory usage metrics)
+
+#### Best-practices audit ✅ (`audit` command)
+- [x] Liveness/readiness probe presence
+- [x] Security context validation (runAsNonRoot, readOnlyRootFilesystem)
+- [x] NetworkPolicies check
 - [x] RBAC permissions audit (excessive permissions)
-  - [x] Resource quotas check in namespace
+- [x] Resource quotas check per namespace
 
-- [x] **Reports and Export** ✅ **PARTIAL**
-  - [x] JSON/Table output formats (tabwriter with alignment)
-  - [x] CI/CD integration (exit codes on critical issues)
-  - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
-  - [x] Summary statistics
-  - [x] YAML output format ✅ **COMPLETE*
-  - [ ] Prometheus metrics export
+#### Reports and export
+- [x] JSON / Table / YAML output (tabwriter with alignment)
+- [x] HTML report output (`internal/k8s-doctor/reporter/html.go`)
+- [x] CI/CD integration (exit codes on critical issues)
+- [x] Emoji severity indicators + summary statistics
+- [ ] Prometheus metrics export (push/exporter mode)
 
-**Technologies:** Go, client-go, cobra, tabwriter, zerolog
+**v1.0 acceptance criteria**
 
-**Completed Files:**
-- `pkg/k8s/client.go` - Kubernetes client wrapper
-- `internal/k8s-doctor/healthcheck/{nodes,pods,components}.go`
-- `internal/k8s-doctor/diagnostics/diagnostics.go`
-- `internal/k8s-doctor/reporter/reporter.go`
-- `cmd/k8s-doctor/main.go` - CLI with healthcheck/diagnostics commands
-- `docs/k8s-doctor-tutorial.md` - 400+ line user guide
-- `internal/k8s-doctor/healthcheck/{nodes,pods,components}_test.go` ✅ **NEW**
-- `internal/k8s-doctor/diagnostics/diagnostics_test.go` ✅ **NEW**
-
-**Next Steps:**
-- [x] Integration tests with kind (Phase 2.5) ✅ **COMPLETE**
-- [x] Implement audit command ✅ **COMPLETE**
-- [ ] Add event analysis
-- [ ] Resource limits checking
-- [ ] Benchmark tests for performance
+- [ ] Prometheus exporter mode (`--metrics` flag serving `/metrics`)
+- [ ] Benchmark tests for large-cluster scans (target <30s @ 100 nodes)
+- [ ] Integration tests stay green in CI against kind
+- [ ] Godoc on all exported types in `internal/k8s-doctor/...`
 
 ---
 
-### 2. alert-analyzer - Prometheus/Alertmanager Alert Analyzer ⏳ **PHASE 1 COMPLETE**
-**Priority:** HIGH
-**Complexity:** Medium-High
-**Status:** Phase 1 Complete (Frequency Analysis MVP)
+### 2. alert-analyzer — Prometheus/Alertmanager alert analyzer ✅ **Beta**
+**Priority:** HIGH · **Complexity:** Medium-High
+**Commands:** `analyze`, `version`
 
-#### Features:
-- [x] **Collection and Aggregation** ✅ **PARTIAL**
-  - [x] Prometheus API connection with timeout/TLS support
-  - [x] Alert history collection via `ALERTS{}` query
-  - [x] Time range queries with configurable lookback
-  - [x] Grouping by alert name
-  - [x] Label extraction (severity, namespace, service)
-  - [x] Alertmanager API connection
-  - [x] Multi-source support (multi-cluster)
+#### Collection and aggregation ✅
+- [x] Prometheus API connection (timeout/TLS)
+- [x] Alert history via `ALERTS{}` query, configurable lookback
+- [x] Grouping by alert name; label extraction (severity, namespace, service)
+- [x] Alertmanager API connection
+- [x] Multi-source support (multi-cluster)
+- [x] Victoria Metrics compatibility
 
-- [x] **Pattern Analysis** ✅ **PARTIAL**
-  - [x] Top "noisy" alerts (highest firing count)
-  - [x] Firing frequency calculation
-  - [x] Total/unique alert counting
-  - [x] Alert history tracking (fired/resolved times)
-  - [x] Flapping alerts detection (constantly switching) ✅ **NEW**
-  - [x] Alert correlation (which alerts fire together) ✅ **NEW**
-  - [x] Temporal patterns (day of week, time of day) ✅ **NEW**
+#### Pattern analysis ✅
+- [x] Top "noisy" alerts (highest firing count) + firing frequency
+- [x] Total/unique counting; fired/resolved tracking
+- [x] Flapping detection
+- [x] Alert correlation (which alerts fire together)
+- [x] Temporal patterns (day of week, time of day)
 
-- [x] **Recommendations** ✅ **PARTIAL**
-  - [x] Suggestions for for/threshold tuning ✅ **NEW**
-  - [x] "Dead" rule identification (never firing) ✅ **NEW**
-  - [x] Signal-to-noise ratio assessment ✅ **NEW**
-  - [x] Rule prioritization for review ✅ **NEW**
+#### Recommendations ✅
+- [x] for/threshold tuning suggestions
+- [x] "Dead" rule identification (never firing)
+- [x] Signal-to-noise ratio assessment
+- [x] Rule prioritization for review
 
-- [x] **Dashboard and Reports** ✅ **PARTIAL**
-  - [x] Table output with top-N alerts
-  - [x] JSON export for automation
-  - [x] Summary statistics (total/unique alerts)
-  - [x] Prometheus metrics framework
-  - [x] Markdown report generation ✅ **NEW**
-  - [x] Grafana dashboard with analysis metrics ✅ **NEW**
-  - [ ] Slack/email notifications about problematic rules
-  - [ ] Jira integration for task creation
+#### Dashboard and reports
+- [x] Table output with top-N alerts
+- [x] JSON export; summary statistics
+- [x] Markdown report generation
+- [x] Grafana dashboard with analysis metrics
+- [x] Prometheus metrics framework
+- [ ] Slack / email notifications about problematic rules
+- [ ] Jira integration for task creation
 
-**Technologies:** Go, prometheus/client_golang, zerolog, cobra
+**Coverage:** ~82% on `alert-analyzer` packages (per last run).
 
-**Completed Files:**
-- `pkg/prometheus/client.go` - Prometheus client wrapper
-- `internal/alert-analyzer/collector/{types,prometheus}.go`
-- `internal/alert-analyzer/analyzer/frequency.go`
-- `internal/alert-analyzer/reporter/reporter.go`
-- `internal/alert-analyzer/storage/memory.go`
-- `cmd/alert-analyzer/main.go` - CLI with analyze command
-- `deployments/docker/alert-analyzer/` - Docker Compose dev environment
-- `deployments/docker/alert-analyzer/README.md` - Setup guide
+**v1.0 acceptance criteria**
 
-**Next Steps:**
-- [x] Unit tests (80%+ coverage target) ✅ **DONE** (`82.4%` total coverpkg for `alert-analyzer`)
-- [x] Flapping detection algorithm ✅ **DONE**
-- [x] Alert correlation analysis ✅ **NEW**
-- [x] Recommendations engine ✅ **NEW**
-- [x] Grafana dashboard ✅ **NEW**
-- [x] Victoria Metrics compatibility testing ✅ **NEW**
+- [ ] At least one notification channel shipped (Slack webhook preferred)
+- [ ] End-to-end test against a seeded Prometheus in docker-compose
+- [ ] Documented recommendation thresholds (tunable via config)
 
 ---
 
-### 3. chaos-load - Load Generator and Chaos Testing ⏳ **PHASE 2 COMPLETE**
-**Priority:** MEDIUM
-**Complexity:** High
-**Status:** Phase 2 Complete (Kubernetes Integration)
+### 3. config-linter — Configuration linter ✅ **Beta**
+**Priority:** MEDIUM · **Complexity:** Medium
+**Commands:** `lint`, `version`
 
-#### Features:
-- [x] **HTTP Load Generation** ✅ **COMPLETE**
-  - [x] Configurable concurrency (workers)
-  - [x] Target URL support
-  - [x] Duration-based runs
-  - [x] Request limit support
-  - [x] Various HTTP methods and payloads
-  - [x] Authentication support (Bearer, Basic)
+#### Kubernetes YAML ✅
+- [x] Schema validation (client-go decoder)
+- [x] Anti-patterns (latest tag, missing probes)
+- [x] Security checks (privileged, hostNetwork/PID/IPC, runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation, dangerous capabilities)
+- [x] Resource limits requirements (CPU/Memory)
+- [x] JSON / Table output
 
-- [ ] **Chaos Scenarios**
-  - [x] Random HTTP 5xx errors
-  - [x] Network latency injection
-  - [x] Connection failures
-  - [x] Timeout simulation
-  - [ ] Resource exhaustion (memory/CPU)
+#### Terraform ✅
+- [x] Provider version constraints
+- [x] Open security groups (SSH/RDP/MySQL/Redis/all-traffic from 0.0.0.0/0)
+- [x] Hardcoded credentials (AWS keys, secrets, tokens)
+- [x] Unencrypted storage (EBS, RDS)
+- [x] Public S3/GCS ACLs; local backend warning; GCP open firewall ranges
 
-- [ ] **Kubernetes Integration**
-  - [x] Pod killing (graceful/force) ✅ **COMPLETE**
-  - [x] Node draining ✅ **COMPLETE**
-  - [ ] Network partition between services
-  - [ ] Network partition between services
-  - [ ] Storage issues (disk full)
+#### Docker / Containerfiles ✅
+- [x] Latest tag / unpinned base image; MAINTAINER deprecated
+- [x] sudo in RUN; apt-get upgrade (non-deterministic)
+- [x] ADD vs COPY; non-root USER (last stage); absolute WORKDIR
 
-- [x] **Reporting** ✅ **PARTIAL**
-  - [x] Summary report in terminal (latency/status codes)
-  - [ ] Real-time dashboard (terminal UI)
-  - [ ] Metrics export to Prometheus
-  - [ ] JMeter/Locust-compatible reports
-  - [ ] Comparison reports (before/after)
+#### Helm charts ✅ (`internal/config-linter/linter/helm.go`)
+- [x] Template / chart linting (basic)
+- [ ] Values.yaml schema check
+- [ ] Dependency analysis + version compatibility
 
-**Technologies:** Go, net/http, stats/collector, cobra, k8s.io/client-go
+#### CI/CD configs ⏳ **NOT STARTED**
+- [ ] GitHub Actions workflow validation
+- [ ] GitLab CI syntax check
+- [ ] Jenkins pipeline lint
 
-**Completed Files:**
-- `internal/chaos-load/http/worker.go`
-- `internal/chaos-load/stats/collector.go`
-- `internal/chaos-load/mock/server.go`
-- `internal/chaos-load/k8s/killer.go`
-- `internal/chaos-load/k8s/drainer.go`
-- `cmd/chaos-load/main.go`
-- `cmd/chaos-load/k8s.go`
-- `docs/chaos-load-tutorial.md`
+**v1.0 acceptance criteria**
 
-**Next Steps:**
-- [x] Unit tests for worker and collector ✅ **COMPLETE**
-- [x] Pod killing chaos scenario ✅ **COMPLETE**
-- [x] Node draining chaos scenario ✅ **COMPLETE**
-- [ ] Support for POST/PUT methods with payloads
-- [ ] Real-time Progress indicator
-- [ ] Network partition between services
+- [ ] Helm: values schema + dependency checks complete
+- [ ] At least GitHub Actions workflow linting shipped
+- [ ] Custom rule engine (OPA/Rego or config-driven) with docs
+- [ ] SARIF output for GitHub code-scanning integration
+
+---
+
+### 4. chaos-load — Load generator and chaos testing ✅ **Beta**
+**Priority:** MEDIUM · **Complexity:** High
+**Commands:** `http`, `k8s` (`pod-kill`, `node-drain`, `network-partition`), `mock`
+
+#### HTTP load generation ✅
+- [x] Configurable concurrency (workers); target URL; duration-based runs
+- [x] Request-limit support; HTTP methods and payloads
+- [x] Authentication (Bearer, Basic)
+
+#### Chaos scenarios (in-traffic) ✅ partial
+- [x] Random HTTP 5xx errors
+- [x] Network latency injection
+- [x] Connection failures; timeout simulation
+- [ ] Resource exhaustion (memory/CPU)
+
+#### Kubernetes integration ✅ partial
+- [x] Pod killing (graceful/force)
+- [x] Node draining
+- [x] Network partition between services (`network-partition` command)
 - [ ] Storage issues (disk full)
 
----
+#### Reporting
+- [x] Summary report in terminal (latency / status codes)
+- [ ] Real-time dashboard (terminal UI)
+- [ ] Metrics export to Prometheus
+- [ ] JMeter/Locust-compatible reports
+- [ ] Comparison reports (before/after)
 
-### 4. config-linter - Configuration Linter
-**Priority:** MEDIUM
-**Complexity:** Medium
+**v1.0 acceptance criteria**
 
-#### Features:
-- [x] **Kubernetes YAML** ✅ **COMPLETE**
-  - [x] Schema validation (client-go decoder)
-  - [x] Best practices (anti-patterns: latest tag, missing probes)
-  - [x] Security checks (privileged, hostNetwork, hostPID, hostIPC, runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation, dangerous capabilities)
-  - [x] Resource limits requirements (CPU/Memory)
-  - [x] JSON/Table output formats
-
-- [ ] **Helm Charts**
-  - Template validation
-  - Values.yaml schema check
-  - Dependency analysis
-  - Version compatibility
-
-- [x] **Terraform** ✅ **COMPLETE**
-  - [x] Provider version constraints check
-  - [x] Security rules: open security groups (SSH/RDP/MySQL/Redis/all-traffic from 0.0.0.0/0)
-  - [x] Hardcoded credentials detection (AWS keys, secrets, tokens)
-  - [x] Unencrypted storage (EBS encrypted=false, RDS storage_encrypted=false)
-  - [x] Public S3/GCS ACLs
-  - [x] Local backend warning (use remote state)
-  - [x] GCP firewall open source_ranges
-
-- [x] **Docker/Containerfiles** ✅ **COMPLETE**
-  - [x] Latest tag / unpinned base image
-  - [x] MAINTAINER deprecated
-  - [x] sudo in RUN
-  - [x] apt-get upgrade (non-deterministic builds)
-  - [x] ADD vs COPY preference
-  - [x] Non-root USER check (last stage)
-  - [x] Absolute WORKDIR paths
-
-- [ ] **CI/CD Configs**
-  - GitHub Actions workflow validation
-  - GitLab CI syntax check
-  - Jenkins pipeline lint
-
-**Technologies:** Go, yaml/json parsers, OPA/Rego for policy
+- [ ] Prometheus metrics export during runs
+- [ ] Real-time progress indicator (live RPS/latency)
+- [ ] Comparison report (baseline vs run) in JSON + terminal
+- [ ] Documented safety guardrails for k8s chaos (dry-run, label selectors)
 
 ---
 
-### 5. cert-monitor - SSL/TLS Certificate Monitoring
-**Priority:** MEDIUM
-**Complexity:** Low-Medium
+### 5. cert-monitor — SSL/TLS certificate monitoring ⏳ **Alpha**
+**Priority:** MEDIUM · **Complexity:** Low-Medium
+**Commands:** `scan`, `watch`, `monitor`, `version`
 
-#### Features:
-- [ ] **Scanning**
-  - Expiration date check
-  - Certificate chain validation
-  - Revocation status check (OCSP/CRL)
-  - Kubernetes secrets monitoring
+#### Scanning
+- [x] Expiration-date check (`internal/cert-monitor/scanner`)
+- [x] Kubernetes secrets monitoring (`internal/cert-monitor/k8ssecrets`)
+- [ ] Certificate chain validation
+- [ ] Revocation status (OCSP / CRL)
 
-- [ ] **Alerting**
-  - Email/Slack notifications
-  - [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`) ✅ **COMPLETE**
-  - [x] Webhook integration ✅ **COMPLETE**
-  - Escalation policy
+#### Alerting
+- [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`)
+- [x] Webhook integration (`internal/cert-monitor/notifier`)
+- [ ] Email / Slack notifications
+- [ ] Escalation policy
 
-- [ ] **Reporting**
-  - Certificate inventory
-  - Grouping by domain/issuer
-  - Renewal history tracking
+#### Reporting
+- [ ] Certificate inventory
+- [ ] Grouping by domain / issuer
+- [ ] Renewal history tracking
 
-**Technologies:** Go, crypto/x509, cert-manager integration
+**v1.0 acceptance criteria**
 
----
-
-### 6. log-parser - Smart Log Parser
-**Priority:** LOW
-**Complexity:** Medium-High
-
-#### Features:
-- [ ] **Parsing**
-  - Format support (JSON, logfmt, regex)
-  - Kubernetes logs (pod/container)
-  - Systemd journal
-  - Custom formats
-
-- [ ] **Analysis**
-  - Error pattern detection
-  - Anomaly detection (ML-based)
-  - Log correlation (trace ID)
-  - Performance metrics extraction
-
-- [ ] **Visualization**
-  - Terminal UI for live tail
-  - Export to Loki/Elasticsearch
-  - Histogram/timeline view
-
-**Technologies:** Go, go-elasticsearch, promtail libraries
+- [ ] Chain validation + OCSP check
+- [ ] Slack notification channel
+- [ ] Certificate inventory report (table + JSON)
+- [ ] Test coverage ≥ 70% on scanner + notifier
 
 ---
 
-### 7. db-toolkit - Database Operations Helper
-**Priority:** LOW
-**Complexity:** Medium
+### 6. log-parser — Smart log parser ⏳ **Alpha**
+**Priority:** LOW-MEDIUM · **Complexity:** Medium-High
+**Commands:** `tail`, `query`, `grep`
 
-#### Features:
-- [ ] **Health Checks**
-  - Connection pool monitoring
-  - Replication lag check
-  - Long-running queries detection
-  - Table/Index bloat analysis
+#### Parsing ✅ partial
+- [x] Format support (`internal/log-parser/formats` — JSON/logfmt/regex)
+- [x] Query + grep over parsed streams
+- [ ] Kubernetes pod/container log source
+- [ ] Systemd journal source
 
-- [ ] **Backup/Restore**
-  - Automated backup scheduling
-  - Point-in-time recovery
-  - Backup validation
-  - Cross-region replication status
+#### Analysis
+- [x] Error pattern detection (`internal/log-parser/analyzer`)
+- [ ] Anomaly detection (statistical/ML)
+- [ ] Log correlation (trace ID)
+- [ ] Performance-metric extraction
 
-- [ ] **Performance**
-  - Slow query analyzer
-  - Index recommendations
-  - Query explain analyzer
-  - Connection pooling stats
+#### Visualization
+- [ ] Terminal UI for live tail
+- [ ] Export to Loki / Elasticsearch
+- [ ] Histogram / timeline view
 
-**Technologies:** Go, database/sql, pgx (PostgreSQL), go-mysql
+**v1.0 acceptance criteria**
 
----
-
-### 8. chaos-operator - Ansible Chaos Operator ⏳ **NEW**
-**Priority:** MEDIUM
-**Complexity:** Medium-High
-**Status:** Planned/Exploratory
-
-#### Features:
-- [ ] **Tool Detection**
-  - Pre-flight checks for required binaries (stress-ng, etc.)
-- [ ] **Granular Status**
-  - Real-time feedback in CRD status
-- [ ] **Safe Cleanup**
-  - Finalizers for cleaning up chaos resources
-- [ ] **Chaos Actions**
-  - memory-hog implementation
-  - pod-killer implementation
-
-**Technologies:** Ansible, Operator SDK, Molecule
+- [ ] Kubernetes log source supported
+- [ ] Basic anomaly detection (rate spikes / new error signatures)
+- [ ] One export target (Loki preferred)
+- [ ] Test coverage ≥ 60%
 
 ---
 
-### 9. slo-gen - SLO Generator & Tracker ⏳ **PROPOSED**
-**Priority:** MEDIUM
-**Complexity:** Medium
+### 7. db-toolkit — Database operations helper ⏳ **Alpha**
+**Priority:** LOW-MEDIUM · **Complexity:** Medium
+**Commands:** `health`, `backup`
 
-#### Features:
-- [ ] **Data Analysis**
-  - [ ] Analyze Prometheus historical metrics (success/total)
-  - [ ] Suggest initial SLO targets based on specific percentile performance
-- [ ] **Generation**
-  - [ ] Generate Terraform/OpenTofu resources for PrometheusRules
-  - [ ] Generate Grafana dashboard JSON for SLO tracking
-- [ ] **Reporting**
-  - [ ] Error Budget burn rate calculation
-  - [ ] Alert on budget exhaustion
+#### Health checks ✅ partial
+- [x] Connection / health checks (`internal/db-toolkit/health`)
+- [ ] Replication lag check
+- [ ] Long-running query detection
+- [ ] Table / index bloat analysis
 
-**Technologies:** Go, Prometheus API
+#### Backup / restore ✅ partial
+- [x] Backup command (`internal/db-toolkit/backup`)
+- [ ] Point-in-time recovery
+- [ ] Backup validation
+- [ ] Cross-region replication status
 
----
+#### Performance
+- [x] Analyzer scaffold (`internal/db-toolkit/analyzer`)
+- [ ] Slow-query analyzer
+- [ ] Index recommendations
+- [ ] Query explain analyzer
 
-### 10. cost-optimizer - Cloud & K8s Cost Analysis ⏳ **PROPOSED**
-**Priority:** HIGH
-**Complexity:** Medium-High
+**v1.0 acceptance criteria**
 
-#### Features:
-- [ ] **Kubernetes Waste**
-  - [ ] Identify over-provisioned pods (Requests >> Usage)
-  - [ ] Identify under-provisioned pods (Throttling/OOM risks)
-  - [ ] Right-sizing recommendations
-- [ ] **Cloud Resources**
-  - [ ] Detect unattached volumes (EBS/PD)
-  - [ ] Identify idle Load Balancers
-  - [ ] Old snapshot retention analysis
-
-**Technologies:** Go, AWS SDK, GCP SDK, k8s client
+- [ ] PostgreSQL fully supported (health, backup, slow-query)
+- [ ] Replication lag + long-running query checks
+- [ ] Backup validation step
+- [ ] Test coverage ≥ 60% with a containerized Postgres
 
 ---
 
-### 11. incident-cli - Incident Management Helper ⏳ **PROPOSED**
-**Priority:** MEDIUM
-**Complexity:** Low-Medium
+## Shared components
 
-#### Features:
-- [ ] **Timeline Construction**
-  - [ ] Parse logs to create automatic timeline events
-  - [ ] Import discussion from chat export (Slack/JSON)
-- [ ] **Post-Mortem**
-  - [ ] Scaffold standard Post-Mortem Markdown
-  - [ ] Auto-fill detection/resolution timestamps
-- [ ] **On-Call Integration**
-  - [ ] Check who is on-call (PagerDuty/OpsGenie)
-  - [ ] Ack/Resolve alerts via CLI
+### CLI framework ✅ **Complete**
+- [x] Cobra command structure (`pkg/cli/root.go`)
+- [x] Viper configuration (`pkg/config/config.go`)
+- [x] zerolog structured logging (`pkg/logging/`)
+- [x] YAML/env config support
+- [ ] Shared progress bars / spinners helper (used consistently across tools)
 
-**Technologies:** Go, PagerDuty API, Slack API
+### Observability ✅ **Partial**
+- [x] Prometheus metrics framework (`pkg/metrics/`)
+- [x] HTTP metrics server; custom metrics (executions, duration, processed, errors)
+- [x] OpenTelemetry tracing package present (`pkg/tracing/tracing.go`)
+- [ ] Tracing wired into all tool commands
+- [ ] Health / readiness endpoints
 
----
+### Testing ✅ **Partial**
+- [x] Unit framework (testing + testify); table-driven tests
+- [x] Coverage reporting (`coverage.out`)
+- [ ] Consistent ≥80% coverage across all tools (cert-monitor, log-parser, db-toolkit lag)
+- [ ] E2E suite
+- [ ] Mock generators (mockery/gomock) standardized
 
-## Common Components
+### DevOps / CI-CD ✅ **Mostly complete**
+- [x] GitHub Actions (`.github/workflows/ci.yml`, `release.yml`)
+- [x] golangci-lint (all 151 prior issues fixed), Codecov, Trivy scanning, artifact upload
+- [x] Release automation via goreleaser (7 tools × linux/darwin/windows × amd64/arm64)
+- [x] Branch protection ruleset (`.github/rulesets/main-protection.json`)
+- [ ] Container image builds + push (per tool)
+- [ ] SBOM generation + image signing (cosign)
 
-### Shared Libraries
-- [x] **CLI Framework** ✅ **COMPLETE**
-  - [x] Cobra-based command structure (`pkg/cli/root.go`)
-  - [x] Viper for configuration (`pkg/config/config.go`)
-  - [x] Logging with zerolog (`pkg/logging/`)
-  - [x] Structured configuration (YAML/env support)
-  - [x] Progress bars and spinners (Ready for implementation)
-
-- [x] **Observability** ✅ **PARTIAL**
-  - [x] Prometheus metrics framework (`pkg/metrics/`)
-  - [x] Structured logging (zerolog)
-  - [x] HTTP metrics server
-  - [x] Custom metrics (command_executions, command_duration, resources_processed, errors)
-  - [ ] OpenTelemetry tracing
-  - [ ] Health/ready endpoints
-
-- [x] **Testing** ✅ **PARTIAL**
-  - [x] Unit test framework (testing + testify)
-  - [x] Test coverage reporting (cover.out)
-  - [x] Table-driven tests
-  - [ ] Integration tests with real clusters
-  - [ ] E2E test suite
-  - [ ] Mock generators (gomock/mockery)
-
-### DevOps
-- [x] **CI/CD** ✅ **COMPLETE**
-  - [x] GitHub Actions workflows (`.github/workflows/ci.yml`)
-  - [x] Automated testing (lint, test, build)
-  - [x] golangci-lint integration (v6)
-  - [x] Codecov coverage reporting
-  - [x] Trivy security scanning
-  - [x] Artifact upload
-  - [x] Release automation (goreleaser) ✅ **COMPLETE** — cross-compile all 7 tools for linux/darwin/windows amd64+arm64, auto-changelog from conventional commits
-  - [ ] Container image builds
-
-- [x] **Documentation** ✅ **PARTIAL**
-  - [x] README with examples and badges
-  - [x] plan.md (26-week roadmap)
-  - [x] backlog.md (feature tracking)
-  - [x] k8s-doctor tutorial (400+ lines)
-  - [x] alert-analyzer tutorial (600+ lines) ✨ **NEW**
-  - [x] alert-analyzer README (Docker Compose setup)
-  - [x] PHASE1/PHASE2 completion docs
-  - [x] MIT License
-  - [ ] Godoc documentation
-  - [ ] Architecture Decision Records (ADR)
-  - [ ] Contributing guide
+### Documentation ✅ **Partial**
+- [x] README with badges; plan.md roadmap; this backlog
+- [x] Tutorials: k8s-doctor, alert-analyzer, chaos-load
+- [x] PHASE1/PHASE2 completion docs; MIT License
+- [ ] Tutorials for config-linter, cert-monitor, log-parser, db-toolkit
+- [ ] Godoc coverage on public APIs
+- [ ] Architecture Decision Records (`docs/adr/`)
+- [ ] CONTRIBUTING.md + issue/PR templates
 
 ---
 
-## Priority-Based Roadmap
+## Roadmap (current focus: hardening to v1.0)
 
-### Phase 1 - Foundation ✅ **COMPLETE**
-1. [x] Set up Go module structure
-2. [x] Create basic CLI framework (cobra, viper, zerolog)
-3. [x] Implement k8s-doctor (basic health checks)
-4. [x] CI/CD pipeline (GitHub Actions)
-5. [x] Makefile build system
-6. [x] golangci-lint configuration
-7. [x] Project documentation
+### Sprint A — Close the test & docs gaps (highest leverage)
+1. [ ] Raise cert-monitor, log-parser, db-toolkit coverage to ≥60–70%
+2. [ ] Add tutorials for config-linter, cert-monitor, log-parser, db-toolkit
+3. [ ] Add CONTRIBUTING.md, ADR template, issue/PR templates
+4. [ ] Godoc pass on all exported APIs
 
-**Status:** COMPLETE (Dec 2024)
-**Deliverables:** Working skeleton, CI pipeline, metrics framework, logging
+### Sprint B — Observability parity across tools
+1. [ ] Prometheus `--metrics` exporter mode for k8s-doctor, chaos-load
+2. [ ] Wire `pkg/tracing` into command execution paths
+3. [ ] Health/readiness endpoints in long-running modes (watch/monitor)
 
-### Phase 2 - Core Tools ✅ **COMPLETE**
-1. [x] k8s-doctor MVP (healthcheck, diagnostics commands)
-2. [x] alert-analyzer Phase 1 (frequency analysis)
-3. [x] k8s-doctor unit tests (84% coverage) ✅ **COMPLETE**
-4. [x] chaos-load Phase 1 (HTTP load MVP) ✅ **COMPLETE**
-5. [x] k8s-doctor integration tests (kind) ✅ **COMPLETE**
-6. [x] alert-analyzer unit tests ✅ **COMPLETE**
-7. [x] chaos-load unit tests ✅ **COMPLETE**
-8. [x] k8s-doctor audit command ✅ **COMPLETE**
+### Sprint C — Feature completion for Beta tools
+1. [ ] alert-analyzer: Slack notifications
+2. [ ] config-linter: GitHub Actions linting + custom rule engine + SARIF output
+3. [ ] chaos-load: real-time TUI + comparison reports
 
-**Status:** 100% COMPLETE ✅ ✅
-**Current Focus:** Testing & Production Readiness
+### Sprint D — Promote Alpha tools to Beta
+1. [ ] cert-monitor: chain validation + OCSP, inventory report
+2. [ ] log-parser: k8s log source + basic anomaly detection
+3. [ ] db-toolkit: replication lag + slow-query analyzer (Postgres)
 
-### Phase 3 - Advanced (Month 4-6)
-1. [ ] chaos-load
-2. [ ] log-parser
-3. [ ] db-toolkit
-4. [ ] config-linter (extension for Terraform, Dockerfile)
-5. [ ] Advanced reporting (HTML, Grafana dashboards)
-
-### Phase 4 - Polish (Month 6+)
-1. [ ] Web UI for tools
-2. [ ] Integrations (Slack, PagerDuty, Jira)
-3. [ ] Kubernetes operator versions
-4. [ ] kubectl plugins
-5. [ ] Krew package manager
-6. [ ] SaaS version with multi-tenancy
+### Sprint E — Release engineering & v1.0
+1. [ ] Container images + push for all tools
+2. [ ] SBOM + cosign signing
+3. [ ] Cut **v1.0.0** with consolidated changelog
 
 ---
 
-## Success Metrics
+## Backlog — proposed new tools (post-v1.0, not started)
 
-- **Technical Quality**
-  - 80%+ test coverage
-  - Zero high-severity security issues
-  - Sub-second startup time
-  - < 50MB binary size
+These remain ideas for after the 7 core tools reach v1.0. Kept here so they aren't lost, but explicitly out of current scope.
 
-- **Adoption**
-  - GitHub stars > 100
-  - Weekly active users
-  - Production deployments
+- **cost-optimizer** (HIGH) — k8s right-sizing (over/under-provisioned pods), unattached volumes, idle load balancers, snapshot retention. *Go, AWS/GCP SDK, k8s client.*
+- **slo-gen** (MEDIUM) — analyze Prometheus history → suggest SLO targets, generate PrometheusRules + Grafana JSON, error-budget burn-rate alerting. *Go, Prometheus API.*
+- **incident-cli** (MEDIUM) — timeline construction from logs/chat, post-mortem scaffolding, on-call (PagerDuty/OpsGenie) ack/resolve. *Go, PagerDuty/Slack API.*
+- **chaos-operator** (MEDIUM) — Ansible/Operator-SDK chaos operator with finalizers, granular CRD status, memory-hog/pod-killer actions. *Ansible, Operator SDK, Molecule.*
 
-- **Skills Demonstration**
-  - Shows Go knowledge
-  - Kubernetes expertise
-  - SRE best practices
-  - Clean architecture
+### Other ideas
+- [ ] kubectl plugin versions of all tools (+ Krew packaging)
+- [ ] Homebrew formula
+- [ ] Telegram bot for quick checks
+- [ ] VS Code extension for config-linter
+- [ ] Grafana datasource plugin
+- [ ] GitOps integration (ArgoCD / Flux)
 
 ---
 
-## Additional Ideas
+## Success metrics
 
-- [ ] **kubectl plugin** versions of all tools
-- [ ] **Telegram bot** for quick checks
-- [ ] **VS Code extension** for config linting
-- [ ] **Grafana datasource plugin** for integration
-- [ ] **Prometheus exporter** mode
-- [ ] **GitOps integration** (ArgoCD/Flux)
+**Technical quality**
+
+- ≥80% test coverage on all Beta+ tools
+- Zero high-severity security findings (Trivy/gosec)
+- Sub-second startup; <50MB binary per tool
+
+**Adoption (post-v1.0)**
+
+- GitHub stars, weekly active users, production deployments
+
+**Skills demonstration**
+
+- Go depth · Kubernetes expertise · SRE best practices · clean architecture · full SDLC
