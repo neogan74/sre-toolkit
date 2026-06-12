@@ -181,8 +181,7 @@ func TestAudit(t *testing.T) {
 	}
 
 	// Case 1: Healthy cluster audit
-	doctorPath := filepath.Join(rootDir, "bin", "k8s-doctor")
-	cmd := exec.Command(doctorPath, "audit", "--kubeconfig", kubeconfigPath)
+	cmd := exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "--kubeconfig", kubeconfigPath)
 	cmd.Dir = rootDir
 	output, err := cmd.CombinedOutput()
 	// Audit might return 1 if there are warnings (like missing network policies in default)

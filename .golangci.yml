@@ -83,7 +83,6 @@ linters:
     gosec:
       excludes:
         - G104 # Audit errors not checked - covered by errcheck
-        - G117 # Exported field names matching secret pattern - legitimate config field names
 
   exclusions:
     rules:
