@@ -238,7 +238,7 @@ roleRef:
 	time.Sleep(2 * time.Second)
 
 	// Run audit again
-	cmd = exec.Command(doctorPath, "audit", "--kubeconfig", kubeconfigPath)
+	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "--kubeconfig", kubeconfigPath)
 	cmd.Dir = rootDir
 	output, err = cmd.CombinedOutput()
 	if err == nil {
@@ -266,7 +266,7 @@ roleRef:
 	}
 
 	// Run audit ONLY for empty-ns with JSON output
-	cmd = exec.Command(doctorPath, "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
+	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
 	output, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Expected audit to fail in empty-ns due to missing quota, but it succeeded. Output:\n%s", output)
