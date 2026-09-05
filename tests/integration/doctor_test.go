@@ -267,6 +267,7 @@ roleRef:
 
 	// Run audit ONLY for empty-ns with JSON output
 	cmd = exec.Command("go", "run", "./cmd/k8s-doctor", "audit", "-n", "empty-ns", "-o", "json", "--kubeconfig", kubeconfigPath)
+	cmd.Dir = rootDir
 	output, err = cmd.CombinedOutput()
 	if err == nil {
 		t.Fatalf("Expected audit to fail in empty-ns due to missing quota, but it succeeded. Output:\n%s", output)

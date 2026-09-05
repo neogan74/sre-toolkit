@@ -80,7 +80,7 @@ func Analyze(ctx context.Context, r io.Reader, cfg *Config) (*Stats, error) { //
 	}
 
 	// Compile patterns
-	var compiledPatterns []*regexp.Regexp
+	compiledPatterns := make([]*regexp.Regexp, 0, len(cfg.Patterns))
 	patternCounts := make([]int, len(cfg.Patterns))
 	patternEntries := make([][]*formats.Entry, len(cfg.Patterns))
 	for i, p := range cfg.Patterns {

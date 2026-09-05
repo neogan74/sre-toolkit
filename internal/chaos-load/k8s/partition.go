@@ -129,7 +129,7 @@ func parseLabelSelector(selector string) map[string]string {
 	return labels
 }
 
-func splitTrim(s string, sep string) []string {
+func splitTrim(s, sep string) []string {
 	var res []string
 	parts := strings.Split(s, sep)
 	for _, p := range parts {
