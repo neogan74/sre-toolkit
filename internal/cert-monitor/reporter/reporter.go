@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/inventory"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 )
 
@@ -48,6 +49,16 @@ func (r *Reporter) ReportCertList(results []CertRow) error {
 		return r.writeJSON(results)
 	default:
 		return r.writeCertTable(results)
+	}
+}
+
+// ReportInventory writes a certificate inventory grouped by issuer.
+func (r *Reporter) ReportInventory(rep inventory.Report) error {
+	switch r.format {
+	case FormatJSON:
+		return r.writeJSON(rep)
+	default:
+		return r.writeInventoryTable(rep)
 	}
 }
 
@@ -98,6 +109,25 @@ func (r *Reporter) writeCertTable(rows []CertRow) error {
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s%s\n",
 			row.Source, row.Subject, row.NotAfter, row.DaysLeft, status, errStr)
+	}
+	return w.Flush()
+}
+
+func (r *Reporter) writeInventoryTable(rep inventory.Report) error {
+	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ISSUER\tTOTAL\tOK\tWARN\tCRIT\tEXPIRED\tERRORS\tSOONEST HOST\tSOONEST DAYS")
+	fmt.Fprintln(w, strings.Repeat("-", 100))
+	for _, g := range rep.Groups {
+		soonestDays := "-"
+		if !g.SoonestAfter.IsZero() {
+			soonestDays = fmt.Sprintf("%d", g.SoonestDays)
+		}
+		soonestHost := g.SoonestHost
+		if soonestHost == "" {
+			soonestHost = "-"
+		}
+		fmt.Fprintf(w, "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%s\t%s\n",
+			g.Issuer, g.Total, g.OK, g.Warning, g.Critical, g.Expired, g.Errors, soonestHost, soonestDays)
 	}
 	return w.Flush()
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/inventory"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/k8ssecrets"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/notifier"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/reporter"
@@ -71,12 +72,13 @@ func startMetricsServer(logger zerolog.Logger) *metrics.Server {
 // newScanCmd creates the `scan` subcommand for scanning URLs.
 func newScanCmd() *cobra.Command {
 	var (
-		warnDays    int
-		critDays    int
-		timeout     time.Duration
-		webhookURL  string
-		insecure    bool
-		concurrency int
+		warnDays      int
+		critDays      int
+		timeout       time.Duration
+		webhookURL    string
+		insecure      bool
+		concurrency   int
+		groupByIssuer bool
 	)
 
 	cmd := &cobra.Command{
@@ -123,7 +125,11 @@ Examples:
 
 			metrics.SetCertMonitorMetrics(results, scanDuration)
 
-			if err := rep.ReportURLScan(results); err != nil {
+			if groupByIssuer {
+				if err := rep.ReportInventory(inventory.Build(results)); err != nil {
+					return err
+				}
+			} else if err := rep.ReportURLScan(results); err != nil {
 				return err
 			}
 
@@ -154,6 +160,7 @@ Examples:
 	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification (for self-signed certs)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
+	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-host list")
 
 	return cmd
 }
@@ -161,12 +168,13 @@ Examples:
 // newK8sCmd creates the `k8s` subcommand for scanning Kubernetes TLS secrets.
 func newK8sCmd() *cobra.Command {
 	var (
-		kubeconfig string
-		namespace  string
-		warnDays   int
-		critDays   int
-		webhookURL string
-		timeout    time.Duration
+		kubeconfig    string
+		namespace     string
+		warnDays      int
+		critDays      int
+		webhookURL    string
+		timeout       time.Duration
+		groupByIssuer bool
 	)
 
 	cmd := &cobra.Command{
@@ -238,7 +246,11 @@ Examples:
 				urlResults = append(urlResults, si.CertInfo)
 			}
 
-			if err := rep.ReportCertList(rows); err != nil {
+			if groupByIssuer {
+				if err := rep.ReportInventory(inventory.Build(urlResults)); err != nil {
+					return err
+				}
+			} else if err := rep.ReportCertList(rows); err != nil {
 				return err
 			}
 
@@ -268,6 +280,7 @@ Examples:
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
 	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout")
+	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-secret list")
 
 	return cmd
 }
