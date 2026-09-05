@@ -77,7 +77,7 @@ type CertRow struct {
 
 func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "HOST\tPORT\tSUBJECT\tEXPIRES\tDAYS LEFT\tSTATUS")
+	fmt.Fprintln(w, "HOST\tPORT\tSUBJECT\tEXPIRES\tDAYS LEFT\tCHAIN\tSTATUS")
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 	for _, info := range results {
 		expires := "-"
@@ -91,10 +91,27 @@ func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 		if info.Error != "" {
 			errStr = fmt.Sprintf(" (%s)", info.Error)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s%s\n",
-			info.Host, info.Port, info.Subject, expires, daysLeft, status, errStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s%s\n",
+			info.Host, info.Port, info.Subject, expires, daysLeft, chainLabel(info), status, errStr)
 	}
 	return w.Flush()
+}
+
+// chainLabel renders a short, colorized summary of certificate chain
+// verification for table output. Connection-level errors (no cert retrieved)
+// produce a neutral dash since there is no chain to assess.
+func chainLabel(info *scanner.CertInfo) string {
+	if info.Status == scanner.StatusError {
+		return "-"
+	}
+	switch {
+	case info.ChainValid:
+		return "\033[32mOK\033[0m"
+	case info.SelfSigned:
+		return "\033[33mSELF-SIGNED\033[0m"
+	default:
+		return "\033[31mUNTRUSTED\033[0m"
+	}
 }
 
 func (r *Reporter) writeCertTable(rows []CertRow) error {

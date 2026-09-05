@@ -238,10 +238,10 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 #### Features:
 - [ ] **Scanning**
-  - Expiration date check
-  - Certificate chain validation
-  - Revocation status check (OCSP/CRL)
-  - Kubernetes secrets monitoring
+  - [x] Expiration date check
+  - [x] Certificate chain validation (verify leaf→root + hostname; self-signed detection) ✅ **NEW**
+  - [ ] Revocation status check (OCSP/CRL)
+  - [x] Kubernetes secrets monitoring
 
 - [ ] **Alerting**
   - Email/Slack notifications

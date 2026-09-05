@@ -163,6 +163,172 @@ func TestScanCertificate(t *testing.T) {
 	assert.Greater(t, info.DaysLeft, 60)
 }
 
+func TestVerifyChain_Empty(t *testing.T) {
+	info := &CertInfo{}
+	verifyChain(info, "example.com", nil, nil)
+
+	assert.Equal(t, 0, info.ChainLength)
+	assert.False(t, info.ChainValid)
+	assert.False(t, info.SelfSigned)
+}
+
+func TestVerifyChain_ValidWithCustomRoot(t *testing.T) {
+	ca, caKey := makeCA(t, "Test Root CA")
+	leaf := makeLeafSignedBy(t, ca, caKey,
+		time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
+
+	roots := x509.NewCertPool()
+	roots.AddCert(ca)
+
+	info := &CertInfo{}
+	verifyChain(info, "leaf.example.com", []*x509.Certificate{leaf}, roots)
+
+	assert.True(t, info.ChainValid)
+	assert.Empty(t, info.ChainError)
+	assert.False(t, info.SelfSigned)
+	assert.Equal(t, 1, info.ChainLength)
+}
+
+func TestVerifyChain_ValidWithIntermediate(t *testing.T) {
+	root, rootKey := makeCA(t, "Test Root CA")
+	inter, interKey := makeIntermediateCA(t, root, rootKey, "Test Intermediate CA")
+	leaf := makeLeafSignedBy(t, inter, interKey,
+		time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
+
+	roots := x509.NewCertPool()
+	roots.AddCert(root)
+
+	info := &CertInfo{}
+	// Server presents leaf + intermediate; root is trusted out of band.
+	verifyChain(info, "leaf.example.com", []*x509.Certificate{leaf, inter}, roots)
+
+	assert.True(t, info.ChainValid)
+	assert.Empty(t, info.ChainError)
+	assert.Equal(t, 2, info.ChainLength)
+}
+
+func TestVerifyChain_SelfSigned(t *testing.T) {
+	leaf := makeCert(t, time.Now().Add(-time.Hour), time.Now().Add(60*24*time.Hour))
+
+	// Empty (non-nil) root pool: trust nothing, so a self-signed cert is untrusted
+	// but must still be flagged as self-signed.
+	info := &CertInfo{}
+	verifyChain(info, "test.example.com", []*x509.Certificate{leaf}, x509.NewCertPool())
+
+	assert.False(t, info.ChainValid)
+	assert.True(t, info.SelfSigned)
+	assert.NotEmpty(t, info.ChainError)
+}
+
+func TestVerifyChain_Untrusted(t *testing.T) {
+	ca, caKey := makeCA(t, "Untrusted CA")
+	leaf := makeLeafSignedBy(t, ca, caKey,
+		time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
+
+	// Trust nothing: a CA-signed leaf whose root is not in the pool is untrusted
+	// and is not self-signed.
+	info := &CertInfo{}
+	verifyChain(info, "leaf.example.com", []*x509.Certificate{leaf}, x509.NewCertPool())
+
+	assert.False(t, info.ChainValid)
+	assert.False(t, info.SelfSigned)
+	assert.NotEmpty(t, info.ChainError)
+}
+
+func TestVerifyChain_HostnameMismatch(t *testing.T) {
+	ca, caKey := makeCA(t, "Test Root CA")
+	leaf := makeLeafSignedBy(t, ca, caKey,
+		time.Now().Add(-time.Hour), time.Now().Add(90*24*time.Hour))
+
+	roots := x509.NewCertPool()
+	roots.AddCert(ca)
+
+	info := &CertInfo{}
+	verifyChain(info, "wrong.example.com", []*x509.Certificate{leaf}, roots)
+
+	assert.False(t, info.ChainValid)
+	assert.NotEmpty(t, info.ChainError)
+}
+
+// makeCA generates a self-signed CA certificate and its private key.
+func makeCA(t *testing.T, commonName string) (*x509.Certificate, *ecdsa.PrivateKey) {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(100),
+		Subject:               pkix.Name{CommonName: commonName},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	require.NoError(t, err)
+
+	cert, err := x509.ParseCertificate(certDER)
+	require.NoError(t, err)
+	return cert, key
+}
+
+// makeIntermediateCA generates an intermediate CA signed by the given parent CA.
+func makeIntermediateCA(t *testing.T, parent *x509.Certificate, parentKey *ecdsa.PrivateKey, commonName string) (*x509.Certificate, *ecdsa.PrivateKey) {
+	t.Helper()
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(200),
+		Subject:               pkix.Name{CommonName: commonName},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(5 * 365 * 24 * time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		MaxPathLenZero:        true,
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, parent, &key.PublicKey, parentKey)
+	require.NoError(t, err)
+
+	cert, err := x509.ParseCertificate(certDER)
+	require.NoError(t, err)
+	return cert, key
+}
+
+// makeLeafSignedBy generates a leaf certificate for "leaf.example.com" signed
+// by the given issuer.
+func makeLeafSignedBy(t *testing.T, issuer *x509.Certificate, issuerKey *ecdsa.PrivateKey, notBefore, notAfter time.Time) *x509.Certificate {
+	t.Helper()
+
+	const dnsName = "leaf.example.com"
+
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(300),
+		Subject:      pkix.Name{CommonName: dnsName},
+		NotBefore:    notBefore,
+		NotAfter:     notAfter,
+		DNSNames:     []string{dnsName},
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, template, issuer, &key.PublicKey, issuerKey)
+	require.NoError(t, err)
+
+	cert, err := x509.ParseCertificate(certDER)
+	require.NoError(t, err)
+	return cert
+}
+
 // makeCert generates a self-signed test certificate valid between notBefore and notAfter.
 func makeCert(t *testing.T, notBefore, notAfter time.Time) *x509.Certificate {
 	t.Helper()
