@@ -132,7 +132,7 @@ func (r *Reporter) writeInventoryTable(rep inventory.Report) error {
 	return w.Flush()
 }
 
-func (r *Reporter) writeJSON(v interface{}) error {
+func (r *Reporter) writeJSON(v any) error {
 	enc := json.NewEncoder(r.out)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)

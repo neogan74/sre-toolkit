@@ -14,6 +14,7 @@ func newHTTPCmd() *cobra.Command {
 		url           string
 		method        string
 		body          string
+		contentType   string
 		bearerToken   string
 		basicUsername string
 		basicPassword string
@@ -36,6 +37,7 @@ func newHTTPCmd() *cobra.Command {
 				TargetURL:     url,
 				Method:        method,
 				Body:          body,
+				ContentType:   contentType,
 				BearerToken:   bearerToken,
 				BasicUsername: basicUsername,
 				BasicPassword: basicPassword,
@@ -62,6 +64,7 @@ func newHTTPCmd() *cobra.Command {
 	cmd.Flags().StringVar(&url, "url", "", "Target URL")
 	cmd.Flags().StringVar(&method, "method", "GET", "HTTP method (GET, POST, PUT, DELETE, etc.)")
 	cmd.Flags().StringVar(&body, "body", "", "Request body")
+	cmd.Flags().StringVar(&contentType, "content-type", "", "Content-Type header for the request body (e.g. application/json)")
 	cmd.Flags().StringVar(&bearerToken, "bearer-token", "", "Bearer token for Authorization header")
 	cmd.Flags().StringVar(&basicUsername, "basic-username", "", "Username for HTTP Basic authentication")
 	cmd.Flags().StringVar(&basicPassword, "basic-password", "", "Password for HTTP Basic authentication")

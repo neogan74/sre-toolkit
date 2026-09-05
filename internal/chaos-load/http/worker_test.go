@@ -174,6 +174,40 @@ func TestPoolRunUsesMethodAndBody(t *testing.T) {
 	}
 }
 
+func TestPoolNewRequestSetsContentType(t *testing.T) {
+	pool := NewPool(PoolConfig{
+		TargetURL:   "https://example.com",
+		Method:      http.MethodPost,
+		Body:        `{"key":"value"}`,
+		ContentType: "application/json",
+	})
+
+	req, err := pool.newRequest(context.Background())
+	if err != nil {
+		t.Fatalf("newRequest() failed: %v", err)
+	}
+
+	if got := req.Header.Get("Content-Type"); got != "application/json" {
+		t.Fatalf("expected Content-Type application/json, got %q", got)
+	}
+}
+
+func TestPoolNewRequestOmitsContentTypeWithoutBody(t *testing.T) {
+	pool := NewPool(PoolConfig{
+		TargetURL:   "https://example.com",
+		ContentType: "application/json",
+	})
+
+	req, err := pool.newRequest(context.Background())
+	if err != nil {
+		t.Fatalf("newRequest() failed: %v", err)
+	}
+
+	if got := req.Header.Get("Content-Type"); got != "" {
+		t.Fatalf("expected no Content-Type header without a body, got %q", got)
+	}
+}
+
 func TestPoolNewRequestSetsBearerToken(t *testing.T) {
 	pool := NewPool(PoolConfig{
 		TargetURL:   "https://example.com",

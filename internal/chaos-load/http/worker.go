@@ -18,6 +18,7 @@ type PoolConfig struct {
 	TargetURL     string
 	Method        string
 	Body          string
+	ContentType   string
 	BearerToken   string //nolint:gosec // BearerToken is a configuration field for HTTP load testing, not a hardcoded credential
 	BasicUsername string
 	BasicPassword string
@@ -192,6 +193,10 @@ func (p *Pool) newRequest(ctx context.Context) (*http.Request, error) {
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	if body != nil && p.config.ContentType != "" {
+		req.Header.Set("Content-Type", p.config.ContentType)
 	}
 
 	if p.config.BearerToken != "" {

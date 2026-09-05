@@ -153,8 +153,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - [ ] **Kubernetes Integration**
   - [x] Pod killing (graceful/force) ✅ **COMPLETE**
   - [x] Node draining ✅ **COMPLETE**
-  - [ ] Network partition between services
-  - [ ] Network partition between services
+  - [x] Network partition between services ✅ **COMPLETE** (`chaos-load k8s network-partition`, default-deny NetworkPolicy)
   - [ ] Storage issues (disk full)
 
 - [x] **Reporting** ✅ **PARTIAL**
@@ -172,6 +171,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `internal/chaos-load/mock/server.go`
 - `internal/chaos-load/k8s/killer.go`
 - `internal/chaos-load/k8s/drainer.go`
+- `internal/chaos-load/k8s/partition.go`
 - `cmd/chaos-load/main.go`
 - `cmd/chaos-load/k8s.go`
 - `docs/chaos-load-tutorial.md`
@@ -180,9 +180,9 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - [x] Unit tests for worker and collector ✅ **COMPLETE**
 - [x] Pod killing chaos scenario ✅ **COMPLETE**
 - [x] Node draining chaos scenario ✅ **COMPLETE**
-- [ ] Support for POST/PUT methods with payloads
+- [x] Network partition between services ✅ **COMPLETE**
+- [x] Support for POST/PUT methods with payloads ✅ **COMPLETE** (`--method`/`--body`/`--content-type`)
 - [ ] Real-time Progress indicator
-- [ ] Network partition between services
 - [ ] Storage issues (disk full)
 
 ---
