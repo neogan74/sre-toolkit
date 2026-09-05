@@ -250,9 +250,9 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - Escalation policy
 
 - [ ] **Reporting**
-  - Certificate inventory
-  - Grouping by domain/issuer
-  - Renewal history tracking
+  - [x] Certificate inventory ✅ **NEW** (`--group-by-issuer` on `scan`/`k8s`, `internal/cert-monitor/inventory`)
+  - [x] Grouping by domain/issuer ✅ **NEW**
+  - [ ] Renewal history tracking
 
 **Technologies:** Go, crypto/x509, cert-manager integration
 
