@@ -82,7 +82,7 @@ func CheckNodes(ctx context.Context, clientset kubernetes.Interface) ([]NodeStat
 // getNodeMetrics fetches node metrics from the K8s Metrics API
 func getNodeMetrics(ctx context.Context, client kubernetes.Interface) (map[string]corev1.ResourceList, error) {
 	rc := client.CoreV1().RESTClient()
-	if rc == nil || (reflect.ValueOf(rc).Kind() == reflect.Ptr && reflect.ValueOf(rc).IsNil()) {
+	if rc == nil || (reflect.ValueOf(rc).Kind() == reflect.Pointer && reflect.ValueOf(rc).IsNil()) {
 		return nil, fmt.Errorf("REST client is nil")
 	}
 

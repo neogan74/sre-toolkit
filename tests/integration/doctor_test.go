@@ -60,7 +60,7 @@ func createCluster() error {
 	// Wait for nodes to be ready
 	fmt.Println("Waiting for nodes to be ready...")
 	// We need to retry waiting because API server might not be immediately available after create returns
-	for i := 0; i < connRetry; i++ {
+	for i := range connRetry {
 		cmd = exec.Command("kubectl", "--kubeconfig", kubeconfigPath, "wait", "--for=condition=Ready", "nodes", "--all", "--timeout=2m") //nolint:noctx // exec.Command used in integration test setup
 		output, err := cmd.CombinedOutput()
 		if err == nil {

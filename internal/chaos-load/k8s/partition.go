@@ -131,8 +131,7 @@ func parseLabelSelector(selector string) map[string]string {
 
 func splitTrim(s, sep string) []string {
 	var res []string
-	parts := strings.Split(s, sep)
-	for _, p := range parts {
+	for p := range strings.SplitSeq(s, sep) {
 		if trimmed := strings.TrimSpace(p); trimmed != "" {
 			res = append(res, trimmed)
 		}
