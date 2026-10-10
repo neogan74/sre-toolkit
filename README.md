@@ -157,7 +157,7 @@ Proactive SSL/TLS certificate expiry monitoring with Kubernetes integration and 
 - Configurable warning/critical thresholds (days before expiry)
 - Kubernetes TLS secret scanning (`kubernetes.io/tls`) across namespaces
 - Continuous `watch` mode with configurable scan interval
-- Webhook alerting on warning/critical/expired certificates
+- Alerting via webhook, Slack and email (SMTP) with `--min-severity` filtering; `watch` dedups repeat alerts
 - Prometheus metrics for Grafana dashboards
 - Multiple output formats (table, JSON)
 - Concurrent scanning for large host lists
@@ -181,7 +181,18 @@ cert-monitor watch --interval 1h --metrics-addr :9101 github.com api.example.com
 
 # CI: exit non-zero if any cert is critical/expired
 cert-monitor scan github.com api.example.com
+
+# Alert to Slack (URL from env) and email, only for critical or worse
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/... SMTP_PASSWORD=...
+cert-monitor watch --interval 6h --min-severity critical --renotify-interval 24h \
+  --smtp-host smtp.example.com --smtp-user alerts --smtp-from certs@example.com \
+  --smtp-to oncall@example.com github.com api.example.com
 ```
+
+Alerting flags (shared by `scan`, `k8s`, `watch`): `--webhook`, `--slack-webhook`, `--slack-channel`,
+`--smtp-host/--smtp-port/--smtp-user/--smtp-from/--smtp-to/--smtp-tls` (`none|starttls|tls`),
+`--min-severity` (`warning|critical|expired`), `--alert-chain` (also alert on chain verification failures).
+`watch` adds `--renotify-interval` (default 24h; 0 = only on status change). Secrets: `SLACK_WEBHOOK_URL`, `SMTP_PASSWORD`.
 
 ### 📝 log-parser - Intelligent Log Analyzer (🚧 Coming Soon)
 
