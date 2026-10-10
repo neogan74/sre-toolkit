@@ -44,6 +44,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Emoji severity indicators (🔴 Critical, ⚠️ Warning, ℹ️ Info)
   - [x] Summary statistics
   - [x] YAML output format ✅ **COMPLETE*
+  - [x] HTML output format ✅ **NEW** (`internal/k8s-doctor/reporter/html.go`, `-o html` + `--output-file`)
   - [ ] Prometheus metrics export
 
 **Technologies:** Go, client-go, cobra, tabwriter, zerolog
@@ -61,8 +62,8 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Next Steps:**
 - [x] Integration tests with kind (Phase 2.5) ✅ **COMPLETE**
 - [x] Implement audit command ✅ **COMPLETE**
-- [ ] Add event analysis
-- [ ] Resource limits checking
+- [x] Add event analysis ✅ **COMPLETE** (`internal/k8s-doctor/healthcheck/events.go`, duplicate of Features item above)
+- [x] Resource limits checking ✅ **COMPLETE** (`internal/k8s-doctor/diagnostics/diagnostics.go:160`, duplicate of Features item above)
 - [ ] Benchmark tests for performance
 
 ---
@@ -120,7 +121,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `deployments/docker/alert-analyzer/README.md` - Setup guide
 
 **Next Steps:**
-- [x] Unit tests (80%+ coverage target) ✅ **DONE** (`82.4%` total coverpkg for `alert-analyzer`)
+- [x] Unit tests (80%+ coverage target) ✅ **DONE** (per-package: `analyzer` 95.7%, `collector` 98.5%, `reporter` 91.1%, `storage` 100.0%)
 - [x] Flapping detection algorithm ✅ **DONE**
 - [x] Alert correlation analysis ✅ **NEW**
 - [x] Recommendations engine ✅ **NEW**
@@ -148,17 +149,17 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Network latency injection
   - [x] Connection failures
   - [x] Timeout simulation
-  - [ ] Resource exhaustion (memory/CPU)
+  - [ ] Resource exhaustion (memory/CPU) — still missing, no `stress-ng`/hog implementation found
 
 - [ ] **Kubernetes Integration**
   - [x] Pod killing (graceful/force) ✅ **COMPLETE**
   - [x] Node draining ✅ **COMPLETE**
   - [x] Network partition between services ✅ **COMPLETE** (`chaos-load k8s network-partition`, default-deny NetworkPolicy)
-  - [ ] Storage issues (disk full)
+  - [ ] Storage issues (disk full) — still missing
 
 - [x] **Reporting** ✅ **PARTIAL**
   - [x] Summary report in terminal (latency/status codes)
-  - [ ] Real-time dashboard (terminal UI)
+  - [x] Real-time dashboard (terminal UI) ✅ **NEW** (`--ui` flag, `internal/chaos-load/stats/ui.go`)
   - [ ] Metrics export to Prometheus
   - [ ] JMeter/Locust-compatible reports
   - [ ] Comparison reports (before/after)
@@ -199,11 +200,11 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Resource limits requirements (CPU/Memory)
   - [x] JSON/Table output formats
 
-- [ ] **Helm Charts**
-  - Template validation
-  - Values.yaml schema check
-  - Dependency analysis
-  - Version compatibility
+- [x] **Helm Charts** ✅ **COMPLETE** (`internal/config-linter/linter/helm.go`, wired in `cli/lint.go:88-89`)
+  - [x] Template validation (Go template syntax, unclosed braces, hardcoded values, missing labels)
+  - [x] Values.yaml schema check (plaintext secrets, `:latest` tags, empty values)
+  - [x] Dependency analysis (missing repo/version, insecure HTTP repos, unpinned versions)
+  - [x] Version compatibility (SemVer check, `kubeVersion` constraint validation)
 
 - [x] **Terraform** ✅ **COMPLETE**
   - [x] Provider version constraints check
@@ -238,10 +239,10 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 #### Features:
 - [ ] **Scanning**
-  - Expiration date check
-  - Certificate chain validation
-  - Revocation status check (OCSP/CRL)
-  - Kubernetes secrets monitoring
+  - [x] Expiration date check
+  - [x] Certificate chain validation (verify leaf→root + hostname; self-signed detection) ✅ **NEW**
+  - [x] Revocation status check (OCSP/CRL) ✅ **NEW** (`--check-revocation` on `scan`/`k8s`/`watch`, `internal/cert-monitor/revocation`)
+  - [x] Kubernetes secrets monitoring
 
 - [ ] **Alerting**
   - Email/Slack notifications
@@ -263,24 +264,30 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Complexity:** Medium-High
 
 #### Features:
-- [ ] **Parsing**
-  - Format support (JSON, logfmt, regex)
-  - Kubernetes logs (pod/container)
-  - Systemd journal
-  - Custom formats
+- [x] **Parsing** ✅ **PARTIAL**
+  - [x] Format support (JSON, logfmt, Apache/nginx access log, syslog, plaintext fallback, auto-detect) ✅ **COMPLETE** (`internal/log-parser/formats/formats.go`)
+  - [ ] Kubernetes logs (pod/container) — still missing, no k8s client integration
+  - [ ] Systemd journal — still missing
+  - [x] Custom formats ✅ (`--format` flag forces a parser, `--pattern` adds ad-hoc regex tracking)
 
-- [ ] **Analysis**
-  - Error pattern detection
-  - Anomaly detection (ML-based)
-  - Log correlation (trace ID)
-  - Performance metrics extraction
+- [x] **Analysis** ✅ **PARTIAL**
+  - [x] Error pattern detection ✅ **COMPLETE** (`--pattern` regex flags, `internal/log-parser/analyzer/analyzer.go:75-93`)
+  - [x] Anomaly detection ✅ (statistical mean+2σ spike detection, `analyzer.go:230-260` — not ML-based as originally scoped)
+  - [ ] Log correlation (trace ID) — still missing
+  - [x] Performance metrics extraction ✅ (rate/min, level breakdown, `analyzer.go:194-200`)
 
 - [ ] **Visualization**
-  - Terminal UI for live tail
-  - Export to Loki/Elasticsearch
-  - Histogram/timeline view
+  - [x] Terminal UI for live tail ⚠️ **PARTIAL** (`tail` subcommand exists, `cmd/log-parser/main.go:199`, but reads a file once — no `-f`/streaming follow)
+  - [ ] Export to Loki/Elasticsearch — still missing
+  - [ ] Histogram/timeline view — still missing
 
 **Technologies:** Go, go-elasticsearch, promtail libraries
+
+**Completed Files:**
+- `internal/log-parser/formats/formats.go` + `formats_test.go` — JSON/logfmt/access/syslog/plain parsers
+- `internal/log-parser/analyzer/analyzer.go` + `analyzer_test.go` — stats, pattern matching, anomaly detection
+- `internal/log-parser/reporter/reporter.go` — table/JSON output
+- `cmd/log-parser/main.go` — `analyze`/`grep`/`tail` CLI commands
 
 ---
 
@@ -289,25 +296,34 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Complexity:** Medium
 
 #### Features:
-- [ ] **Health Checks**
-  - Connection pool monitoring
-  - Replication lag check
-  - Long-running queries detection
-  - Table/Index bloat analysis
+- [x] **Health Checks** ✅ **PARTIAL**
+  - [x] Connection pool monitoring ✅ (active/max connection %, `internal/db-toolkit/health/health.go:100-115`)
+  - [x] Replication lag check ✅ (PostgreSQL only, `health.go:125-144`)
+  - [x] Long-running queries detection ✅ (`health.go:146-159`)
+  - [ ] Table/Index bloat analysis — partial only: size reported (`analyzer/analyzer.go:107-128`), not bloat/dead-tuple specific
 
 - [ ] **Backup/Restore**
-  - Automated backup scheduling
-  - Point-in-time recovery
-  - Backup validation
-  - Cross-region replication status
+  - [x] Backup automation ✅ (`internal/db-toolkit/backup/backup.go` — pg_dump/mysqldump, gzip compression)
+  - [ ] Automated backup **scheduling** — still missing (backup is one-shot on demand, no cron/scheduler)
+  - [ ] Point-in-time recovery — still missing
+  - [ ] Backup validation — still missing
+  - [ ] Cross-region replication status — still missing
 
-- [ ] **Performance**
-  - Slow query analyzer
-  - Index recommendations
-  - Query explain analyzer
-  - Connection pooling stats
+- [x] **Performance** ✅ **PARTIAL**
+  - [x] Slow query analyzer ✅ (pg_stat_statements / MySQL performance_schema, `analyzer/analyzer.go:130-159,241-269`)
+  - [ ] Index recommendations — partial only: usage/unused-index stats exist (`analyzer.go:165-211`), no prescriptive recommendations
+  - [ ] Query explain analyzer — still missing
+  - [x] Connection pooling stats ✅ (see Health Checks above)
 
 **Technologies:** Go, database/sql, pgx (PostgreSQL), go-mysql
+
+**Completed Files:**
+- `internal/db-toolkit/connector/connector.go` — PostgreSQL/MySQL connection management
+- `internal/db-toolkit/health/health.go` + `health_test.go` — health checks
+- `internal/db-toolkit/analyzer/analyzer.go` + `analyzer_test.go` — performance analysis
+- `internal/db-toolkit/backup/backup.go` — pg_dump/mysqldump automation
+- `internal/db-toolkit/reporter/reporter.go` + `reporter_test.go` — table/JSON output
+- `cmd/db-toolkit/main.go` — `health`/`analyze`/`backup`/`query` CLI commands
 
 ---
 
@@ -402,7 +418,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Structured logging (zerolog)
   - [x] HTTP metrics server
   - [x] Custom metrics (command_executions, command_duration, resources_processed, errors)
-  - [ ] OpenTelemetry tracing
+  - [x] OpenTelemetry tracing ✅ **NEW** (`pkg/tracing/tracing.go`, wired into `k8s-doctor`/`chaos-load`/`alert-analyzer` via `tracing.InitTracer`; stdout exporter only, no OTLP yet)
   - [ ] Health/ready endpoints
 
 - [x] **Testing** ✅ **PARTIAL**
@@ -467,11 +483,11 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 **Current Focus:** Testing & Production Readiness
 
 ### Phase 3 - Advanced (Month 4-6)
-1. [ ] chaos-load
-2. [ ] log-parser
-3. [ ] db-toolkit
-4. [ ] config-linter (extension for Terraform, Dockerfile)
-5. [ ] Advanced reporting (HTML, Grafana dashboards)
+1. [x] chaos-load ✅ **MOSTLY COMPLETE** (HTTP load gen, k8s chaos scenarios, terminal dashboard; resource exhaustion & storage chaos still open — see tool section)
+2. [x] log-parser ✅ **MOSTLY COMPLETE** (multi-format parsing, pattern/anomaly analysis, CLI; k8s/journal sources & correlation still open — see tool section)
+3. [x] db-toolkit ✅ **MOSTLY COMPLETE** (health checks, slow-query/index analysis, backup automation; scheduling/PITR/explain analyzer still open — see tool section)
+4. [x] config-linter (extension for Terraform, Dockerfile) ✅ **COMPLETE** (Helm chart linting also added; only CI/CD config lint remains open)
+5. [x] Advanced reporting (HTML, Grafana dashboards) ✅ **COMPLETE** (k8s-doctor HTML output, alert-analyzer Grafana dashboard/Markdown reports)
 
 ### Phase 4 - Polish (Month 6+)
 1. [ ] Web UI for tools

@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/revocation"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,13 +38,13 @@ func ScanSecrets(ctx context.Context, client kubernetes.Interface, namespace str
 	var results []*SecretCertInfo
 	for i := range secrets.Items {
 		s := &secrets.Items[i]
-		infos := scanSecret(s, cfg)
+		infos := scanSecret(ctx, s, cfg)
 		results = append(results, infos...)
 	}
 	return results, nil
 }
 
-func scanSecret(secret *corev1.Secret, cfg *scanner.Config) []*SecretCertInfo {
+func scanSecret(ctx context.Context, secret *corev1.Secret, cfg *scanner.Config) []*SecretCertInfo {
 	var results []*SecretCertInfo
 
 	certData, ok := secret.Data["tls.crt"]
@@ -69,6 +70,18 @@ func scanSecret(secret *corev1.Secret, cfg *scanner.Config) []*SecretCertInfo {
 	// Report the leaf certificate (first one)
 	source := fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
 	info := scanner.ScanCertificate(certs[0], source, cfg)
+
+	if cfg.CheckRevocation {
+		// OCSP/CRL data must be authenticated against the issuer. Look for it
+		// in the rest of tls.crt and in ca.crt, if present.
+		candidates := append([]*x509.Certificate{}, certs[1:]...)
+		if caCerts, err := parseCertificates(secret.Data["ca.crt"]); err == nil {
+			candidates = append(candidates, caCerts...)
+		}
+		issuer := revocation.FindIssuer(certs[0], candidates...)
+		scanner.ApplyRevocation(info, revocation.Check(ctx, certs[0], issuer, cfg.Timeout))
+	}
+
 	results = append(results, &SecretCertInfo{
 		CertInfo:   info,
 		Namespace:  secret.Namespace,

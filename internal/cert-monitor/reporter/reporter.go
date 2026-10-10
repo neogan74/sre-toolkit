@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/inventory"
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/revocation"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 )
 
@@ -73,11 +74,15 @@ type CertRow struct {
 	Error     string `json:"error,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Secret    string `json:"secret,omitempty"` //nolint:gosec // field name is part of certificate report schema, not a credential
+
+	RevocationStatus string `json:"revocation_status,omitempty"`
+	RevocationMethod string `json:"revocation_method,omitempty"`
+	RevocationError  string `json:"revocation_error,omitempty"`
 }
 
 func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "HOST\tPORT\tSUBJECT\tEXPIRES\tDAYS LEFT\tSTATUS")
+	fmt.Fprintln(w, "HOST\tPORT\tSUBJECT\tEXPIRES\tDAYS LEFT\tCHAIN\tREVOKED\tSTATUS")
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 	for _, info := range results {
 		expires := "-"
@@ -91,15 +96,47 @@ func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 		if info.Error != "" {
 			errStr = fmt.Sprintf(" (%s)", info.Error)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s%s\n",
-			info.Host, info.Port, info.Subject, expires, daysLeft, status, errStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%s\n",
+			info.Host, info.Port, info.Subject, expires, daysLeft, chainLabel(info), revocationLabel(info.RevocationStatus), status, errStr)
 	}
 	return w.Flush()
 }
 
+// revocationLabel renders a short, colorized summary of the revocation check
+// for table output. Returns a dash when no check was performed.
+func revocationLabel(status string) string {
+	switch status {
+	case string(revocation.StatusGood):
+		return "\033[32mGOOD\033[0m"
+	case string(revocation.StatusRevoked):
+		return "\033[31mREVOKED\033[0m"
+	case string(revocation.StatusUnknown):
+		return "\033[90mUNKNOWN\033[0m"
+	default:
+		return "-"
+	}
+}
+
+// chainLabel renders a short, colorized summary of certificate chain
+// verification for table output. Connection-level errors (no cert retrieved)
+// produce a neutral dash since there is no chain to assess.
+func chainLabel(info *scanner.CertInfo) string {
+	if info.Status == scanner.StatusError {
+		return "-"
+	}
+	switch {
+	case info.ChainValid:
+		return "\033[32mOK\033[0m"
+	case info.SelfSigned:
+		return "\033[33mSELF-SIGNED\033[0m"
+	default:
+		return "\033[31mUNTRUSTED\033[0m"
+	}
+}
+
 func (r *Reporter) writeCertTable(rows []CertRow) error {
 	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "SOURCE\tSUBJECT\tEXPIRES\tDAYS LEFT\tSTATUS")
+	fmt.Fprintln(w, "SOURCE\tSUBJECT\tEXPIRES\tDAYS LEFT\tREVOKED\tSTATUS")
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 	for _, row := range rows {
 		status := colorStatus(row.Status)
@@ -107,8 +144,8 @@ func (r *Reporter) writeCertTable(rows []CertRow) error {
 		if row.Error != "" {
 			errStr = fmt.Sprintf(" (%s)", row.Error)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s%s\n",
-			row.Source, row.Subject, row.NotAfter, row.DaysLeft, status, errStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s%s\n",
+			row.Source, row.Subject, row.NotAfter, row.DaysLeft, revocationLabel(row.RevocationStatus), status, errStr)
 	}
 	return w.Flush()
 }
@@ -153,7 +190,7 @@ func colorStatus(s string) string {
 		return "\033[32m" + s + "\033[0m"
 	case scanner.StatusWarning:
 		return "\033[33m" + s + "\033[0m"
-	case scanner.StatusCritical:
+	case scanner.StatusCritical, scanner.StatusRevoked:
 		return "\033[31m" + s + "\033[0m"
 	case scanner.StatusExpired:
 		return "\033[35m" + s + "\033[0m"
