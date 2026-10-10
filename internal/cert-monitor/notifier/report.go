@@ -44,6 +44,8 @@ type CertAlert struct {
 	Expires    string `json:"expires"`
 	Error      string `json:"error,omitempty"`
 	ChainError string `json:"chain_error,omitempty"`
+	// UnresolvedFor is set on escalations: how long the alert has been firing.
+	UnresolvedFor string `json:"unresolved_for,omitempty"`
 }
 
 // AlertSummary contains aggregated counts.
@@ -61,6 +63,7 @@ type Report struct {
 	Source    string
 	Alerts    []CertAlert
 	Summary   AlertSummary
+	Escalated bool `json:"escalated,omitempty"`
 }
 
 // Options controls which results become alerts.

@@ -74,6 +74,9 @@ func (n *SlackNotifier) format(r Report) slackMessage {
 
 	header := fmt.Sprintf(":warning: cert-monitor: %d certificate alert(s) (critical %d, expired %d, errors %d, of %d scanned)",
 		len(r.Alerts), r.Summary.Critical, r.Summary.Expired, r.Summary.Errors, r.Summary.Total)
+	if r.Escalated {
+		header = ":rotating_light: ESCALATED " + strings.TrimPrefix(header, ":warning: ")
+	}
 	return slackMessage{
 		Channel:  n.Channel,
 		Username: n.Username,
@@ -98,6 +101,9 @@ func alertDetail(a CertAlert) string {
 	}
 	if a.ChainError != "" {
 		parts = append(parts, "chain: "+a.ChainError)
+	}
+	if a.UnresolvedFor != "" {
+		parts = append(parts, "unresolved for "+a.UnresolvedFor)
 	}
 	if len(parts) == 0 {
 		return a.Subject

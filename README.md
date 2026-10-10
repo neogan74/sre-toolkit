@@ -194,6 +194,17 @@ Alerting flags (shared by `scan`, `k8s`, `watch`): `--webhook`, `--slack-webhook
 `--min-severity` (`warning|critical|expired`), `--alert-chain` (also alert on chain verification failures).
 `watch` adds `--renotify-interval` (default 24h; 0 = only on status change). Secrets: `SLACK_WEBHOOK_URL`, `SMTP_PASSWORD`.
 
+Escalation (`watch` only): `--escalate-after 4h` re-alerts **once** when a certificate has been alerting that long,
+to `--escalate-slack-webhook` ($`ESCALATE_SLACK_WEBHOOK_URL`) and/or `--escalate-smtp-to` (same `--smtp-*` server).
+State is in-memory: a restart restarts the timer. See [docs/cert-monitor-alerting.md](docs/cert-monitor-alerting.md).
+
+Renewal history: add `--history-file certs.json` (or `$CERT_MONITOR_HISTORY`) to `scan`/`k8s`/`watch`, then:
+
+```bash
+cert-monitor history --history-file certs.json                       # per-target summary
+cert-monitor history --history-file certs.json --events --type renewed --since 720h -o json
+```
+
 ### 📝 log-parser - Intelligent Log Analyzer (🚧 Coming Soon)
 
 Smart log parsing with pattern detection and anomaly detection.

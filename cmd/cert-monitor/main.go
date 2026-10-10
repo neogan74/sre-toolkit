@@ -45,6 +45,7 @@ tracks expiry dates, and sends alerts via webhook, Slack and email.`,
 		newScanCmd(),
 		newK8sCmd(),
 		newWatchCmd(),
+		newHistoryCmd(),
 		newVersionCmd(),
 	)
 
@@ -76,6 +77,7 @@ func newScanCmd() *cobra.Command {
 		critDays      int
 		timeout       time.Duration
 		notify        notifyOpts
+		historyFile   string
 		insecure      bool
 		concurrency   int
 		groupByIssuer bool
@@ -142,7 +144,8 @@ Examples:
 			ok, warn, crit, expired, errs := countStatuses(results)
 			rep.PrintSummary(len(results), ok, warn, crit, expired, errs)
 
-			dispatch(ctx, logger, sinks, nopts, nil, results)
+			recordHistory(logger, historyFile, results)
+			dispatch(ctx, logger, sinks, nopts, nil, nil, results)
 
 			// Exit with error if any critical/expired/error
 			if crit+expired+errs > 0 {
@@ -156,6 +159,7 @@ Examples:
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout per host")
 	notify.addFlags(cmd)
+	addHistoryFlag(cmd, &historyFile)
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification (for self-signed certs)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
 	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-host list")
@@ -172,6 +176,7 @@ func newK8sCmd() *cobra.Command {
 		warnDays      int
 		critDays      int
 		notify        notifyOpts
+		historyFile   string
 		timeout       time.Duration
 		groupByIssuer bool
 		checkRevoke   bool
@@ -265,7 +270,8 @@ Examples:
 			ok, warn, crit, expired, errs := countStatuses(urlResults)
 			rep.PrintSummary(len(rows), ok, warn, crit, expired, errs)
 
-			dispatch(ctx, logger, sinks, nopts, nil, urlResults)
+			recordHistory(logger, historyFile, urlResults)
+			dispatch(ctx, logger, sinks, nopts, nil, nil, urlResults)
 
 			if crit+expired+errs > 0 {
 				return fmt.Errorf("%d critical, %d expired, %d error certificates found", crit, expired, errs)
@@ -279,6 +285,7 @@ Examples:
 	cmd.Flags().IntVar(&warnDays, "warn-days", 30, "Days before expiry to trigger WARNING")
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
 	notify.addFlags(cmd)
+	addHistoryFlag(cmd, &historyFile)
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout")
 	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-secret list")
 	cmd.Flags().BoolVar(&checkRevoke, "check-revocation", false, "Check certificate revocation status via OCSP (falls back to CRL)")
@@ -294,6 +301,8 @@ func newWatchCmd() *cobra.Command {
 		critDays    int
 		timeout     time.Duration
 		notify      notifyOpts
+		historyFile string
+		escOpts     escalateOpts
 		renotify    time.Duration
 		insecure    bool
 		concurrency int
@@ -315,6 +324,10 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
 			sinks, nopts, err := notify.build(timeout)
+			if err != nil {
+				return err
+			}
+			esc, err := escOpts.build(&notify, timeout)
 			if err != nil {
 				return err
 			}
@@ -363,7 +376,8 @@ Examples:
 				ok, warn, crit, expired, errs := countStatuses(results)
 				rep.PrintSummary(len(results), ok, warn, crit, expired, errs)
 
-				dispatch(ctx, logger, sinks, nopts, dedup, results)
+				recordHistory(logger, historyFile, results)
+				dispatch(ctx, logger, sinks, nopts, dedup, esc, results)
 			}
 
 			// Run immediately, then on interval
@@ -386,6 +400,8 @@ Examples:
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout per host")
 	notify.addFlags(cmd)
+	addHistoryFlag(cmd, &historyFile)
+	escOpts.addFlags(cmd)
 	cmd.Flags().DurationVar(&renotify, "renotify-interval", 24*time.Hour, "Re-send an unchanged alert after this long (0 = only on status change)")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
