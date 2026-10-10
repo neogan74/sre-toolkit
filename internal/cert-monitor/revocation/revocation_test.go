@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -113,6 +114,11 @@ func (ca *testCA) crl(t *testing.T, revoked ...*x509.Certificate) []byte {
 	return der
 }
 
+func TestMain(m *testing.M) {
+	allowLoopback = true // httptest servers listen on loopback
+	os.Exit(m.Run())
+}
+
 func TestCheck_NilCertificate(t *testing.T) {
 	res := Check(context.Background(), nil, nil, time.Second)
 	assert.Equal(t, StatusUnknown, res.Status)
@@ -164,6 +170,7 @@ func TestCheck_OCSPRevoked(t *testing.T) {
 }
 
 func TestCheck_OCSPUnreachableFallsBackToCRL(t *testing.T) {
+	resetCRLCache()
 	ca := newTestCA(t)
 
 	var leaf *x509.Certificate
@@ -185,6 +192,7 @@ func TestCheck_OCSPUnreachableFallsBackToCRL(t *testing.T) {
 }
 
 func TestCheck_CRLRevoked(t *testing.T) {
+	resetCRLCache()
 	ca := newTestCA(t)
 
 	var leaf *x509.Certificate
@@ -201,26 +209,114 @@ func TestCheck_CRLRevoked(t *testing.T) {
 	assert.Contains(t, res.Error, "revoked at")
 }
 
-func TestCheck_NoIssuerSkipsOCSP(t *testing.T) {
+func TestCheck_NoIssuerIsUnknown(t *testing.T) {
+	ca := newTestCA(t)
+	leaf := ca.issueLeaf(t, 7, "http://127.0.0.1:1/ocsp", "http://127.0.0.1:1/crl")
+
+	res := Check(context.Background(), leaf, nil, 2*time.Second)
+	assert.Equal(t, StatusUnknown, res.Status)
+	assert.Contains(t, res.Error, "issuer")
+}
+
+func TestCheck_CRLNotSignedByIssuerRejected(t *testing.T) {
+	resetCRLCache()
+	ca, forger := newTestCA(t), newTestCA(t)
+
+	var leaf *x509.Certificate
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write(forger.crl(t)) // empty CRL signed by the wrong key
+	}))
+	defer srv.Close()
+	leaf = ca.issueLeaf(t, 8, "", srv.URL)
+
+	res := Check(context.Background(), leaf, ca.cert, 2*time.Second)
+	assert.Equal(t, StatusUnknown, res.Status)
+}
+
+func TestCheck_StaleCRLRejected(t *testing.T) {
+	resetCRLCache()
+	ca := newTestCA(t)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		der, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+			Number:     big.NewInt(1),
+			ThisUpdate: time.Now().Add(-48 * time.Hour),
+			NextUpdate: time.Now().Add(-24 * time.Hour),
+		}, ca.cert, ca.key)
+		require.NoError(t, err)
+		_, _ = w.Write(der)
+	}))
+	defer srv.Close()
+	leaf := ca.issueLeaf(t, 9, "", srv.URL)
+
+	res := Check(context.Background(), leaf, ca.cert, 2*time.Second)
+	assert.Equal(t, StatusUnknown, res.Status)
+}
+
+func TestCheck_StaleOCSPRejected(t *testing.T) {
 	ca := newTestCA(t)
 
 	var leaf *x509.Certificate
-	ocspHit := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp, err := ocsp.CreateResponse(ca.cert, ca.cert, ocsp.Response{
+			SerialNumber: leaf.SerialNumber,
+			Status:       ocsp.Good,
+			ThisUpdate:   time.Now().Add(-48 * time.Hour),
+			NextUpdate:   time.Now().Add(-24 * time.Hour),
+		}, ca.key)
+		require.NoError(t, err)
+		_, _ = w.Write(resp)
+	}))
+	defer srv.Close()
+	leaf = ca.issueLeaf(t, 10, srv.URL, "")
+
+	res := Check(context.Background(), leaf, ca.cert, 2*time.Second)
+	assert.Equal(t, StatusUnknown, res.Status)
+}
+
+func TestCheck_OCSPUnknownFallsBackToCRL(t *testing.T) {
+	resetCRLCache()
+	ca := newTestCA(t)
+
+	var leaf *x509.Certificate
 	ocspSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ocspHit = true
-		_, _ = w.Write(ca.ocspResponse(t, leaf, ocsp.Good))
+		_, _ = w.Write(ca.ocspResponse(t, leaf, ocsp.Unknown))
 	}))
 	defer ocspSrv.Close()
-
 	crlSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write(ca.crl(t))
+		_, _ = w.Write(ca.crl(t, leaf))
 	}))
 	defer crlSrv.Close()
+	leaf = ca.issueLeaf(t, 11, ocspSrv.URL, crlSrv.URL)
 
-	leaf = ca.issueLeaf(t, 7, ocspSrv.URL, crlSrv.URL)
-
-	res := Check(context.Background(), leaf, nil, 2*time.Second)
-	assert.False(t, ocspHit, "OCSP should not be queried without an issuer certificate")
-	assert.Equal(t, StatusGood, res.Status)
+	res := Check(context.Background(), leaf, ca.cert, 2*time.Second)
+	assert.Equal(t, StatusRevoked, res.Status)
 	assert.Equal(t, "CRL", res.Method)
+}
+
+func TestCheck_RefusesLoopbackDestinations(t *testing.T) {
+	allowLoopback = false
+	defer func() { allowLoopback = true }()
+	resetCRLCache()
+	ca := newTestCA(t)
+
+	hit := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hit = true
+		_, _ = w.Write(ca.crl(t))
+	}))
+	defer srv.Close()
+	leaf := ca.issueLeaf(t, 12, "", srv.URL)
+
+	res := Check(context.Background(), leaf, ca.cert, 2*time.Second)
+	assert.False(t, hit)
+	assert.Equal(t, StatusUnknown, res.Status)
+}
+
+func TestFindIssuer(t *testing.T) {
+	ca, other := newTestCA(t), newTestCA(t)
+	leaf := ca.issueLeaf(t, 13, "", "")
+
+	assert.Equal(t, ca.cert, FindIssuer(leaf, other.cert, ca.cert))
+	assert.Nil(t, FindIssuer(leaf, other.cert))
 }

@@ -71,7 +71,7 @@ func (n *WebhookNotifier) Notify(ctx context.Context, results []*scanner.CertInf
 			continue
 		case scanner.StatusWarning:
 			summary.Warning++
-		case scanner.StatusCritical:
+		case scanner.StatusCritical, scanner.StatusRevoked:
 			summary.Critical++
 		case scanner.StatusExpired:
 			summary.Expired++

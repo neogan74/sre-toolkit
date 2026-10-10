@@ -72,17 +72,14 @@ func scanSecret(ctx context.Context, secret *corev1.Secret, cfg *scanner.Config)
 	info := scanner.ScanCertificate(certs[0], source, cfg)
 
 	if cfg.CheckRevocation {
-		// OCSP requires the issuer to validate the response signature; only
-		// attempt it when the secret carries the issuer alongside the leaf
-		// (e.g. a full chain in tls.crt). CRL lookup below doesn't need it.
-		var issuer *x509.Certificate
-		if len(certs) > 1 {
-			issuer = certs[1]
+		// OCSP/CRL data must be authenticated against the issuer. Look for it
+		// in the rest of tls.crt and in ca.crt, if present.
+		candidates := append([]*x509.Certificate{}, certs[1:]...)
+		if caCerts, err := parseCertificates(secret.Data["ca.crt"]); err == nil {
+			candidates = append(candidates, caCerts...)
 		}
-		res := revocation.Check(ctx, certs[0], issuer, cfg.Timeout)
-		info.RevocationStatus = string(res.Status)
-		info.RevocationMethod = res.Method
-		info.RevocationError = res.Error
+		issuer := revocation.FindIssuer(certs[0], candidates...)
+		scanner.ApplyRevocation(info, revocation.Check(ctx, certs[0], issuer, cfg.Timeout))
 	}
 
 	results = append(results, &SecretCertInfo{

@@ -100,7 +100,7 @@ func countStatus(rep *Report, s scanner.Status) {
 		rep.OK++
 	case scanner.StatusWarning:
 		rep.Warning++
-	case scanner.StatusCritical:
+	case scanner.StatusCritical, scanner.StatusRevoked:
 		rep.Critical++
 	case scanner.StatusExpired:
 		rep.Expired++
@@ -115,7 +115,7 @@ func countGroupStatus(g *Group, s scanner.Status) {
 		g.OK++
 	case scanner.StatusWarning:
 		g.Warning++
-	case scanner.StatusCritical:
+	case scanner.StatusCritical, scanner.StatusRevoked:
 		g.Critical++
 	case scanner.StatusExpired:
 		g.Expired++

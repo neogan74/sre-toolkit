@@ -23,6 +23,7 @@ const (
 	StatusCritical Status = "CRITICAL"
 	StatusExpired  Status = "EXPIRED"
 	StatusError    Status = "ERROR"
+	StatusRevoked  Status = "REVOKED" // the issuer has revoked the certificate
 )
 
 // CertInfo holds information about a scanned TLS certificate.
@@ -132,21 +133,24 @@ func ScanURL(ctx context.Context, target string, cfg *Config) *CertInfo {
 }
 
 // checkRevocation runs an OCSP/CRL revocation check for the leaf certificate
-// and records the outcome on info. The issuer is the next certificate in the
-// presented chain, or the leaf itself when self-signed.
+// and records the outcome on info. The issuer is located among the presented
+// chain (or the leaf itself when self-signed).
 func checkRevocation(ctx context.Context, info *CertInfo, certs []*x509.Certificate, cfg *Config) {
 	leaf := certs[0]
-	issuer := leaf
-	if len(certs) > 1 {
-		issuer = certs[1]
-	} else if !info.SelfSigned {
-		issuer = nil
-	}
+	issuer := revocation.FindIssuer(leaf, certs[1:]...)
+	ApplyRevocation(info, revocation.Check(ctx, leaf, issuer, cfg.Timeout))
+}
 
-	res := revocation.Check(ctx, leaf, issuer, cfg.Timeout)
+// ApplyRevocation records a revocation result on info. A revoked certificate
+// overrides any expiry-based status so it surfaces in alerts, summaries and
+// exit codes.
+func ApplyRevocation(info *CertInfo, res revocation.Result) {
 	info.RevocationStatus = string(res.Status)
 	info.RevocationMethod = res.Method
 	info.RevocationError = res.Error
+	if res.Status == revocation.StatusRevoked {
+		info.Status = StatusRevoked
+	}
 }
 
 // verifyChain inspects the full certificate chain presented by a server and

@@ -97,15 +97,15 @@ func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 			errStr = fmt.Sprintf(" (%s)", info.Error)
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%s\n",
-			info.Host, info.Port, info.Subject, expires, daysLeft, chainLabel(info), revocationLabel(info), status, errStr)
+			info.Host, info.Port, info.Subject, expires, daysLeft, chainLabel(info), revocationLabel(info.RevocationStatus), status, errStr)
 	}
 	return w.Flush()
 }
 
 // revocationLabel renders a short, colorized summary of the revocation check
 // for table output. Returns a dash when no check was performed.
-func revocationLabel(info *scanner.CertInfo) string {
-	switch info.RevocationStatus {
+func revocationLabel(status string) string {
+	switch status {
 	case string(revocation.StatusGood):
 		return "\033[32mGOOD\033[0m"
 	case string(revocation.StatusRevoked):
@@ -145,24 +145,9 @@ func (r *Reporter) writeCertTable(rows []CertRow) error {
 			errStr = fmt.Sprintf(" (%s)", row.Error)
 		}
 		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s%s\n",
-			row.Source, row.Subject, row.NotAfter, row.DaysLeft, revocationRowLabel(row), status, errStr)
+			row.Source, row.Subject, row.NotAfter, row.DaysLeft, revocationLabel(row.RevocationStatus), status, errStr)
 	}
 	return w.Flush()
-}
-
-// revocationRowLabel mirrors revocationLabel for the CertRow (k8s secrets)
-// table, which carries revocation fields flattened rather than on CertInfo.
-func revocationRowLabel(row CertRow) string {
-	switch row.RevocationStatus {
-	case string(revocation.StatusGood):
-		return "\033[32mGOOD\033[0m"
-	case string(revocation.StatusRevoked):
-		return "\033[31mREVOKED\033[0m"
-	case string(revocation.StatusUnknown):
-		return "\033[90mUNKNOWN\033[0m"
-	default:
-		return "-"
-	}
 }
 
 func (r *Reporter) writeInventoryTable(rep inventory.Report) error {
@@ -205,7 +190,7 @@ func colorStatus(s string) string {
 		return "\033[32m" + s + "\033[0m"
 	case scanner.StatusWarning:
 		return "\033[33m" + s + "\033[0m"
-	case scanner.StatusCritical:
+	case scanner.StatusCritical, scanner.StatusRevoked:
 		return "\033[31m" + s + "\033[0m"
 	case scanner.StatusExpired:
 		return "\033[35m" + s + "\033[0m"

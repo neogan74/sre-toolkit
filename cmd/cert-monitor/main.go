@@ -416,7 +416,7 @@ func countStatuses(results []*scanner.CertInfo) (ok, warn, crit, expired, errs i
 			ok++
 		case scanner.StatusWarning:
 			warn++
-		case scanner.StatusCritical:
+		case scanner.StatusCritical, scanner.StatusRevoked:
 			crit++
 		case scanner.StatusExpired:
 			expired++
