@@ -3,6 +3,7 @@ package scanner
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -249,7 +250,7 @@ func fillCertInfo(info *CertInfo, cert *x509.Certificate, cfg *Config) {
 	info.NotBefore = cert.NotBefore
 	info.NotAfter = cert.NotAfter
 	info.Serial = cert.SerialNumber.String()
-	info.Fingerprint = fmt.Sprintf("%X", cert.SerialNumber.Bytes())
+	info.Fingerprint = fmt.Sprintf("%X", sha256.Sum256(cert.Raw)) // SHA-256 of the DER certificate
 
 	now := time.Now()
 	daysLeft := int(cert.NotAfter.Sub(now).Hours() / 24)

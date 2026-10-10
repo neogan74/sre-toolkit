@@ -14,8 +14,9 @@ import (
 
 // Environment fallbacks for secrets, so they stay out of shell history.
 const (
-	envSlackWebhook = "SLACK_WEBHOOK_URL"
-	envSMTPPassword = "SMTP_PASSWORD"
+	envSlackWebhook  = "SLACK_WEBHOOK_URL"
+	envSMTPPassword  = "SMTP_PASSWORD"
+	envEscalateSlack = "ESCALATE_SLACK_WEBHOOK_URL"
 )
 
 // notifyOpts holds the alerting flags shared by scan, k8s and watch.
@@ -69,16 +70,7 @@ func (o *notifyOpts) build(timeout time.Duration) (notifier.Multi, notifier.Opti
 		sinks = append(sinks, notifier.NewSlackNotifier(slackURL, o.slackChannel, timeout))
 	}
 	if o.smtpHost != "" {
-		email, err := notifier.NewEmailNotifier(notifier.EmailConfig{
-			Host:     o.smtpHost,
-			Port:     o.smtpPort,
-			Username: o.smtpUser,
-			Password: os.Getenv(envSMTPPassword),
-			From:     o.smtpFrom,
-			To:       o.smtpTo,
-			TLS:      o.smtpTLS,
-			Timeout:  timeout,
-		})
+		email, err := o.newEmail(o.smtpTo, timeout)
 		if err != nil {
 			return nil, opts, fmt.Errorf("email alerts: %w", err)
 		}
@@ -87,14 +79,78 @@ func (o *notifyOpts) build(timeout time.Duration) (notifier.Multi, notifier.Opti
 	return sinks, opts, nil
 }
 
-// dispatch builds a report from results and sends it to all sinks. dedup may
-// be nil. Failures are logged, never fatal.
-func dispatch(ctx context.Context, logger zerolog.Logger, sinks notifier.Multi, opts notifier.Options,
-	dedup *notifier.Dedup, results []*scanner.CertInfo) {
+func (o *notifyOpts) newEmail(to []string, timeout time.Duration) (*notifier.EmailNotifier, error) {
+	return notifier.NewEmailNotifier(notifier.EmailConfig{
+		Host:     o.smtpHost,
+		Port:     o.smtpPort,
+		Username: o.smtpUser,
+		Password: os.Getenv(envSMTPPassword),
+		From:     o.smtpFrom,
+		To:       to,
+		TLS:      o.smtpTLS,
+		Timeout:  timeout,
+	})
+}
+
+// escalateOpts holds the watch-only escalation flags.
+type escalateOpts struct {
+	after    time.Duration
+	slackURL string
+	smtpTo   []string
+}
+
+func (e *escalateOpts) addFlags(cmd *cobra.Command) {
+	f := cmd.Flags()
+	f.DurationVar(&e.after, "escalate-after", 0, "Escalate an alert unresolved for this long (0 = off); needs an escalation sink")
+	f.StringVar(&e.slackURL, "escalate-slack-webhook", "", "Slack webhook for escalations (or $"+envEscalateSlack+")")
+	f.StringSliceVar(&e.smtpTo, "escalate-smtp-to", nil, "Extra email recipient(s) for escalations (uses --smtp-* server settings)")
+}
+
+// build returns the escalation policy, or nil when --escalate-after is unset.
+func (e *escalateOpts) build(o *notifyOpts, timeout time.Duration) (*notifier.Escalation, error) {
+	if e.after < 0 {
+		return nil, fmt.Errorf("--escalate-after must not be negative")
+	}
+	if e.after == 0 {
+		return nil, nil
+	}
+	var sinks notifier.Multi
+	slackURL := e.slackURL
+	if slackURL == "" {
+		slackURL = os.Getenv(envEscalateSlack)
+	}
+	if slackURL != "" {
+		sinks = append(sinks, notifier.NewSlackNotifier(slackURL, o.slackChannel, timeout))
+	}
+	if len(e.smtpTo) > 0 {
+		email, err := o.newEmail(e.smtpTo, timeout)
+		if err != nil {
+			return nil, fmt.Errorf("escalation email: %w", err)
+		}
+		sinks = append(sinks, email)
+	}
 	if len(sinks) == 0 {
+		return nil, fmt.Errorf("--escalate-after needs --escalate-slack-webhook or --escalate-smtp-to")
+	}
+	return notifier.NewEscalation(e.after, sinks...), nil
+}
+
+// dispatch builds a report from results, escalates (esc may be nil) and sends
+// it to all sinks (dedup may be nil). Failures are logged, never fatal.
+func dispatch(ctx context.Context, logger zerolog.Logger, sinks notifier.Multi, opts notifier.Options,
+	dedup *notifier.Dedup, esc *notifier.Escalation, results []*scanner.CertInfo) {
+	if len(sinks) == 0 && esc == nil {
 		return
 	}
 	report := notifier.BuildReport(results, opts)
+	if esc != nil {
+		if err := esc.Escalate(ctx, report, 0); err != nil {
+			logger.Error().Err(err).Msg("Escalation failed")
+		}
+	}
+	if len(sinks) == 0 {
+		return
+	}
 	if dedup != nil {
 		report = dedup.Filter(report)
 	}

@@ -98,6 +98,10 @@ func worstLabel(r Report) string {
 func buildMessage(cfg EmailConfig, r Report) []byte {
 	subject := fmt.Sprintf("[cert-monitor] %d certificate alert(s) (worst: %s)", len(r.Alerts), worstLabel(r))
 
+	if r.Escalated {
+		subject = "[ESCALATED] " + subject
+	}
+
 	var b strings.Builder
 	fmt.Fprintf(&b, "From: %s\r\n", cfg.From)
 	fmt.Fprintf(&b, "To: %s\r\n", strings.Join(cfg.To, ", "))

@@ -233,28 +233,28 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 
 ---
 
-### 5. cert-monitor - SSL/TLS Certificate Monitoring
+### 5. cert-monitor - SSL/TLS Certificate Monitoring ✅ **COMPLETE**
 **Priority:** MEDIUM
 **Complexity:** Low-Medium
 
 #### Features:
-- [ ] **Scanning**
+- [x] **Scanning**
   - [x] Expiration date check
   - [x] Certificate chain validation (verify leaf→root + hostname; self-signed detection) ✅ **NEW**
   - [x] Revocation status check (OCSP/CRL) ✅ **NEW** (`--check-revocation` on `scan`/`k8s`/`watch`, `internal/cert-monitor/revocation`)
   - [x] Kubernetes secrets monitoring
 
-- [ ] **Alerting**
+- [x] **Alerting**
   - [x] Email/Slack notifications ✅ **NEW** (`--slack-webhook`, `--smtp-*`, `--min-severity`, `--alert-chain`; `internal/cert-monitor/notifier`)
   - [x] Alert dedup in `watch` (`--renotify-interval`) ✅ **NEW**
   - [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`) ✅ **COMPLETE**
   - [x] Webhook integration ✅ **COMPLETE**
-  - [ ] Escalation policy (`notifier.Escalator` hook declared, no implementation)
+  - [x] Escalation policy ✅ **NEW** (`watch --escalate-after`, `--escalate-slack-webhook`, `--escalate-smtp-to`; `notifier/escalate.go`; once per sink per episode, in-memory)
 
-- [ ] **Reporting**
+- [x] **Reporting**
   - [x] Certificate inventory ✅ **NEW** (`--group-by-issuer` on `scan`/`k8s`, `internal/cert-monitor/inventory`)
   - [x] Grouping by domain/issuer ✅ **NEW**
-  - [ ] Renewal history tracking
+  - [x] Renewal history tracking ✅ **NEW** (`--history-file` on `scan`/`k8s`/`watch`, `history` command; `internal/cert-monitor/history`; renewal = new SHA-256 fingerprint + later expiry)
 
 **Technologies:** Go, crypto/x509, cert-manager integration
 
