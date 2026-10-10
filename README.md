@@ -6,6 +6,14 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/neogan/sre-toolkit)](https://goreportcard.com/report/github.com/neogan/sre-toolkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+## Status
+
+**Stage:** active development, 5 of 7 tools available, the other two in progress · **Last commit:** 2026-09-05 · **Updated:** 2026-10-10
+
+- **Done:** `k8s-doctor`, `alert-analyzer`, `chaos-load`, `config-linter`, `cert-monitor` (inventory reporting by issuer, certificate chain validation), CI and metrics foundation.
+- **In progress:** `cert-monitor` Kubernetes secrets scanning (uncommitted edits in `internal/cert-monitor/k8ssecrets`).
+- **Early code, not released:** `log-parser` and `db-toolkit` (marked "Coming Soon" below). Proposed next: `slo-gen`, `cost-optimizer`, `incident-cli`. See [plan.md](plan.md) and [docs/tasks/backlog.md](docs/tasks/backlog.md).
+
 ## Overview
 
 SRE Toolkit is a collection of powerful command-line utilities designed to help Site Reliability Engineers diagnose, monitor, and improve infrastructure reliability. Built with Go for performance and production readiness.
@@ -353,14 +361,13 @@ See [plan.md](plan.md) for complete roadmap, [docs/backlog.md](docs/backlog.md) 
 - [x] Logging (zerolog)
 - [x] Metrics (Prometheus)
 - [x] CI/CD pipeline (GitHub Actions)
-- [ ] k8s-doctor MVP implementation
+- [x] k8s-doctor MVP implementation
 
-### Next Phase: k8s-doctor MVP (In Progress)
+### Next Phase: remaining tools
 
-- [ ] Kubernetes client setup
-- [ ] Health check implementation
-- [ ] Diagnostics engine
-- [ ] Best practices audit
+- [x] k8s-doctor: Kubernetes client, health checks, diagnostics, HTML report
+- [ ] alert-analyzer and chaos-load: later phases (see backlog)
+- [ ] log-parser and db-toolkit: first release
 
 ## License
 

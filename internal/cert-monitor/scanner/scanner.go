@@ -9,6 +9,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/revocation"
 )
 
 // Status represents the health status of a certificate.
@@ -44,6 +46,12 @@ type CertInfo struct {
 	ChainValid  bool   // true if the leaf chains to a trusted root and the hostname matches
 	ChainError  string // human-readable reason the chain failed verification, if any
 	SelfSigned  bool   // true if the leaf certificate is self-signed
+
+	// Revocation status, populated when Config.CheckRevocation is set and the
+	// scan has network access to an OCSP responder or CRL distribution point.
+	RevocationStatus string // "GOOD", "REVOKED", "UNKNOWN", or "" when not checked
+	RevocationMethod string // "OCSP", "CRL", or "" when not checked
+	RevocationError  string // reason revocation status is UNKNOWN, or revocation detail
 }
 
 // Config holds scanner configuration.
@@ -53,6 +61,7 @@ type Config struct {
 	CriticalThreshold  int // days
 	InsecureSkipVerify bool
 	Concurrency        int
+	CheckRevocation    bool
 }
 
 // DefaultConfig returns scanner config with sensible defaults.
@@ -114,7 +123,30 @@ func ScanURL(ctx context.Context, target string, cfg *Config) *CertInfo {
 	cert := certs[0]
 	fillCertInfo(info, cert, cfg)
 	verifyChain(info, host, certs, nil)
+
+	if cfg.CheckRevocation {
+		checkRevocation(ctx, info, certs, cfg)
+	}
+
 	return info
+}
+
+// checkRevocation runs an OCSP/CRL revocation check for the leaf certificate
+// and records the outcome on info. The issuer is the next certificate in the
+// presented chain, or the leaf itself when self-signed.
+func checkRevocation(ctx context.Context, info *CertInfo, certs []*x509.Certificate, cfg *Config) {
+	leaf := certs[0]
+	issuer := leaf
+	if len(certs) > 1 {
+		issuer = certs[1]
+	} else if !info.SelfSigned {
+		issuer = nil
+	}
+
+	res := revocation.Check(ctx, leaf, issuer, cfg.Timeout)
+	info.RevocationStatus = string(res.Status)
+	info.RevocationMethod = res.Method
+	info.RevocationError = res.Error
 }
 
 // verifyChain inspects the full certificate chain presented by a server and

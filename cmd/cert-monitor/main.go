@@ -79,6 +79,7 @@ func newScanCmd() *cobra.Command {
 		insecure      bool
 		concurrency   int
 		groupByIssuer bool
+		checkRevoke   bool
 	)
 
 	cmd := &cobra.Command{
@@ -104,6 +105,7 @@ Examples:
 				CriticalThreshold:  critDays,
 				InsecureSkipVerify: insecure,
 				Concurrency:        concurrency,
+				CheckRevocation:    checkRevoke,
 			}
 
 			// Start metrics server if address is configured.
@@ -161,6 +163,7 @@ Examples:
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification (for self-signed certs)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
 	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-host list")
+	cmd.Flags().BoolVar(&checkRevoke, "check-revocation", false, "Check certificate revocation status via OCSP (falls back to CRL)")
 
 	return cmd
 }
@@ -175,6 +178,7 @@ func newK8sCmd() *cobra.Command {
 		webhookURL    string
 		timeout       time.Duration
 		groupByIssuer bool
+		checkRevoke   bool
 	)
 
 	cmd := &cobra.Command{
@@ -210,6 +214,7 @@ Examples:
 				CriticalThreshold: critDays,
 				Timeout:           timeout,
 				Concurrency:       10,
+				CheckRevocation:   checkRevoke,
 			}
 
 			logger.Info().Str("namespace", namespaceOrAll(namespace)).Msg("Scanning K8s TLS secrets")
@@ -233,15 +238,18 @@ Examples:
 					expires = si.NotAfter.Format("2006-01-02")
 				}
 				rows = append(rows, reporter.CertRow{
-					Source:    si.Host,
-					Subject:   si.Subject,
-					Issuer:    si.Issuer,
-					NotAfter:  expires,
-					DaysLeft:  si.DaysLeft,
-					Status:    string(si.Status),
-					Error:     si.Error,
-					Namespace: si.Namespace,
-					Secret:    si.SecretName,
+					Source:           si.Host,
+					Subject:          si.Subject,
+					Issuer:           si.Issuer,
+					NotAfter:         expires,
+					DaysLeft:         si.DaysLeft,
+					Status:           string(si.Status),
+					Error:            si.Error,
+					Namespace:        si.Namespace,
+					Secret:           si.SecretName,
+					RevocationStatus: si.RevocationStatus,
+					RevocationMethod: si.RevocationMethod,
+					RevocationError:  si.RevocationError,
 				})
 				urlResults = append(urlResults, si.CertInfo)
 			}
@@ -281,6 +289,7 @@ Examples:
 	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout")
 	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-secret list")
+	cmd.Flags().BoolVar(&checkRevoke, "check-revocation", false, "Check certificate revocation status via OCSP (falls back to CRL)")
 
 	return cmd
 }
@@ -295,6 +304,7 @@ func newWatchCmd() *cobra.Command {
 		webhookURL  string
 		insecure    bool
 		concurrency int
+		checkRevoke bool
 	)
 
 	cmd := &cobra.Command{
@@ -318,6 +328,7 @@ Examples:
 				CriticalThreshold:  critDays,
 				InsecureSkipVerify: insecure,
 				Concurrency:        concurrency,
+				CheckRevocation:    checkRevoke,
 			}
 
 			// Start metrics server — essential for watch mode so Prometheus can scrape.
@@ -383,6 +394,7 @@ Examples:
 	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
+	cmd.Flags().BoolVar(&checkRevoke, "check-revocation", false, "Check certificate revocation status via OCSP (falls back to CRL)")
 
 	return cmd
 }

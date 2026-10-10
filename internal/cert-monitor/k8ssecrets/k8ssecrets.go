@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/revocation"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,13 +38,13 @@ func ScanSecrets(ctx context.Context, client kubernetes.Interface, namespace str
 	var results []*SecretCertInfo
 	for i := range secrets.Items {
 		s := &secrets.Items[i]
-		infos := scanSecret(s, cfg)
+		infos := scanSecret(ctx, s, cfg)
 		results = append(results, infos...)
 	}
 	return results, nil
 }
 
-func scanSecret(secret *corev1.Secret, cfg *scanner.Config) []*SecretCertInfo {
+func scanSecret(ctx context.Context, secret *corev1.Secret, cfg *scanner.Config) []*SecretCertInfo {
 	var results []*SecretCertInfo
 
 	certData, ok := secret.Data["tls.crt"]
@@ -69,6 +70,21 @@ func scanSecret(secret *corev1.Secret, cfg *scanner.Config) []*SecretCertInfo {
 	// Report the leaf certificate (first one)
 	source := fmt.Sprintf("%s/%s", secret.Namespace, secret.Name)
 	info := scanner.ScanCertificate(certs[0], source, cfg)
+
+	if cfg.CheckRevocation {
+		// OCSP requires the issuer to validate the response signature; only
+		// attempt it when the secret carries the issuer alongside the leaf
+		// (e.g. a full chain in tls.crt). CRL lookup below doesn't need it.
+		var issuer *x509.Certificate
+		if len(certs) > 1 {
+			issuer = certs[1]
+		}
+		res := revocation.Check(ctx, certs[0], issuer, cfg.Timeout)
+		info.RevocationStatus = string(res.Status)
+		info.RevocationMethod = res.Method
+		info.RevocationError = res.Error
+	}
+
 	results = append(results, &SecretCertInfo{
 		CertInfo:   info,
 		Namespace:  secret.Namespace,

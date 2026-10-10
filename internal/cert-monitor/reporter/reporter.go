@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/inventory"
+	"github.com/neogan/sre-toolkit/internal/cert-monitor/revocation"
 	"github.com/neogan/sre-toolkit/internal/cert-monitor/scanner"
 )
 
@@ -73,11 +74,15 @@ type CertRow struct {
 	Error     string `json:"error,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Secret    string `json:"secret,omitempty"` //nolint:gosec // field name is part of certificate report schema, not a credential
+
+	RevocationStatus string `json:"revocation_status,omitempty"`
+	RevocationMethod string `json:"revocation_method,omitempty"`
+	RevocationError  string `json:"revocation_error,omitempty"`
 }
 
 func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "HOST\tPORT\tSUBJECT\tEXPIRES\tDAYS LEFT\tCHAIN\tSTATUS")
+	fmt.Fprintln(w, "HOST\tPORT\tSUBJECT\tEXPIRES\tDAYS LEFT\tCHAIN\tREVOKED\tSTATUS")
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 	for _, info := range results {
 		expires := "-"
@@ -91,10 +96,25 @@ func (r *Reporter) writeURLTable(results []*scanner.CertInfo) error {
 		if info.Error != "" {
 			errStr = fmt.Sprintf(" (%s)", info.Error)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s%s\n",
-			info.Host, info.Port, info.Subject, expires, daysLeft, chainLabel(info), status, errStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s%s\n",
+			info.Host, info.Port, info.Subject, expires, daysLeft, chainLabel(info), revocationLabel(info), status, errStr)
 	}
 	return w.Flush()
+}
+
+// revocationLabel renders a short, colorized summary of the revocation check
+// for table output. Returns a dash when no check was performed.
+func revocationLabel(info *scanner.CertInfo) string {
+	switch info.RevocationStatus {
+	case string(revocation.StatusGood):
+		return "\033[32mGOOD\033[0m"
+	case string(revocation.StatusRevoked):
+		return "\033[31mREVOKED\033[0m"
+	case string(revocation.StatusUnknown):
+		return "\033[90mUNKNOWN\033[0m"
+	default:
+		return "-"
+	}
 }
 
 // chainLabel renders a short, colorized summary of certificate chain
@@ -116,7 +136,7 @@ func chainLabel(info *scanner.CertInfo) string {
 
 func (r *Reporter) writeCertTable(rows []CertRow) error {
 	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "SOURCE\tSUBJECT\tEXPIRES\tDAYS LEFT\tSTATUS")
+	fmt.Fprintln(w, "SOURCE\tSUBJECT\tEXPIRES\tDAYS LEFT\tREVOKED\tSTATUS")
 	fmt.Fprintln(w, strings.Repeat("-", 80))
 	for _, row := range rows {
 		status := colorStatus(row.Status)
@@ -124,10 +144,25 @@ func (r *Reporter) writeCertTable(rows []CertRow) error {
 		if row.Error != "" {
 			errStr = fmt.Sprintf(" (%s)", row.Error)
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s%s\n",
-			row.Source, row.Subject, row.NotAfter, row.DaysLeft, status, errStr)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s%s\n",
+			row.Source, row.Subject, row.NotAfter, row.DaysLeft, revocationRowLabel(row), status, errStr)
 	}
 	return w.Flush()
+}
+
+// revocationRowLabel mirrors revocationLabel for the CertRow (k8s secrets)
+// table, which carries revocation fields flattened rather than on CertInfo.
+func revocationRowLabel(row CertRow) string {
+	switch row.RevocationStatus {
+	case string(revocation.StatusGood):
+		return "\033[32mGOOD\033[0m"
+	case string(revocation.StatusRevoked):
+		return "\033[31mREVOKED\033[0m"
+	case string(revocation.StatusUnknown):
+		return "\033[90mUNKNOWN\033[0m"
+	default:
+		return "-"
+	}
 }
 
 func (r *Reporter) writeInventoryTable(rep inventory.Report) error {
