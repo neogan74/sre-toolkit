@@ -245,10 +245,11 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Kubernetes secrets monitoring
 
 - [ ] **Alerting**
-  - Email/Slack notifications
+  - [x] Email/Slack notifications ✅ **NEW** (`--slack-webhook`, `--smtp-*`, `--min-severity`, `--alert-chain`; `internal/cert-monitor/notifier`)
+  - [x] Alert dedup in `watch` (`--renotify-interval`) ✅ **NEW**
   - [x] Prometheus metrics export (`cert_monitor_cert_days_left`, `cert_monitor_cert_status`, `cert_monitor_certs_total`, `cert_monitor_last_scan_timestamp_seconds`, `cert_monitor_scan_duration_seconds`) ✅ **COMPLETE**
   - [x] Webhook integration ✅ **COMPLETE**
-  - Escalation policy
+  - [ ] Escalation policy (`notifier.Escalator` hook declared, no implementation)
 
 - [ ] **Reporting**
   - [x] Certificate inventory ✅ **NEW** (`--group-by-issuer` on `scan`/`k8s`, `internal/cert-monitor/inventory`)

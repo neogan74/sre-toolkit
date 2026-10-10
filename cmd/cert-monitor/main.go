@@ -28,7 +28,7 @@ func main() {
 		Use:   "cert-monitor",
 		Short: "TLS certificate monitoring and expiry alerting",
 		Long: `cert-monitor scans TLS certificates for URLs and Kubernetes secrets,
-tracks expiry dates, and sends alerts via webhooks.`,
+tracks expiry dates, and sends alerts via webhook, Slack and email.`,
 	}
 
 	// Global flags
@@ -75,7 +75,7 @@ func newScanCmd() *cobra.Command {
 		warnDays      int
 		critDays      int
 		timeout       time.Duration
-		webhookURL    string
+		notify        notifyOpts
 		insecure      bool
 		concurrency   int
 		groupByIssuer bool
@@ -96,6 +96,10 @@ Examples:
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
+			sinks, nopts, err := notify.build(timeout)
+			if err != nil {
+				return err
+			}
 			outputFmt := reporter.Format(viper.GetString("output"))
 			rep := reporter.New(outputFmt, os.Stdout)
 
@@ -138,15 +142,7 @@ Examples:
 			ok, warn, crit, expired, errs := countStatuses(results)
 			rep.PrintSummary(len(results), ok, warn, crit, expired, errs)
 
-			// Send webhook if configured
-			if webhookURL != "" {
-				n := notifier.NewWebhookNotifier(webhookURL, timeout)
-				if err := n.Notify(ctx, results); err != nil {
-					logger.Error().Err(err).Msg("Failed to send webhook notification")
-				} else {
-					logger.Info().Str("url", webhookURL).Msg("Webhook notification sent")
-				}
-			}
+			dispatch(ctx, logger, sinks, nopts, nil, results)
 
 			// Exit with error if any critical/expired/error
 			if crit+expired+errs > 0 {
@@ -159,7 +155,7 @@ Examples:
 	cmd.Flags().IntVar(&warnDays, "warn-days", 30, "Days before expiry to trigger WARNING")
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout per host")
-	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
+	notify.addFlags(cmd)
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification (for self-signed certs)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
 	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-host list")
@@ -175,7 +171,7 @@ func newK8sCmd() *cobra.Command {
 		namespace     string
 		warnDays      int
 		critDays      int
-		webhookURL    string
+		notify        notifyOpts
 		timeout       time.Duration
 		groupByIssuer bool
 		checkRevoke   bool
@@ -194,6 +190,10 @@ Examples:
   cert-monitor k8s --kubeconfig ~/.kube/config --warn-days 60`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
+			sinks, nopts, err := notify.build(timeout)
+			if err != nil {
+				return err
+			}
 			outputFmt := reporter.Format(viper.GetString("output"))
 			rep := reporter.New(outputFmt, os.Stdout)
 
@@ -265,15 +265,7 @@ Examples:
 			ok, warn, crit, expired, errs := countStatuses(urlResults)
 			rep.PrintSummary(len(rows), ok, warn, crit, expired, errs)
 
-			// Send webhook alerts
-			if webhookURL != "" {
-				n := notifier.NewWebhookNotifier(webhookURL, timeout)
-				if err := n.Notify(ctx, urlResults); err != nil {
-					logger.Error().Err(err).Msg("Failed to send webhook notification")
-				} else {
-					logger.Info().Str("url", webhookURL).Msg("Webhook notification sent")
-				}
-			}
+			dispatch(ctx, logger, sinks, nopts, nil, urlResults)
 
 			if crit+expired+errs > 0 {
 				return fmt.Errorf("%d critical, %d expired, %d error certificates found", crit, expired, errs)
@@ -286,7 +278,7 @@ Examples:
 	cmd.Flags().StringVarP(&namespace, "namespace", "n", "", "Namespace to scan (empty = all namespaces)")
 	cmd.Flags().IntVar(&warnDays, "warn-days", 30, "Days before expiry to trigger WARNING")
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
-	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
+	notify.addFlags(cmd)
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout")
 	cmd.Flags().BoolVar(&groupByIssuer, "group-by-issuer", false, "Print an inventory summary grouped by issuer instead of the per-secret list")
 	cmd.Flags().BoolVar(&checkRevoke, "check-revocation", false, "Check certificate revocation status via OCSP (falls back to CRL)")
@@ -301,7 +293,8 @@ func newWatchCmd() *cobra.Command {
 		warnDays    int
 		critDays    int
 		timeout     time.Duration
-		webhookURL  string
+		notify      notifyOpts
+		renotify    time.Duration
 		insecure    bool
 		concurrency int
 		checkRevoke bool
@@ -312,7 +305,8 @@ func newWatchCmd() *cobra.Command {
 		Short:        "Continuously monitor TLS certificates",
 		SilenceUsage: true,
 		Long: `Runs certificate scans on a configurable interval and sends
-webhook alerts when issues are detected.
+alerts (webhook, Slack, email) when issues are detected. Unchanged alerts are
+suppressed until --renotify-interval elapses.
 
 Examples:
   cert-monitor watch --interval 6h example.com api.example.com
@@ -320,6 +314,11 @@ Examples:
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := logging.GetLogger()
+			sinks, nopts, err := notify.build(timeout)
+			if err != nil {
+				return err
+			}
+			dedup := notifier.NewDedup(renotify)
 			outputFmt := reporter.Format(viper.GetString("output"))
 
 			cfg := &scanner.Config{
@@ -364,12 +363,7 @@ Examples:
 				ok, warn, crit, expired, errs := countStatuses(results)
 				rep.PrintSummary(len(results), ok, warn, crit, expired, errs)
 
-				if webhookURL != "" {
-					n := notifier.NewWebhookNotifier(webhookURL, timeout)
-					if err := n.Notify(ctx, results); err != nil {
-						logger.Error().Err(err).Msg("Webhook notification failed")
-					}
-				}
+				dispatch(ctx, logger, sinks, nopts, dedup, results)
 			}
 
 			// Run immediately, then on interval
@@ -391,7 +385,8 @@ Examples:
 	cmd.Flags().IntVar(&warnDays, "warn-days", 30, "Days before expiry to trigger WARNING")
 	cmd.Flags().IntVar(&critDays, "crit-days", 7, "Days before expiry to trigger CRITICAL")
 	cmd.Flags().DurationVar(&timeout, "timeout", 10*time.Second, "Connection timeout per host")
-	cmd.Flags().StringVar(&webhookURL, "webhook", "", "Webhook URL to send alerts to")
+	notify.addFlags(cmd)
+	cmd.Flags().DurationVar(&renotify, "renotify-interval", 24*time.Hour, "Re-send an unchanged alert after this long (0 = only on status change)")
 	cmd.Flags().BoolVar(&insecure, "insecure", false, "Skip TLS verification")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 10, "Number of concurrent scans")
 	cmd.Flags().BoolVar(&checkRevoke, "check-revocation", false, "Check certificate revocation status via OCSP (falls back to CRL)")

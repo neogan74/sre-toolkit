@@ -27,7 +27,7 @@ func TestWebhookNotifier_NoAlerts(t *testing.T) {
 		{Status: scanner.StatusOK},
 	}
 
-	err := n.Notify(context.Background(), results)
+	err := n.Notify(context.Background(), BuildReport(results, Options{}))
 	require.NoError(t, err)
 	assert.False(t, called, "webhook should not be called when all certs are OK")
 }
@@ -69,7 +69,7 @@ func TestWebhookNotifier_WithAlerts(t *testing.T) {
 		},
 	}
 
-	err := n.Notify(context.Background(), results)
+	err := n.Notify(context.Background(), BuildReport(results, Options{}))
 	require.NoError(t, err)
 
 	assert.Equal(t, "cert-monitor", received.Source)
@@ -91,7 +91,7 @@ func TestWebhookNotifier_ServerError(t *testing.T) {
 		{Status: scanner.StatusCritical, Host: "x.example.com", Port: "443"},
 	}
 
-	err := n.Notify(context.Background(), results)
+	err := n.Notify(context.Background(), BuildReport(results, Options{}))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "500")
 }
@@ -102,7 +102,7 @@ func TestWebhookNotifier_InvalidURL(t *testing.T) {
 		{Status: scanner.StatusExpired, Host: "x.example.com", Port: "443"},
 	}
 
-	err := n.Notify(context.Background(), results)
+	err := n.Notify(context.Background(), BuildReport(results, Options{}))
 	assert.Error(t, err)
 }
 
@@ -127,7 +127,7 @@ func TestWebhookNotifier_ExpiredAlert(t *testing.T) {
 		},
 	}
 
-	err := n.Notify(context.Background(), results)
+	err := n.Notify(context.Background(), BuildReport(results, Options{}))
 	require.NoError(t, err)
 	assert.Equal(t, 1, received.Summary.Expired)
 }
