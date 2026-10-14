@@ -105,7 +105,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Prometheus metrics framework
   - [x] Markdown report generation ✅ **NEW**
   - [x] Grafana dashboard with analysis metrics ✅ **NEW**
-  - [ ] Slack/email notifications about problematic rules
+  - [x] Slack/email notifications about problematic rules ✅ **NEW** (`--slack-webhook`, `--smtp-*`, `--webhook`, `--notify-on`; `cmd/alert-analyzer/notify.go`, `internal/alert-analyzer/notify`, shared `pkg/notifier`)
   - [ ] Jira integration for task creation
 
 **Technologies:** Go, prometheus/client_golang, zerolog, cobra
@@ -413,6 +413,9 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Logging with zerolog (`pkg/logging/`)
   - [x] Structured configuration (YAML/env support)
   - [x] Progress bars and spinners (Ready for implementation)
+
+- [x] **Notifications** ✅ **COMPLETE**
+  - [x] Shared Slack/SMTP/webhook transport (`pkg/notifier`), used by `cert-monitor` and `alert-analyzer`
 
 - [x] **Observability** ✅ **PARTIAL**
   - [x] Prometheus metrics framework (`pkg/metrics/`)

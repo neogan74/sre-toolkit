@@ -30,6 +30,7 @@ type analysisOptions struct {
 	showTemporalPatterns bool
 	showRecommendations  bool
 	flappingThreshold    float64
+	notify               notifyOpts
 }
 
 type analysisResult struct {

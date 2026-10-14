@@ -64,6 +64,7 @@ func newAnalyzeCmd() *cobra.Command {
 		showTemporalPatterns bool
 		showRecommendations  bool
 		flappingThreshold    float64
+		notify               notifyOpts
 	)
 
 	cmd := &cobra.Command{
@@ -92,7 +93,10 @@ time range, and performs frequency analysis to identify the most problematic ale
   alert-analyzer analyze --prometheus-url http://prom:9090 --show-temporal-patterns
 
   # Generate actionable recommendations
-  alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations`,
+  alert-analyzer analyze --prometheus-url http://prom:9090 --show-recommendations
+
+  # Send high-priority problematic rules to Slack (and/or --smtp-host, --webhook)
+  alert-analyzer analyze --prometheus-url http://prom:9090 --slack-webhook https://hooks.slack.com/... --notify-on high`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAnalyze(analysisOptions{
 				prometheusURLs:       prometheusURLs,
@@ -108,6 +112,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 				showTemporalPatterns: showTemporalPatterns,
 				showRecommendations:  showRecommendations,
 				flappingThreshold:    flappingThreshold,
+				notify:               notify,
 			})
 		},
 	}
@@ -126,6 +131,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 	cmd.Flags().BoolVar(&showTemporalPatterns, "show-temporal-patterns", false, "Include time-of-day and day-of-week alert patterns")
 	cmd.Flags().BoolVar(&showRecommendations, "show-recommendations", false, "Include actionable recommendations based on alert patterns")
 	cmd.Flags().Float64Var(&flappingThreshold, "flapping-threshold", 3.0, "Flapping threshold (transitions per hour)")
+	notify.addFlags(cmd)
 
 	cmd.MarkFlagRequired("prometheus-url")
 
@@ -230,6 +236,16 @@ func parsePrometheusURL(input string) (clusterName, targetURL string) {
 }
 
 func runAnalyze(opts analysisOptions) error {
+	sinks, minRank, err := opts.notify.build()
+	if err != nil {
+		return err
+	}
+	if len(sinks) > 0 {
+		// Notifications are built from recommendations and flapping results.
+		opts.showRecommendations = true
+		opts.showFlapping = true
+	}
+
 	// Initialize configuration
 	cfg := config.Default()
 
@@ -264,6 +280,8 @@ func runAnalyze(opts analysisOptions) error {
 	if err := reportAnalysis(result, opts.outputFormat); err != nil {
 		return fmt.Errorf("failed to generate report: %w", err)
 	}
+
+	dispatch(context.Background(), logger, sinks, minRank, result)
 
 	if cfg.Metrics.Enabled {
 		recordAnalysisMetrics(result, "analyze")
