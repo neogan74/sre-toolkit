@@ -188,6 +188,21 @@ func sortRecommendations(recommendations []Recommendation) {
 	})
 }
 
+// ParsePriority validates a recommendation priority name (case-insensitive,
+// empty = low) and returns its rank; higher is more urgent.
+func ParsePriority(s string) (int, error) {
+	switch p := strings.ToLower(strings.TrimSpace(s)); p {
+	case "":
+		return priorityWeight(RecommendationPriorityLow), nil
+	case RecommendationPriorityCritical, RecommendationPriorityHigh, RecommendationPriorityMedium, RecommendationPriorityLow:
+		return priorityWeight(p), nil
+	}
+	return 0, fmt.Errorf("invalid priority %q (want low, medium, high or critical)", s)
+}
+
+// PriorityRank returns the rank of a priority or severity name; unknown names rank lowest.
+func PriorityRank(priority string) int { return priorityWeight(strings.ToLower(priority)) }
+
 func priorityWeight(priority string) int {
 	switch priority {
 	case RecommendationPriorityCritical:

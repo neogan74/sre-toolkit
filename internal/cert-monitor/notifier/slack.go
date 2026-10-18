@@ -3,91 +3,62 @@ package notifier
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
+
+	pkgnotifier "github.com/neogan/sre-toolkit/pkg/notifier"
 )
 
 // maxSlackAlerts caps the lines in one message to stay under Slack's text limits.
-const maxSlackAlerts = 40
+const maxSlackAlerts = pkgnotifier.MaxSlackLines
+
+type slackMessage = pkgnotifier.SlackMessage
 
 // SlackNotifier posts alerts to a Slack incoming webhook.
 type SlackNotifier struct {
-	URL      string
-	Channel  string // optional override (legacy webhooks)
-	Username string // optional override
-	client   *http.Client
+	sender *pkgnotifier.SlackSender
 }
 
 // NewSlackNotifier creates a SlackNotifier.
 func NewSlackNotifier(url, channel string, timeout time.Duration) *SlackNotifier {
-	if timeout == 0 {
-		timeout = 10 * time.Second
-	}
-	return &SlackNotifier{
-		URL:      url,
-		Channel:  channel,
-		Username: "cert-monitor",
-		client:   &http.Client{Timeout: timeout},
-	}
-}
-
-type slackAttachment struct {
-	Color    string   `json:"color"`
-	Text     string   `json:"text"`
-	Fallback string   `json:"fallback"`
-	MrkdwnIn []string `json:"mrkdwn_in,omitempty"`
-}
-
-type slackMessage struct {
-	Channel     string            `json:"channel,omitempty"`
-	Username    string            `json:"username,omitempty"`
-	Text        string            `json:"text"`
-	Attachments []slackAttachment `json:"attachments"`
+	return &SlackNotifier{sender: pkgnotifier.NewSlackSender(url, channel, "cert-monitor", timeout)}
 }
 
 // Name implements Notifier.
-func (n *SlackNotifier) Name() string { return "slack" }
+func (n *SlackNotifier) Name() string { return n.sender.Name() }
 
 // Notify implements Notifier.
 func (n *SlackNotifier) Notify(ctx context.Context, r Report) error {
-	if len(r.Alerts) == 0 {
-		return nil
-	}
-	return postJSON(ctx, n.client, n.URL, n.format(r))
+	return n.sender.Send(ctx, slackText(r))
 }
 
 func (n *SlackNotifier) format(r Report) slackMessage {
-	color := "warning"
-	if r.Worst() >= SeverityCritical {
-		color = "danger"
-	}
+	return n.sender.Format(slackText(r))
+}
 
-	var b strings.Builder
-	for i, a := range r.Alerts {
-		if i == maxSlackAlerts {
-			fmt.Fprintf(&b, "_…and %d more_\n", len(r.Alerts)-maxSlackAlerts)
-			break
-		}
-		fmt.Fprintf(&b, "*%s* `%s` — %s\n", a.Status, a.Host, alertDetail(a))
-	}
-
-	header := fmt.Sprintf(":warning: cert-monitor: %d certificate alert(s) (critical %d, expired %d, errors %d, of %d scanned)",
+// slackText is the neutral message for chat sinks.
+func slackText(r Report) pkgnotifier.Message {
+	m := toMessage(r)
+	m.Header = fmt.Sprintf(":warning: cert-monitor: %d certificate alert(s) (critical %d, expired %d, errors %d, of %d scanned)",
 		len(r.Alerts), r.Summary.Critical, r.Summary.Expired, r.Summary.Errors, r.Summary.Total)
 	if r.Escalated {
-		header = ":rotating_light: ESCALATED " + strings.TrimPrefix(header, ":warning: ")
+		m.Header = ":rotating_light: ESCALATED " + strings.TrimPrefix(m.Header, ":warning: ")
 	}
-	return slackMessage{
-		Channel:  n.Channel,
-		Username: n.Username,
-		Text:     header,
-		Attachments: []slackAttachment{{
-			Color:    color,
-			Text:     b.String(),
-			Fallback: header,
-			MrkdwnIn: []string{"text"},
-		}},
+	return m
+}
+
+// toMessage converts a Report to the shared neutral message (no header/subject).
+func toMessage(r Report) pkgnotifier.Message {
+	m := pkgnotifier.Message{
+		Source: r.Source,
+		Time:   r.Timestamp,
+		Danger: r.Worst() >= SeverityCritical,
+		Lines:  make([]pkgnotifier.Line, 0, len(r.Alerts)),
 	}
+	for _, a := range r.Alerts {
+		m.Lines = append(m.Lines, pkgnotifier.Line{Label: a.Status, Target: a.Host, Detail: alertDetail(a)})
+	}
+	return m
 }
 
 // alertDetail renders the human-readable tail of an alert line.

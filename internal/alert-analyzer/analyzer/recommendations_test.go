@@ -169,3 +169,16 @@ func TestFormatCompactDuration(t *testing.T) {
 		assert.Equal(t, tt.expected, formatCompactDuration(tt.input), "input: %v", tt.input)
 	}
 }
+
+func TestParsePriority(t *testing.T) {
+	cases := map[string]int{"": 1, "low": 1, " Medium ": 2, "HIGH": 3, "critical": 4}
+	for in, want := range cases {
+		got, err := ParsePriority(in)
+		require.NoError(t, err, in)
+		assert.Equal(t, want, got, in)
+	}
+	_, err := ParsePriority("urgent")
+	assert.ErrorContains(t, err, `invalid priority "urgent"`)
+	assert.Equal(t, 3, PriorityRank("High"))
+	assert.Equal(t, 1, PriorityRank("warning"))
+}

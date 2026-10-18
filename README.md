@@ -87,6 +87,10 @@ alert-analyzer analyze --prometheus-url http://prometheus:9090 --show-recommenda
 # Export a Markdown report
 alert-analyzer analyze --prometheus-url http://prometheus:9090 --output markdown
 
+# Notify Slack/email about high-priority problematic rules
+alert-analyzer analyze --prometheus-url http://prometheus:9090 \
+  --slack-webhook "$SLACK_WEBHOOK_URL" --notify-on high
+
 # Expose continuous analysis metrics for Grafana
 alert-analyzer monitor \
   --prometheus-url http://prometheus:9090 \
@@ -374,22 +378,23 @@ k8s-doctor healthcheck --log-level=debug
 
 ## Roadmap
 
-See [plan.md](plan.md) for complete roadmap, [docs/backlog.md](docs/backlog.md) for features, and [docs/architecture.md](docs/architecture.md) for system design.
+See [plan.md](plan.md) for complete roadmap, [docs/tasks/backlog.md](docs/tasks/backlog.md) for features, and [docs/architecture.md](docs/architecture.md) for system design.
 
-### Current Phase: Foundation ✅
+### Done
 
-- [x] Project structure and build system
-- [x] CLI framework (Cobra + Viper)
-- [x] Logging (zerolog)
-- [x] Metrics (Prometheus)
-- [x] CI/CD pipeline (GitHub Actions)
-- [x] k8s-doctor MVP implementation
+- [x] Foundation: project structure, CLI framework (Cobra + Viper), logging, metrics, CI/CD
+- [x] k8s-doctor: health checks, diagnostics, audit, HTML report
+- [x] alert-analyzer: frequency, flapping, correlation, temporal patterns, recommendations, Grafana dashboard, Slack/email/webhook notifications
+- [x] chaos-load: HTTP load generation, Kubernetes chaos scenarios, terminal dashboard
+- [x] config-linter: Kubernetes, Terraform, Dockerfile, Helm
+- [x] cert-monitor: scanning, chain/revocation checks, inventory, Slack/email alerts, escalation, renewal history
 
-### Next Phase: remaining tools
+### In progress / next
 
-- [x] k8s-doctor: Kubernetes client, health checks, diagnostics, HTML report
-- [ ] alert-analyzer and chaos-load: later phases (see backlog)
-- [ ] log-parser and db-toolkit: first release
+- [ ] log-parser and db-toolkit: first release (see backlog for open items)
+- [ ] chaos-load: resource exhaustion and storage chaos; Prometheus export
+- [ ] alert-analyzer: Jira integration; notifications from `monitor`
+- [ ] New tools: slo-gen, cost-optimizer, incident-cli
 
 ## License
 

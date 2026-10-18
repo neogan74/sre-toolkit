@@ -763,7 +763,38 @@ alert-analyzer analyze \
 
 ## Integration Examples
 
-### Slack Notifications
+### Built-in Notifications (Slack / Email / Webhook)
+
+`analyze` can send the problematic rules it finds (recommendations plus flapping alerts) to Slack, email or a JSON webhook after the report is printed.
+
+```bash
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...   # or --slack-webhook
+export SMTP_PASSWORD=...                                        # never pass on the CLI
+
+alert-analyzer analyze \
+  --prometheus-url http://prom:9090 \
+  --slack-webhook "$SLACK_WEBHOOK_URL" \
+  --smtp-host smtp.example.com --smtp-user alerts@example.com \
+  --smtp-from alerts@example.com --smtp-to oncall@example.com \
+  --notify-on high
+```
+
+| Flag | Meaning |
+|------|---------|
+| `--slack-webhook`, `--slack-channel` | Slack incoming webhook (env `SLACK_WEBHOOK_URL`) |
+| `--smtp-host/-port/-user/-from/-to/-tls` | Email; password from env `SMTP_PASSWORD`; TLS `none\|starttls\|tls` (default `starttls`) |
+| `--webhook` | POST the message as JSON (`source`, `header`, `summary`, `lines[]`, `danger`) |
+| `--notify-on` | Minimum priority: `low`, `medium`, `high` (default), `critical` |
+
+Behavior and limits:
+- Notification flags automatically enable `--show-recommendations` and `--show-flapping`.
+- Only findings at or above `--notify-on` are sent; if none qualify, nothing is sent.
+- Flapping rules already named by a recommendation are not repeated. Flapping severity maps to the same scale (`critical` > `warning`), so `warning` flapping needs `--notify-on low`.
+- One-shot: no dedup or escalation, and `monitor` does not send notifications. Run `analyze` from cron/CI for periodic reports.
+- Send failures are logged and do not change the exit code. Invalid flags fail before any query runs.
+- Secrets are never logged or included in errors.
+
+### Slack Notifications (custom script)
 
 ```bash
 #!/bin/bash
