@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -68,7 +69,7 @@ func TestDispatch_SendsSlackMessage(t *testing.T) {
 			{Priority: "low", Target: "Minor", Summary: "meh"},
 		},
 	}
-	dispatch(context.Background(), zerolog.Nop(), sinks, rank, result)
+	dispatch(context.Background(), zerolog.Nop(), sinks, rank, result, nil)
 
 	require.Equal(t, 1, calls)
 	assert.Contains(t, got.Text, "1 problematic alert rule(s)")
@@ -88,8 +89,8 @@ func TestDispatch_NothingToSendOrNoSinks(t *testing.T) {
 	require.NoError(t, err)
 
 	low := &analysisResult{recommendations: []analyzer.Recommendation{{Priority: "low", Target: "A"}}}
-	dispatch(context.Background(), zerolog.Nop(), sinks, rank, low)
-	dispatch(context.Background(), zerolog.Nop(), nil, rank, low)
+	dispatch(context.Background(), zerolog.Nop(), sinks, rank, low, nil)
+	dispatch(context.Background(), zerolog.Nop(), nil, rank, low, nil)
 	assert.Zero(t, calls)
 }
 
@@ -102,7 +103,7 @@ func TestDispatch_SendFailureIsNotFatal(t *testing.T) {
 	sinks, rank, err := (&notifyOpts{slackURL: srv.URL}).build()
 	require.NoError(t, err)
 	res := &analysisResult{recommendations: []analyzer.Recommendation{{Priority: "high", Target: "A"}}}
-	assert.NotPanics(t, func() { dispatch(context.Background(), zerolog.Nop(), sinks, rank, res) })
+	assert.NotPanics(t, func() { dispatch(context.Background(), zerolog.Nop(), sinks, rank, res, nil) })
 }
 
 func TestRunAnalyze_InvalidNotifyFlagsFailBeforeAnalysis(t *testing.T) {
@@ -110,5 +111,13 @@ func TestRunAnalyze_InvalidNotifyFlagsFailBeforeAnalysis(t *testing.T) {
 		prometheusURLs: []string{"http://127.0.0.1:1"},
 		notify:         notifyOpts{notifyOn: "urgent"},
 	})
+	assert.ErrorContains(t, err, "--notify-on")
+}
+
+func TestRunMonitor_InvalidNotifyFlagsFailFast(t *testing.T) {
+	err := runMonitor(analysisOptions{
+		prometheusURLs: []string{"http://127.0.0.1:1"},
+		notify:         notifyOpts{notifyOn: "urgent"},
+	}, "1m", "127.0.0.1:0", "/metrics", time.Hour)
 	assert.ErrorContains(t, err, "--notify-on")
 }

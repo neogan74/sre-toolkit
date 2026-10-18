@@ -106,6 +106,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Markdown report generation ✅ **NEW**
   - [x] Grafana dashboard with analysis metrics ✅ **NEW**
   - [x] Slack/email notifications about problematic rules ✅ **NEW** (`--slack-webhook`, `--smtp-*`, `--webhook`, `--notify-on`; `cmd/alert-analyzer/notify.go`, `internal/alert-analyzer/notify`, shared `pkg/notifier`)
+  - [x] Notifications from `monitor` ✅ **NEW** (same flags as `analyze` plus `--renotify-interval`; findings deduplicated per cycle, `internal/alert-analyzer/notify/dedup.go`)
   - [ ] Jira integration for task creation
 
 **Technologies:** Go, prometheus/client_golang, zerolog, cobra

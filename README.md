@@ -393,7 +393,7 @@ See [plan.md](plan.md) for complete roadmap, [docs/tasks/backlog.md](docs/tasks/
 
 - [ ] log-parser and db-toolkit: first release (see backlog for open items)
 - [ ] chaos-load: resource exhaustion and storage chaos; Prometheus export
-- [ ] alert-analyzer: Jira integration; notifications from `monitor`
+- [ ] alert-analyzer: Jira integration
 - [ ] New tools: slo-gen, cost-optimizer, incident-cli
 
 ## License
