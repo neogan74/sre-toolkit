@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/neogan/sre-toolkit/internal/log-parser/analyzer"
+	"github.com/neogan/sre-toolkit/internal/log-parser/follow"
 	"github.com/neogan/sre-toolkit/internal/log-parser/formats"
 	"github.com/neogan/sre-toolkit/internal/log-parser/reporter"
 	"github.com/neogan/sre-toolkit/pkg/logging"
@@ -198,20 +201,27 @@ Examples:
 // newTailCmd creates the `tail` subcommand — show last N parsed entries.
 func newTailCmd() *cobra.Command {
 	var (
-		n      int
-		level  string
-		format string
+		n          int
+		level      string
+		format     string
+		followMode bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "tail [file...]",
 		Short: "Show last N parsed log entries",
 		Long: `Display the last N log entries from a file, with parsed level and timestamp.
+With -f, keep running and print entries as they are appended; truncation and
+log rotation are handled. Stop with Ctrl-C.
 
 Examples:
   log-parser tail -n 20 app.log
-  log-parser tail --level error app.log`,
+  log-parser tail --level error app.log
+  log-parser tail -f --level warn app.log`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if followMode && len(args) != 1 {
+				return fmt.Errorf("--follow requires exactly one file")
+			}
 			minLevel := formats.LevelUnknown
 			if level != "" {
 				minLevel = parseLevelFlag(level)
@@ -222,56 +232,96 @@ Examples:
 				return err
 			}
 			defer closer()
+			cr := &countingReader{r: r}
 
-			var parser formats.Parser
+			tl := &tailer{format: format, minLevel: minLevel}
 			var entries []*formats.Entry
-			sc := bufio.NewScanner(r)
+			sc := bufio.NewScanner(cr)
 			sc.Buffer(make([]byte, 1*1024*1024), 1*1024*1024)
-			lineN := 0
 
 			for sc.Scan() {
-				lineN++
-				line := sc.Text()
-				if strings.TrimSpace(line) == "" {
-					continue
+				if entry := tl.parse(sc.Text()); entry != nil {
+					entries = append(entries, entry)
+					if len(entries) > n {
+						entries = entries[1:]
+					}
 				}
-				if parser == nil {
-					parser = detectParser(format, line)
-				}
-
-				entry, err := parser.Parse(line)
-				if err != nil {
-					continue
-				}
-				entry.LineNum = lineN
-
-				if minLevel != formats.LevelUnknown && !levelAtLeast(entry.Level, minLevel) {
-					continue
-				}
-
-				entries = append(entries, entry)
-				if len(entries) > n {
-					entries = entries[1:]
-				}
+			}
+			if err := sc.Err(); err != nil {
+				return err
 			}
 
 			for _, e := range entries {
-				ts := ""
-				if !e.Timestamp.IsZero() {
-					ts = e.Timestamp.Format("2006-01-02 15:04:05") + " "
-				}
-				fmt.Fprintf(os.Stdout, "L%-5d %s[%s] %s\n", e.LineNum, ts, levelColor(e.Level), e.Message) //nolint:gosec // writing to stdout, not an HTTP context
+				printEntry(e)
 			}
 
-			return sc.Err()
+			if !followMode {
+				return nil
+			}
+			ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt, syscall.SIGTERM)
+			defer stop()
+			return follow.Lines(ctx, args[0], cr.n, follow.DefaultInterval, func(line string) {
+				if entry := tl.parse(line); entry != nil {
+					printEntry(entry)
+				}
+			})
 		},
 	}
 
 	cmd.Flags().IntVarP(&n, "lines", "n", 20, "Number of lines to show")
 	cmd.Flags().StringVar(&level, "level", "", "Minimum log level")
 	cmd.Flags().StringVar(&format, "format", "", "Force log format")
+	cmd.Flags().BoolVarP(&followMode, "follow", "f", false, "Keep printing entries appended to the file")
 
 	return cmd
+}
+
+// tailer parses lines one at a time, keeping the detected parser and line number.
+type tailer struct {
+	format   string
+	minLevel formats.Level
+	parser   formats.Parser
+	lineN    int
+}
+
+// parse returns nil for blank, unparsable or filtered-out lines.
+func (t *tailer) parse(line string) *formats.Entry {
+	t.lineN++
+	if strings.TrimSpace(line) == "" {
+		return nil
+	}
+	if t.parser == nil {
+		t.parser = detectParser(t.format, line)
+	}
+	entry, err := t.parser.Parse(line)
+	if err != nil {
+		return nil
+	}
+	entry.LineNum = t.lineN
+	if t.minLevel != formats.LevelUnknown && !levelAtLeast(entry.Level, t.minLevel) {
+		return nil
+	}
+	return entry
+}
+
+// countingReader counts bytes read, giving the offset to continue following from.
+type countingReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	return n, err
+}
+
+func printEntry(e *formats.Entry) {
+	ts := ""
+	if !e.Timestamp.IsZero() {
+		ts = e.Timestamp.Format("2006-01-02 15:04:05") + " "
+	}
+	fmt.Fprintf(os.Stdout, "L%-5d %s[%s] %s\n", e.LineNum, ts, levelColor(e.Level), e.Message) //nolint:gosec // writing to stdout, not an HTTP context
 }
 
 func newVersionCmd() *cobra.Command {

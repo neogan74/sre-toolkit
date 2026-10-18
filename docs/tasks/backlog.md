@@ -279,7 +279,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
   - [x] Performance metrics extraction ✅ (rate/min, level breakdown, `analyzer.go:194-200`)
 
 - [ ] **Visualization**
-  - [x] Terminal UI for live tail ⚠️ **PARTIAL** (`tail` subcommand exists, `cmd/log-parser/main.go:199`, but reads a file once — no `-f`/streaming follow)
+  - [x] Terminal UI for live tail ⚠️ **PARTIAL** (`tail` subcommand; `-f/--follow` ✅ **NEW** via `internal/log-parser/follow`, polling, survives truncation and rotation; still plain text output, no full-screen TUI)
   - [ ] Export to Loki/Elasticsearch — still missing
   - [ ] Histogram/timeline view — still missing
 
