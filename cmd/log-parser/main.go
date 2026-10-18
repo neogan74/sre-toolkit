@@ -40,6 +40,7 @@ error spikes, matches user-defined patterns, and exports results as JSON.`,
 		newAnalyzeCmd(),
 		newGrepCmd(),
 		newTailCmd(),
+		newTraceCmd(),
 		newVersionCmd(),
 	)
 
@@ -57,6 +58,7 @@ func newAnalyzeCmd() *cobra.Command {
 		topN            int
 		anomalyWindow   time.Duration
 		anomalyMinCount int
+		traceKeys       []string
 	)
 
 	cmd := &cobra.Command{
@@ -81,6 +83,7 @@ Examples:
 				TopN:            topN,
 				AnomalyWindow:   anomalyWindow,
 				AnomalyMinCount: anomalyMinCount,
+				TraceKeys:       traceKeys,
 			}
 
 			r, closer, err := openInput(args)
@@ -103,6 +106,7 @@ Examples:
 	cmd.Flags().IntVar(&topN, "top", 10, "Number of top messages to show")
 	cmd.Flags().DurationVar(&anomalyWindow, "anomaly-window", time.Minute, "Time window for anomaly detection")
 	cmd.Flags().IntVar(&anomalyMinCount, "anomaly-min", 5, "Minimum errors in a window to flag as anomaly")
+	cmd.Flags().StringArrayVar(&traceKeys, "trace-key", nil, "Field holding the trace/request ID (repeatable, default: trace_id, request_id, correlation_id, req_id, x_request_id)")
 
 	return cmd
 }
@@ -322,6 +326,70 @@ func printEntry(e *formats.Entry) {
 		ts = e.Timestamp.Format("2006-01-02 15:04:05") + " "
 	}
 	fmt.Fprintf(os.Stdout, "L%-5d %s[%s] %s\n", e.LineNum, ts, levelColor(e.Level), e.Message) //nolint:gosec // writing to stdout, not an HTTP context
+}
+
+// newTraceCmd creates the `trace` subcommand — every line of one request.
+func newTraceCmd() *cobra.Command {
+	var (
+		format    string
+		traceKeys []string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "trace <id> [file...]",
+		Short: "Show every log line belonging to one trace/request ID",
+		Long: `Print all entries of a single trace in file order. A line belongs to the
+trace when its trace/request ID field equals <id>; in plain-text logs without
+such a field, any line containing <id> is included.
+
+Multiple files are read in the order given, so pass service logs together to
+follow a request across them. Reads stdin if no files are provided.
+
+Examples:
+  log-parser trace 4bf92f3577b34da6 api.log worker.log
+  log-parser trace --trace-key order_id 1042 app.log`,
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id, files := args[0], args[1:]
+			r, closer, err := openInput(files)
+			if err != nil {
+				return err
+			}
+			defer closer()
+
+			tl := &tailer{format: format, minLevel: formats.LevelUnknown}
+			sc := bufio.NewScanner(r)
+			sc.Buffer(make([]byte, 1*1024*1024), 1*1024*1024)
+			matched := 0
+			for sc.Scan() {
+				entry := tl.parse(sc.Text())
+				if entry == nil || !belongsToTrace(entry, id, traceKeys) {
+					continue
+				}
+				matched++
+				printEntry(entry)
+			}
+			if err := sc.Err(); err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "\n%d lines in trace %s\n", matched, id)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&format, "format", "", "Force log format")
+	cmd.Flags().StringArrayVar(&traceKeys, "trace-key", nil, "Field holding the trace/request ID (repeatable)")
+
+	return cmd
+}
+
+// belongsToTrace reports whether e is part of trace id: its ID field matches,
+// or, when it has no ID field at all, the raw line mentions id.
+func belongsToTrace(e *formats.Entry, id string, keys []string) bool {
+	if got := e.TraceID(keys); got != "" {
+		return got == id
+	}
+	return strings.Contains(e.Raw, id)
 }
 
 func newVersionCmd() *cobra.Command {

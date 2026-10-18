@@ -275,7 +275,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - [x] **Analysis** ✅ **PARTIAL**
   - [x] Error pattern detection ✅ **COMPLETE** (`--pattern` regex flags, `internal/log-parser/analyzer/analyzer.go:75-93`)
   - [x] Anomaly detection ✅ (statistical mean+2σ spike detection, `analyzer.go:230-260` — not ML-based as originally scoped)
-  - [ ] Log correlation (trace ID) — still missing
+  - [x] Log correlation (trace ID) ✅ **NEW** (`analyze` lists traces with errors; `trace <id> [file...]` prints one request across files; `--trace-key` for custom fields; `internal/log-parser/analyzer/traces.go`, `formats/trace.go`)
   - [x] Performance metrics extraction ✅ (rate/min, level breakdown, `analyzer.go:194-200`)
 
 - [ ] **Visualization**
@@ -289,7 +289,7 @@ Create a set of practical tools for SRE specialists, demonstrating deep understa
 - `internal/log-parser/formats/formats.go` + `formats_test.go` — JSON/logfmt/access/syslog/plain parsers
 - `internal/log-parser/analyzer/analyzer.go` + `analyzer_test.go` — stats, pattern matching, anomaly detection
 - `internal/log-parser/reporter/reporter.go` — table/JSON output
-- `cmd/log-parser/main.go` — `analyze`/`grep`/`tail` CLI commands
+- `cmd/log-parser/main.go` — `analyze`/`grep`/`tail`/`trace` CLI commands
 
 ---
 

@@ -24,6 +24,9 @@ type Stats struct {
 	TopErrors   []MessageCount
 	Patterns    []PatternMatch
 	Anomalies   []Anomaly
+	Traces      []TraceGroup // traces with errors, worst first
+	TracesTotal int          // distinct trace IDs seen (tracked)
+	TracesLost  int          // lines of trace IDs ignored after MaxTraces was reached
 	TimeRange   TimeRange
 	RatePerMin  float64
 }
@@ -60,8 +63,10 @@ type Config struct {
 	Patterns        []string // regex patterns to track
 	TopN            int      // how many top messages to show
 	AnomalyWindow   time.Duration
-	AnomalyMinCount int    // min errors in window to flag anomaly
-	Format          string // "", "json", "logfmt", "access", "syslog", "plain"
+	AnomalyMinCount int      // min errors in window to flag anomaly
+	Format          string   // "", "json", "logfmt", "access", "syslog", "plain"
+	TraceKeys       []string // fields holding a correlation ID; formats.DefaultTraceKeys if empty
+	MaxTraces       int      // distinct trace IDs to track; DefaultMaxTraces if <= 0
 }
 
 // DefaultConfig returns sensible defaults.
@@ -96,6 +101,7 @@ func Analyze(ctx context.Context, r io.Reader, cfg *Config) (*Stats, error) { //
 		LevelCounts: make(map[formats.Level]int),
 	}
 
+	traces := newTraceTracker(cfg.TraceKeys, cfg.MaxTraces)
 	msgCounts := make(map[string]int)
 	errCounts := make(map[string]int)
 
@@ -150,6 +156,8 @@ func Analyze(ctx context.Context, r io.Reader, cfg *Config) (*Stats, error) { //
 				stats.TimeRange.End = entry.Timestamp
 			}
 		}
+
+		traces.add(entry)
 
 		// Count messages (normalised)
 		key := normalise(entry.Message)
@@ -213,6 +221,10 @@ func Analyze(ctx context.Context, r io.Reader, cfg *Config) (*Stats, error) { //
 			})
 		}
 	}
+
+	stats.Traces = traces.result(cfg.TopN)
+	stats.TracesTotal = len(traces.groups)
+	stats.TracesLost = traces.dropped
 
 	// Anomaly detection: find buckets with significantly more errors than average
 	stats.Anomalies = detectAnomalies(buckets, cfg.AnomalyMinCount)

@@ -111,6 +111,8 @@ func (r *Reporter) reportTable(stats *analyzer.Stats) error {
 		}
 	}
 
+	r.reportTraces(stats)
+
 	// Anomalies
 	if len(stats.Anomalies) > 0 {
 		fmt.Fprintf(r.out, "\n--- Anomalies Detected ---\n")
@@ -125,6 +127,23 @@ func (r *Reporter) reportTable(stats *analyzer.Stats) error {
 
 	fmt.Fprintln(r.out)
 	return nil
+}
+
+func (r *Reporter) reportTraces(stats *analyzer.Stats) {
+	if len(stats.Traces) == 0 {
+		return
+	}
+	fmt.Fprintf(r.out, "\n--- Traces with Errors (%d distinct IDs) ---\n", stats.TracesTotal)
+	w := tabwriter.NewWriter(r.out, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "  TRACE ID\tLINES\tERRORS\tSPAN\tFIRST ERROR")
+	for _, g := range stats.Traces {
+		fmt.Fprintf(w, "  %s\t%d\t%d\t%s\t%s\n", truncate(g.ID, 36), g.Entries, g.Errors, g.Duration, truncate(g.FirstError, 60))
+	}
+	_ = w.Flush()
+	if stats.TracesLost > 0 {
+		fmt.Fprintf(r.out, "  (%d lines skipped: trace ID limit reached)\n", stats.TracesLost)
+	}
+	fmt.Fprintln(r.out, "  Show a whole trace: log-parser trace <id> <file>")
 }
 
 func makeBar(count, total, width int) string {
