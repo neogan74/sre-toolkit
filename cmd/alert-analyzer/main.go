@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/neogan/sre-toolkit/internal/alert-analyzer/collector"
+	"github.com/neogan/sre-toolkit/internal/alert-analyzer/notify"
 	"github.com/neogan/sre-toolkit/pkg/alertmanager"
 	"github.com/neogan/sre-toolkit/pkg/cli"
 	"github.com/neogan/sre-toolkit/pkg/config"
@@ -64,7 +65,7 @@ func newAnalyzeCmd() *cobra.Command {
 		showTemporalPatterns bool
 		showRecommendations  bool
 		flappingThreshold    float64
-		notify               notifyOpts
+		notifyFlags          notifyOpts
 	)
 
 	cmd := &cobra.Command{
@@ -112,7 +113,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 				showTemporalPatterns: showTemporalPatterns,
 				showRecommendations:  showRecommendations,
 				flappingThreshold:    flappingThreshold,
-				notify:               notify,
+				notify:               notifyFlags,
 			})
 		},
 	}
@@ -131,7 +132,7 @@ time range, and performs frequency analysis to identify the most problematic ale
 	cmd.Flags().BoolVar(&showTemporalPatterns, "show-temporal-patterns", false, "Include time-of-day and day-of-week alert patterns")
 	cmd.Flags().BoolVar(&showRecommendations, "show-recommendations", false, "Include actionable recommendations based on alert patterns")
 	cmd.Flags().Float64Var(&flappingThreshold, "flapping-threshold", 3.0, "Flapping threshold (transitions per hour)")
-	notify.addFlags(cmd)
+	notifyFlags.addFlags(cmd)
 
 	cmd.MarkFlagRequired("prometheus-url")
 
@@ -155,6 +156,8 @@ func newMonitorCmd() *cobra.Command {
 		interval             string
 		metricsAddress       string
 		metricsPath          string
+		renotify             time.Duration
+		notifyFlags          notifyOpts
 	)
 
 	cmd := &cobra.Command{
@@ -170,7 +173,14 @@ for Prometheus and Grafana dashboards.`,
     --show-temporal-patterns \
     --show-recommendations \
     --interval 1m \
-    --metrics-address :8080`,
+    --metrics-address :8080
+
+  # Also notify Slack about new high/critical findings, repeating every 6h
+  alert-analyzer monitor \
+    --prometheus-url http://prom:9090 \
+    --slack-webhook https://hooks.slack.com/... \
+    --notify-on high \
+    --renotify-interval 6h`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runMonitor(analysisOptions{
 				prometheusURLs:       prometheusURLs,
@@ -185,7 +195,8 @@ for Prometheus and Grafana dashboards.`,
 				showTemporalPatterns: showTemporalPatterns,
 				showRecommendations:  showRecommendations,
 				flappingThreshold:    flappingThreshold,
-			}, interval, metricsAddress, metricsPath)
+				notify:               notifyFlags,
+			}, interval, metricsAddress, metricsPath, renotify)
 		},
 	}
 
@@ -204,6 +215,8 @@ for Prometheus and Grafana dashboards.`,
 	cmd.Flags().StringVar(&interval, "interval", "1m", "Analysis refresh interval")
 	cmd.Flags().StringVar(&metricsAddress, "metrics-address", ":8080", "Metrics listen address")
 	cmd.Flags().StringVar(&metricsPath, "metrics-path", "/metrics", "Metrics HTTP path")
+	cmd.Flags().DurationVar(&renotify, "renotify-interval", 24*time.Hour, "Re-send an unchanged finding after this long (0 = only when new)")
+	notifyFlags.addFlags(cmd)
 	cmd.MarkFlagRequired("prometheus-url")
 
 	return cmd
@@ -281,7 +294,7 @@ func runAnalyze(opts analysisOptions) error {
 		return fmt.Errorf("failed to generate report: %w", err)
 	}
 
-	dispatch(context.Background(), logger, sinks, minRank, result)
+	dispatch(context.Background(), logger, sinks, minRank, result, nil)
 
 	if cfg.Metrics.Enabled {
 		recordAnalysisMetrics(result, "analyze")
@@ -291,11 +304,21 @@ func runAnalyze(opts analysisOptions) error {
 	return nil
 }
 
-func runMonitor(opts analysisOptions, intervalStr, metricsAddress, metricsPath string) error {
+func runMonitor(opts analysisOptions, intervalStr, metricsAddress, metricsPath string, renotify time.Duration) error {
 	interval, err := time.ParseDuration(intervalStr)
 	if err != nil {
 		return fmt.Errorf("invalid interval duration: %w", err)
 	}
+	sinks, minRank, err := opts.notify.build()
+	if err != nil {
+		return err
+	}
+	if len(sinks) > 0 {
+		// Notifications are built from recommendations and flapping results.
+		opts.showRecommendations = true
+		opts.showFlapping = true
+	}
+	dedup := notify.NewDedup(renotify)
 
 	cfg := config.Default()
 	logging.Init(cfg.Logging)
@@ -331,6 +354,7 @@ func runMonitor(opts analysisOptions, intervalStr, metricsAddress, metricsPath s
 			metrics.Errors.WithLabelValues("monitor", "analysis").Inc()
 		} else {
 			recordAnalysisMetrics(result, "monitor")
+			dispatch(ctx, logger, sinks, minRank, result, dedup)
 			metrics.CommandDuration.WithLabelValues("monitor").Observe(time.Since(start).Seconds())
 			logger.Info().
 				Int("alerts", result.history.CountAlerts()).

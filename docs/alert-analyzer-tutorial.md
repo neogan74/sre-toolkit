@@ -790,9 +790,21 @@ Behavior and limits:
 - Notification flags automatically enable `--show-recommendations` and `--show-flapping`.
 - Only findings at or above `--notify-on` are sent; if none qualify, nothing is sent.
 - Flapping rules already named by a recommendation are not repeated. Flapping severity maps to the same scale (`critical` > `warning`), so `warning` flapping needs `--notify-on low`.
-- One-shot: no dedup or escalation, and `monitor` does not send notifications. Run `analyze` from cron/CI for periodic reports.
+- `analyze` is one-shot: no dedup or escalation. For continuous alerting use `monitor` with the same flags (see below).
 - Send failures are logged and do not change the exit code. Invalid flags fail before any query runs.
 - Secrets are never logged or included in errors.
+
+#### Notifications from `monitor`
+
+`monitor` accepts the same notification flags and checks after every cycle. A message is sent only when it contains a finding that is new (label + target) or was last sent more than `--renotify-interval` ago (default `24h`, `0` = only when new). The whole current report is sent, not just the new lines. A finding that clears and returns is reported again. State is in memory, so a restart re-sends current findings. Failed sends are retried next cycle.
+
+```bash
+alert-analyzer monitor \
+  --prometheus-url http://prom:9090 \
+  --slack-webhook "$SLACK_WEBHOOK_URL" \
+  --notify-on high \
+  --renotify-interval 6h
+```
 
 ### Slack Notifications (custom script)
 

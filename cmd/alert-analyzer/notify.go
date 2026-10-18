@@ -89,19 +89,30 @@ func (o *notifyOpts) build() (notifier.Multi, int, error) {
 }
 
 // dispatch sends the problematic rules in result to sinks. Failures are
-// logged, never fatal: the analysis itself already succeeded.
-func dispatch(ctx context.Context, logger zerolog.Logger, sinks notifier.Multi, minRank int, result *analysisResult) {
+// logged, never fatal: the analysis itself already succeeded. A non-nil dedup
+// (monitor mode) skips messages whose findings were already reported.
+func dispatch(ctx context.Context, logger zerolog.Logger, sinks notifier.Multi, minRank int, result *analysisResult, dedup *notify.Dedup) {
 	if len(sinks) == 0 {
 		return
 	}
-	msg, ok := notify.BuildMessage(result.stats, result.recommendations, result.flapping, minRank, time.Now())
+	now := time.Now()
+	msg, ok := notify.BuildMessage(result.stats, result.recommendations, result.flapping, minRank, now)
+	if dedup != nil {
+		// Due also forgets cleared findings, so call it even when msg is empty.
+		if !dedup.Due(msg, now) {
+			ok = false
+		}
+	}
 	if !ok {
-		logger.Info().Msg("No problematic rules at or above --notify-on; nothing to send")
+		logger.Info().Msg("No new problematic rules at or above --notify-on; nothing to send")
 		return
 	}
 	if err := sinks.Send(ctx, msg); err != nil {
 		logger.Error().Err(err).Msg("Notification failed")
 		return
+	}
+	if dedup != nil {
+		dedup.Commit(msg, now)
 	}
 	logger.Info().Str("sinks", sinks.Name()).Int("rules", len(msg.Lines)).Msg("Notifications sent")
 }
