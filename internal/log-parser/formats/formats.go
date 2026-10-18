@@ -43,7 +43,7 @@ type Parser interface {
 
 // --- JSON (structured) parser ---
 
-var jsonKeyRE = regexp.MustCompile(`"(\w+)"\s*:\s*"?([^",}\n]*)"?`)
+var jsonKeyRE = regexp.MustCompile(`"([\w.-]+)"\s*:\s*"?([^",}\n]*)"?`)
 
 // JSONParser handles structured JSON log lines (zerolog, zap, logrus JSON).
 type JSONParser struct{}
@@ -79,7 +79,7 @@ func (p *JSONParser) Parse(line string) (*Entry, error) {
 
 // --- Logfmt parser ---
 
-var logfmtPairRE = regexp.MustCompile(`(\w+)=("([^"]*)"|(\S*))`)
+var logfmtPairRE = regexp.MustCompile(`([\w.-]+)=("([^"]*)"|(\S*))`)
 
 // LogfmtParser handles key=value log lines.
 type LogfmtParser struct{}
