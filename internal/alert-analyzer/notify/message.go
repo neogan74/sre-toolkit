@@ -18,7 +18,7 @@ const dangerRank = 3 // high and critical findings color the message red
 func BuildMessage(stats analyzer.SummaryStats, recs []analyzer.Recommendation, flapping []analyzer.FlappingResult, minRank int, now time.Time) (notifier.Message, bool) {
 	covered := map[string]struct{}{}
 	counts := map[string]int{}
-	var lines []notifier.Line
+	lines := make([]notifier.Line, 0, len(recs)+len(flapping))
 	worst := 0
 
 	for _, r := range recs {

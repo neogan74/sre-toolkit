@@ -171,7 +171,7 @@ func (s *Store) Summary(target string) []TargetSummary {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	var out []TargetSummary
+	out := make([]TargetSummary, 0, len(s.data.Targets))
 	for key, t := range s.data.Targets {
 		if target != "" && target != key {
 			continue
